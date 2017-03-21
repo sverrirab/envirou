@@ -21,15 +21,5 @@ CloudStack=CS_API_URL, CS_API_KEY, CS_SECRET_KEY, CS_URL
 CloudStack=MANAGE_API_KEY, MANAGE_SECRET_KEY, MANAGE_URL
 
 [highlight]
-yellow=PATH, EC2_URL
+green=EC2_URL, CS_API_URL
 blue=MUCHADOABOUTNOTHING
-
-[default]
-
-
-[profile:stuff1]
-PROF_NAME=stuff1
-PROF_XYZ=abc
-[profile:stuff2]
-PROF_NAME=stuff2
-PROF_XYZ=xyz
