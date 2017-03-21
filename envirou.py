@@ -9,47 +9,25 @@ _CONSOLE_COLORS = {
     "c-end":        "\033[0m",
     "c-bold":       "\033[1m",
     "c-underline":  "\033[4m",
-    "c-fail":       "\033[91m",
-    "c-green":      "\033[92m",
-    "c-warn":       "\033[93m",
-    "c-blue":       "\033[94m",
-    "c-header":     "\033[95m",
+    "c-red":        "\033[31m",
+    "c-green":      "\033[32m",
+    "c-yellow":     "\033[33m",
+    "c-blue":       "\033[34m",
+    "c-magenta":    "\033[35m",
 }
 
-_DEFAULT_CONFIG = """; Default configuration file for mge - feel free to edit.
-[groups]
-; Names starting with _ are hidden by default
-AWS=AWS_ACCESS_KEY,AWS_SECRET_KEY,EC2_HOME,EC2_URL,S3_URL
-CloudStack=CS_API_URL,CS_API_KEY,CS_SECRET_KEY,CS_URL
-GO=GOPATH
-Java=JAVA_HOME
-Python=VIRTUAL_ENV
-Standard=PATH
-_Apple=Apple_PubSub_Socket_Render,__CF_USER_TEXT_ENCODING,XPC_FLAGS,XPC_SERVICE_NAME
-_Python=VERSIONER_PYTHON_PREFER_32_BIT,VERSIONER_PYTHON_VERSION
-_mge=MGE_HOME
-_iTerm=ITERM_PROFILE,ITERM_SESSION_ID,COLORFGBG
-_SSH=SSH_AUTH_SOCK
-_Env=TERM,SHELL,LOGNAME,USER,HOME,EDITOR,LC_ALL,LC_CTYPE,TMP,TMPDIR
-_Terminal=TERM_PROGRAM,TERM_PROGRAM_VERSION,TERM_SESSION_ID
-_Shell=_,PWD,SHLVL
-_Progs=LSCOLORS,PAGER,LESS,ZSH
-[profile:stuff1]
-PROF_NAME=stuff1
-PROF_XYZ=abc
-[profile:stuff2]
-PROF_NAME=stuff2
-PROF_XYZ=xyz
-"""
-
-_CONFIG_PATH = "~/.mge"
+_CONFIG_ENV = "ENVIROU_HOME"
+_CONFIG_PATH = "~/.envirou"
 _CONFIG_FILE = "config"
 _SECTION_GROUPS = "groups"
+_SECTION_CUSTOM = "custom"
+_SECTION_HIGHLIGHT = "highlight"
 _SECTION_PROFILE = "profile"
 _NOGROUP = "NA"
 
 _verbose_level = 0
 _groups = defaultdict(list)
+_highlight = {}
 _profiles = defaultdict(list)
 _stdout = None
 
@@ -58,6 +36,13 @@ def redirect_stdout():
     global _stdout
     _stdout = sys.stdout
     sys.stdout = sys.stderr
+
+
+def shell_eval(fmt, *args, **kwargs):
+    if _verbose_level > 0:
+        verbose("SHELL> " + fmt, *args, **kwargs)
+    output = fmt.format(**kwargs)
+    print(output, *args, file=_stdout)
 
 
 def very_verbose(fmt, *args, **kwargs):
@@ -75,15 +60,18 @@ def verbose(fmt, *args, **kwargs):
 def output_group(group):
     if group == _NOGROUP:
         group += " (No Applicable group)"
-    verbose("{c-header}# {group} {c-end}", group=group)
+    verbose("{c-magenta}# {group} {c-end}", group=group)
 
 
 def output_key(k, maxlen):
-    verbose("{key:<{maxlen}} = {c-bold}{value}{c-end}", key=k, value=os.environ[k], maxlen=maxlen)
+    fmt = "{key:<{maxlen}} {value}"
+    if k in _highlight:
+        fmt = "{c-" + _highlight.get(k) + "}" + fmt + "{c-end}"
+    verbose(fmt, key=k, value=os.environ[k], maxlen=maxlen)
 
 
 def read_config():
-    folder = os.environ.get("MGE_HOME", "")
+    folder = os.environ.get("ENVIROU_HOME", "")
     if len(folder.strip()) == 0:
         folder = os.path.expanduser(_CONFIG_PATH)
     if not os.path.isdir(folder):
@@ -92,8 +80,14 @@ def read_config():
     config = os.path.join(folder, _CONFIG_FILE)
     if not os.path.exists(config):
         very_verbose("First time initializization of config file:", config)
+        py_path = os.path.realpath(__file__)
+        config_path = py_path[:-3] + ".default"
+        very_verbose("Reading from template:", py_path)
+        with open(config_path, "r") as template:
+            default_config = template.read()
+
         with open(config, "w") as f:
-            f.write(_DEFAULT_CONFIG)
+            f.write(default_config)
 
     with open(config, "r") as f:
         section = "(none)"
@@ -106,10 +100,13 @@ def read_config():
                 continue
             key, value = l.split("=", 1)
 
-            if section == _SECTION_GROUPS:
+            if section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     very_verbose(_SECTION_GROUPS, key, env)
                     _groups[key].append(env.strip())
+            elif section == _SECTION_HIGHLIGHT:
+                for env in value.split(","):
+                    _highlight[env] = key
             elif section.startswith(_SECTION_PROFILE):
                 _, profile = section.split(":", 1)
                 very_verbose(_SECTION_PROFILE, profile, key, value)
@@ -120,6 +117,10 @@ def read_config():
 
 def main(arguments):
     read_config()
+
+    if arguments.reset:
+        very_verbose("resetting standard profile")
+
     match_group = defaultdict(list)
     for name, keys in _groups.items():
         for k in sorted(keys):
@@ -139,7 +140,7 @@ def main(arguments):
     filter_groups = len(arguments.group) > 0
     not_displayed_group = []
     for group in sorted(grouped.keys()):
-        is_hidden = (group[0] == "_")
+        is_hidden = (group[0] == ".")
         if arguments.all or (filter_groups and group in arguments.group) or (not filter_groups and not is_hidden):
             output_group(group)
             for k in grouped[group]:
@@ -156,7 +157,7 @@ def main(arguments):
             verbose(key, value)
 
     # TODO: REMOVE
-    # print("export MUCHADOABOUTNOTHING=1", file=_stdout)
+    shell_eval("export MUCHADOABOUTNOTHING=1")
 
     return 0
 
@@ -171,6 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-all", dest="password", action="store_false", help="Don't show hidden groups (default)")
     parser.set_defaults(all=False)
 
+    parser.add_argument("-r", "--reset", help="Activate profile")
     parser.add_argument("-p", "--profile", help="Activate profile")
     parser.add_argument("group", nargs="*", help="Display named group(s)")
 
