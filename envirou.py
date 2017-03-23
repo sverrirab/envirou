@@ -23,6 +23,8 @@ _DEFAULT_FILE = "default.envirou"
 _SECTION_GROUPS = "groups"
 _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
+_SECTION_PROFILE = "profile:"
+_HIGHLIGHT_PASSWORD = "password"
 _NOGROUP = "NA"
 
 _verbose_level = 0
@@ -57,19 +59,30 @@ def verbose(fmt, *args, **kwargs):
     print(output, *args)
 
 
+def color_wrap(s, color):
+    return "{c-" + color + "}" + s + "{c-end}"
+
+
 def output_group(group):
     if group == _NOGROUP:
         group += " (No Applicable group)"
-    verbose("{c-magenta}# {group} {c-end}", group=group)
+    out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
+    verbose(out, group=group)
 
 
-def output_key(k, maxlen):
+def output_key(k, maxlen, password=False):
     fmt = "{key:<{maxlen}} {value}"
-    if _default and ((k in _default and os.environ.get(k, "") != _default[k]) or k not in _default):
+    value = os.environ.get(k, "")
+    if _default and ((k in _default and value != _default[k]) or k not in _default):
         fmt = "{c-red}" + fmt + "{c-end}"
     elif k in _highlight:
-        fmt = "{c-" + _highlight.get(k) + "}" + fmt + "{c-end}"
-    verbose(fmt, key=k, value=os.environ.get(k, ""), maxlen=maxlen)
+        color = _highlight.get(k)
+        if color == _HIGHLIGHT_PASSWORD:
+            if not password:
+                value = "*" * len(value)
+        else:
+            fmt = color_wrap(fmt, color)
+    verbose(fmt, key=k, value=value, maxlen=maxlen)
 
 
 def clean_split(s, sep="="):
@@ -78,15 +91,24 @@ def clean_split(s, sep="="):
     return k.strip(), v.strip()
 
 
-def read_config():
-    # Write/prepare first time configuration.
-    folder = os.environ.get(_CONFIG_ENV, "")
-    if len(folder.strip()) == 0:
-        folder = os.path.expanduser(_CONFIG_PATH)
+def config_filename(short):
+    """
+    :param short: short name
+    :return: Get full path to config filename.
+    """
+    folder = os.environ.get(_CONFIG_ENV, _CONFIG_PATH)
+    folder = os.path.expanduser(folder)
     if not os.path.isdir(folder):
         very_verbose("Creating configuration folder:", folder)
         os.makedirs(folder)
-    config = os.path.join(folder, _CONFIG_FILE)
+    full = os.path.join(folder, short)
+    very_verbose("Full path of", short, "is", full)
+    return full
+
+
+def read_config():
+    # Write/prepare first time configuration.
+    config = config_filename(_CONFIG_FILE)
     if not os.path.exists(config):
         very_verbose("First time initializization of config file:", config)
         py_path = os.path.realpath(__file__)
@@ -117,33 +139,46 @@ def read_config():
                 for env in value.split(","):
                     very_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
+            elif section.startswith(_SECTION_PROFILE):
+                profile = section[len(_SECTION_PROFILE):]
+                very_verbose(_SECTION_PROFILE, profile, key, value)
             else:
                 very_verbose("Ignoring config item:", section, key, value)
 
     # Read default environment file
-    default_file = os.path.join(folder, _DEFAULT_FILE)
+    default_file = config_filename(_DEFAULT_FILE)
     if os.path.exists(default_file):
         with open(default_file, "r") as f:
             for l in f.readlines():
-                l = l.strip()   # Trailing LF removed.
+                l = l.strip()   # Removing trailing LF
                 key, value = l.split("=", 1)
                 very_verbose("reading default env", key, "=", value, ".")
                 _default[key] = value
 
 
 def save_default():
-    folder = os.path.expanduser(_CONFIG_PATH)
-    with open(os.path.join(folder, _DEFAULT_FILE), "w") as f:
+    default = config_filename(_DEFAULT_FILE)
+    with open(default, "w") as f:
         for k in sorted(os.environ.keys()):
             f.write("{}={}\n".format(k, os.environ.get(k)))
+
+
+def clear_default():
+    default = config_filename(_DEFAULT_FILE)
+    os.remove(default)
 
 
 def main(arguments):
     read_config()
 
-    if arguments.default:
-        very_verbose("saving default environment")
+    if arguments.clear_default:
+        clear_default()
+        verbose("Default cleared")
+        return 0
+    elif arguments.default:
         save_default()
+        verbose("Current environment set as default")
+        return 0
 
     match_group = defaultdict(list)
     for name, keys in _groups.items():
@@ -168,7 +203,7 @@ def main(arguments):
         if arguments.all or (filter_groups and group in arguments.group) or (not filter_groups and not is_hidden):
             output_group(group)
             for k in grouped[group]:
-                output_key(k, maxlen)
+                output_key(k, maxlen, password=arguments.show_password)
         else:
             not_displayed_group.append(group)
 
@@ -190,14 +225,15 @@ def main(arguments):
 if __name__ == "__main__":
     redirect_stdout()
     parser = argparse.ArgumentParser(description="Manage your environment with Envirou!")
-    parser.set_defaults(all=False, default=False)
 
     parser.add_argument("-v", "--verbose", action="count", default=0,
                         help="Increase output verbosity")
 
     parser.add_argument("-a", "--all", dest="all", action="store_true", help="Show all groups")
+    parser.add_argument("-p", "--show-password", action="store_true", help="Clear out default")
     parser.add_argument("--no-all", dest="all", action="store_false", help="Don't show hidden groups (default)")
     parser.add_argument("--default", action="store_true", help="Set current env as default")
+    parser.add_argument("--clear-default", action="store_true", help="Clear out default")
 
     parser.add_argument("group", nargs="*", help="Display named group(s)")
 
