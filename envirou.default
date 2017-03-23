@@ -26,12 +26,9 @@ CloudStack=MANAGE_API_KEY, MANAGE_SECRET_KEY, MANAGE_URL
 [highlight]
 green=EC2_URL, CS_API_URL
 password=AWS_SECRET_KEY, CS_SECRET_KEY
-;blue=MUCHADOABOUTNOTHING
 magenta=groups
+green=profiles
 
-[profile:stuff]
-STUFFY=stuff!
-
-[profile:more]
-STUFFY=even more stuff
-MUCHADOABOUTNOTHING=2
+[profile:example]
+OCCUPATION=elevator operator
+SALARY=ample

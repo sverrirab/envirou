@@ -21,14 +21,16 @@ _CONFIG_PATH = "~/.envirou"
 _CONFIG_FILE = "config"
 _DEFAULT_FILE = "default.envirou"
 _SECTION_GROUPS = "groups"
+_SECTION_PROFILES = "profiles"
 _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
-_SECTION_PROFILE = "profile:"
+_SECTION_PROFILE_START = "profile:"
 _HIGHLIGHT_PASSWORD = "password"
 _NOGROUP = "NA"
 
 _verbose_level = 0
 _groups = defaultdict(list)
+_profiles = defaultdict(dict)
 _highlight = {}
 _default = {}
 _stdout = None
@@ -45,6 +47,11 @@ def shell_eval(fmt, *args, **kwargs):
         verbose("SHELL> " + fmt, *args, **kwargs)
     output = fmt.format(**kwargs)
     print(output, *args, file=_stdout)
+
+
+def ultra_verbose(fmt, *args, **kwargs):
+    if _verbose_level > 1:
+        verbose(fmt, *args, **kwargs)
 
 
 def very_verbose(fmt, *args, **kwargs):
@@ -85,8 +92,25 @@ def output_key(k, maxlen, password=False):
     verbose(fmt, key=k, value=value, maxlen=maxlen)
 
 
+def output_profiles(active, inactive):
+    def_color = _highlight.get(_SECTION_GROUPS, "magenta")
+    active_color = _highlight.get(_SECTION_PROFILES, "yellow")
+    active_str = color_wrap(", ", def_color).join([color_wrap(p, active_color) for p in active])
+    inactive_str = ", ".join(inactive)
+    s = ""
+    if active:
+        s = color_wrap("# Active profiles: ", def_color) + active_str
+
+    if inactive and active:
+        s += color_wrap(" (inactive: {})".format(inactive_str), def_color)
+    elif inactive:
+        s = color_wrap("# Inactive profiles: {}".format(inactive_str), def_color)
+
+    if s:
+        verbose(s)
+
+
 def clean_split(s, sep="="):
-    very_verbose(s)
     k, v = s.split(sep, 1)
     return k.strip(), v.strip()
 
@@ -102,7 +126,7 @@ def config_filename(short):
         very_verbose("Creating configuration folder:", folder)
         os.makedirs(folder)
     full = os.path.join(folder, short)
-    very_verbose("Full path of", short, "is", full)
+    ultra_verbose("Full path of", short, "is", full)
     return full
 
 
@@ -113,7 +137,7 @@ def read_config():
         very_verbose("First time initializization of config file:", config)
         py_path = os.path.realpath(__file__)
         config_path = py_path[:-3] + ".default"
-        very_verbose("Reading from template:", py_path)
+        ultra_verbose("Reading from template:", py_path)
         with open(config_path, "r") as template:
             default_config = template.read()
 
@@ -133,17 +157,24 @@ def read_config():
             key, value = clean_split(l)
             if section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
-                    very_verbose(_SECTION_GROUPS, key, env)
+                    ultra_verbose(_SECTION_GROUPS, key, env)
                     _groups[key].append(env.strip())
             elif section == _SECTION_HIGHLIGHT:
                 for env in value.split(","):
-                    very_verbose(_SECTION_HIGHLIGHT, env, key)
+                    ultra_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
-            elif section.startswith(_SECTION_PROFILE):
-                profile = section[len(_SECTION_PROFILE):]
-                very_verbose(_SECTION_PROFILE, profile, key, value)
+            elif section.startswith(_SECTION_PROFILE_START):
+                profile = section[len(_SECTION_PROFILE_START):]
+                ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
+                _profiles[profile][key] = value
             else:
                 very_verbose("Ignoring config item:", section, key, value)
+
+    if _verbose_level > 1:
+        for p in sorted(_profiles.keys()):
+            ultra_verbose("profile", p)
+            for k, v in _profiles[p].items():
+                ultra_verbose("  {k}={v}", k=k, v=v)
 
     # Read default environment file
     default_file = config_filename(_DEFAULT_FILE)
@@ -152,7 +183,7 @@ def read_config():
             for l in f.readlines():
                 l = l.strip()   # Removing trailing LF
                 key, value = l.split("=", 1)
-                very_verbose("reading default env", key, "=", value, ".")
+                ultra_verbose("reading default env", key, "=", value, ".")
                 _default[key] = value
 
 
@@ -216,8 +247,23 @@ def main(arguments):
     if len(not_displayed_group):
         output_group("Hidden groups: {}".format(" ".join(not_displayed_group)))
 
-    # TODO: REMOVE
-    shell_eval("export MUCHADOABOUTNOTHING=1")
+    active_profiles = []
+    inactive_profiles = []
+    for p in sorted(_profiles.keys()):
+        ultra_verbose("profile", p)
+        active = True
+        for k, v in _profiles[p].items():
+            if k not in os.environ or os.environ[k] != v:
+                active = False
+                break
+        if active:
+            active_profiles.append(p)
+        else:
+            inactive_profiles.append(p)
+
+    output_profiles(active_profiles, inactive_profiles)
+
+    # TODO: call shell_eval("export ...")
 
     return 0
 
