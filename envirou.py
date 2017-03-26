@@ -43,10 +43,11 @@ def redirect_stdout():
 
 
 def shell_eval(fmt, *args, **kwargs):
-    if _verbose_level > 0:
-        verbose("SHELL> " + fmt, *args, **kwargs)
     output = fmt.format(**kwargs)
-    print(output, *args, file=_stdout)
+    if _verbose_level > 0:
+        verbose(" [eval] " + output, *args)
+    print(output, *args, file=_stdout, end="")
+    _stdout.flush()
 
 
 def ultra_verbose(fmt, *args, **kwargs):
@@ -99,12 +100,12 @@ def output_profiles(active, inactive):
     inactive_str = ", ".join(inactive)
     s = ""
     if active:
-        s = color_wrap("# Active profiles: ", def_color) + active_str
+        s = color_wrap("# Active profile(s): ", def_color) + active_str
 
     if inactive and active:
         s += color_wrap(" (inactive: {})".format(inactive_str), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profiles: {}".format(inactive_str), def_color)
+        s = color_wrap("# Inactive profile(s): {}".format(inactive_str), def_color)
 
     if s:
         verbose(s)
@@ -134,7 +135,7 @@ def read_config():
     # Write/prepare first time configuration.
     config = config_filename(_CONFIG_FILE)
     if not os.path.exists(config):
-        very_verbose("First time initializization of config file:", config)
+        very_verbose("First time initialization of config file:", config)
         py_path = os.path.realpath(__file__)
         config_path = py_path[:-3] + ".default"
         ultra_verbose("Reading from template:", py_path)
@@ -199,6 +200,22 @@ def clear_default():
     os.remove(default)
 
 
+def shell_escape(s):
+    if s.find(" ") != -1 and s[0] != "\"" and s[0] != "'":
+        return "\"{}\"".format(s)   # s.replace(" ", "\\ ")
+    else:
+        return s
+
+
+def activate_profile(p):
+    if p in _profiles:
+        for k, v in _profiles[p].items():
+            shell_eval("export {k}={v};", k=k, v=shell_escape(v))
+        return True
+    else:
+        return False
+
+
 def main(arguments):
     read_config()
 
@@ -210,6 +227,13 @@ def main(arguments):
         save_default()
         verbose("Current environment set as default")
         return 0
+    elif arguments.profile:
+        if activate_profile(arguments.profile):
+            verbose("Profile '{p}' activated", p=arguments.profile)
+            return 0
+
+        verbose("Profile '{p}' not found", p=arguments.profile)
+        return 1
 
     match_group = defaultdict(list)
     for name, keys in _groups.items():
@@ -263,8 +287,6 @@ def main(arguments):
 
     output_profiles(active_profiles, inactive_profiles)
 
-    # TODO: call shell_eval("export ...")
-
     return 0
 
 
@@ -276,7 +298,8 @@ if __name__ == "__main__":
                         help="Increase output verbosity")
 
     parser.add_argument("-a", "--all", dest="all", action="store_true", help="Show all groups")
-    parser.add_argument("-p", "--show-password", action="store_true", help="Clear out default")
+    parser.add_argument("-P", "--show-password", action="store_true", help="Clear out default")
+    parser.add_argument("-p", "--profile", default="", help="Activate profile")
     parser.add_argument("--no-all", dest="all", action="store_false", help="Don't show hidden groups (default)")
     parser.add_argument("--default", action="store_true", help="Set current env as default")
     parser.add_argument("--clear-default", action="store_true", help="Clear out default")
