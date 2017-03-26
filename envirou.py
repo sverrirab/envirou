@@ -79,6 +79,7 @@ def output_group(group):
 
 
 def output_key(k, maxlen, password=False):
+    has_password = False
     fmt = "{key:<{maxlen}} {value}"
     value = os.environ.get(k, "")
     if _default and ((k in _default and value != _default[k]) or k not in _default):
@@ -87,10 +88,12 @@ def output_key(k, maxlen, password=False):
         color = _highlight.get(k)
         if color == _HIGHLIGHT_PASSWORD:
             if not password:
+                has_password = True
                 value = "*" * len(value)
         else:
             fmt = color_wrap(fmt, color)
     verbose(fmt, key=k, value=value, maxlen=maxlen)
+    return has_password
 
 
 def output_profiles(active, inactive):
@@ -103,9 +106,9 @@ def output_profiles(active, inactive):
         s = color_wrap("# Active profile(s): ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" (inactive: {})".format(inactive_str), def_color)
+        s += color_wrap(" (inactive: {} [-p NAME to activate]".format(inactive_str), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profile(s): {}".format(inactive_str), def_color)
+        s = color_wrap("# Inactive profile(s): {} [-p NAME to activate]".format(inactive_str), def_color)
 
     if s:
         verbose(s)
@@ -253,12 +256,14 @@ def main(arguments):
 
     filter_groups = len(arguments.group) > 0
     not_displayed_group = []
+    has_hidden_password = False
     for group in sorted(grouped.keys()):
         is_hidden = (group[0] == ".")
         if arguments.all or (filter_groups and group in arguments.group) or (not filter_groups and not is_hidden):
             output_group(group)
             for k in grouped[group]:
-                output_key(k, maxlen, password=arguments.show_password)
+                if output_key(k, maxlen, password=arguments.show_password):
+                    has_hidden_password = True
         else:
             not_displayed_group.append(group)
 
@@ -269,7 +274,7 @@ def main(arguments):
             output_key(k, maxlen)
 
     if len(not_displayed_group):
-        output_group("Hidden groups: {}".format(" ".join(not_displayed_group)))
+        output_group("Hidden groups: {} [-a to show]".format(" ".join(not_displayed_group)))
 
     active_profiles = []
     inactive_profiles = []
@@ -284,6 +289,9 @@ def main(arguments):
             active_profiles.append(p)
         else:
             inactive_profiles.append(p)
+
+    if has_hidden_password:
+        output_group("Hidden password [-P to show]")
 
     output_profiles(active_profiles, inactive_profiles)
 
