@@ -26,7 +26,7 @@ _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
 _SECTION_PROFILE_START = "profile:"
 _HIGHLIGHT_PASSWORD = "password"
-_NOGROUP = "NA"
+_NA_GROUP = "na"
 
 _verbose_level = 0
 _groups = defaultdict(list)
@@ -72,7 +72,7 @@ def color_wrap(s, color):
 
 
 def output_group(group):
-    if group == _NOGROUP:
+    if group == _NA_GROUP:
         group += " (No Applicable group)"
     out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
     verbose(out, group=group)
@@ -191,16 +191,72 @@ def read_config():
                 _default[key] = value
 
 
+def edit_config_file():
+    if os.environ.get("EDITOR", ""):
+        shell_eval("$EDITOR", config_filename(_CONFIG_FILE))
+        return 0
+    else:
+        verbose("Set your EDITOR env variable or edit file: ", config_filename(_CONFIG_FILE))
+        return 1
+
+
 def save_default():
     default = config_filename(_DEFAULT_FILE)
     with open(default, "w") as f:
         for k in sorted(os.environ.keys()):
             f.write("{}={}\n".format(k, os.environ.get(k)))
+    verbose("Current environment set as default")
+    return 0
 
 
 def clear_default():
     default = config_filename(_DEFAULT_FILE)
-    os.remove(default)
+    if os.path.exists(default):
+        os.remove(default)
+        verbose("Default cleared")
+    else:
+        verbose("No default environment set [-s to set]")
+    return 0
+
+
+def reset_to_default():
+    if not _default:
+        verbose("No default environment set [-s to set]")
+        return 1
+
+    remove = []
+    update = []
+    for k, v in os.environ.items():
+        if k not in _default.keys():
+            remove.append(k)
+        elif v != _default[k]:
+            update.append(k)
+
+    add = []
+    for k, v in _default.items():
+        if k not in os.environ.keys():
+            add.append(k)
+
+    if remove:
+        very_verbose("Removing vars: " + ", ".join(remove))
+    for k in remove:
+        unset_env_variable(k)
+
+    if update:
+        very_verbose("Updating vars: " + ", ".join(update))
+
+    if add:
+        very_verbose("Adding vars: " + ", ".join(add))
+
+    for k in update + add:
+        set_env_variable(k, _default[k])
+
+    if remove or update or add:
+        verbose("Environment reset to default")
+    else:
+        verbose("No changes to environment required")
+
+    return 0
 
 
 def shell_escape(s):
@@ -210,10 +266,18 @@ def shell_escape(s):
         return s
 
 
+def set_env_variable(k, v):
+    shell_eval("export {k}={v};", k=k, v=shell_escape(v))
+
+
+def unset_env_variable(k):
+    shell_eval("unset {k};", k=k)
+
+
 def activate_profile(p):
     if p in _profiles:
         for k, v in _profiles[p].items():
-            shell_eval("export {k}={v};", k=k, v=shell_escape(v))
+            set_env_variable(k, v)
         return True
     else:
         return False
@@ -222,14 +286,14 @@ def activate_profile(p):
 def main(arguments):
     read_config()
 
-    if arguments.clear_default:
-        clear_default()
-        verbose("Default cleared")
-        return 0
-    elif arguments.default:
-        save_default()
-        verbose("Current environment set as default")
-        return 0
+    if arguments.edit:
+        return edit_config_file()
+    elif arguments.clear_default:
+        return clear_default()
+    elif arguments.set_default:
+        return save_default()
+    elif arguments.reset_to_default:
+        return reset_to_default()
     elif arguments.profile:
         if activate_profile(arguments.profile):
             verbose("Profile '{p}' activated", p=arguments.profile)
@@ -252,7 +316,7 @@ def main(arguments):
             for group in matched_groups:
                 grouped[group].append(k)
         else:
-            grouped[_NOGROUP].append(k)
+            grouped[_NA_GROUP].append(k)
 
     filter_groups = len(arguments.group) > 0
     not_displayed_group = []
@@ -291,7 +355,7 @@ def main(arguments):
             inactive_profiles.append(p)
 
     if has_hidden_password:
-        output_group("Hidden password [-P to show]")
+        output_group("Hiding passwords [-w to show]")
 
     output_profiles(active_profiles, inactive_profiles)
 
@@ -306,12 +370,14 @@ if __name__ == "__main__":
                         help="Increase output verbosity")
 
     parser.add_argument("-a", "--all", dest="all", action="store_true", help="Show all groups")
-    parser.add_argument("-P", "--show-password", action="store_true", help="Clear out default")
-    parser.add_argument("-p", "--profile", default="", help="Activate profile")
     parser.add_argument("--no-all", dest="all", action="store_false", help="Don't show hidden groups (default)")
-    parser.add_argument("--default", action="store_true", help="Set current env as default")
-    parser.add_argument("--clear-default", action="store_true", help="Clear out default")
-
+    parser.add_argument("-w", "--show-password", action="store_true", help="Clear out default")
+    parser.add_argument("-s", "--set-default", action="store_true", help="Set current env as default")
+    #parser.add_argument("-d", "--diff-default", action="store_true", help="Set current env as default")
+    parser.add_argument("-c", "--clear-default", action="store_true", help="Clear out default")
+    parser.add_argument("-r", "--reset-to-default", action="store_true", help="Reset env to default")
+    parser.add_argument("-e", "--edit", action="store_true", help="Edit Envirou configuration")
+    parser.add_argument("-p", "--profile", default="", help="Activate profile")
     parser.add_argument("group", nargs="*", help="Display named group(s)")
 
     args = parser.parse_args()
