@@ -22,6 +22,7 @@ _CONFIG_FILE = "config"
 _DEFAULT_FILE = "default.envirou"
 _SECTION_GROUPS = "groups"
 _SECTION_PROFILES = "profiles"
+_SECTION_DIFFERENCES = "differences"
 _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
 _SECTION_PROFILE_START = "profile:"
@@ -78,12 +79,12 @@ def output_group(group):
     verbose(out, group=group)
 
 
-def output_key(k, maxlen, password=False):
+def output_key(k, maxlen, no_diff=False, password=False):
     has_password = False
     fmt = "{key:<{maxlen}} {value}"
     value = os.environ.get(k, "")
-    if _default and ((k in _default and value != _default[k]) or k not in _default):
-        fmt = "{c-red}" + fmt + "{c-end}"
+    if _default and ((k in _default and value != _default[k]) or k not in _default) and not no_diff:
+        fmt = color_wrap(fmt, color=_highlight.get(_SECTION_DIFFERENCES, "red"))
     elif k in _highlight:
         color = _highlight.get(k)
         if color == _HIGHLIGHT_PASSWORD:
@@ -103,12 +104,12 @@ def output_profiles(active, inactive):
     inactive_str = ", ".join(inactive)
     s = ""
     if active:
-        s = color_wrap("# Active profile(s): ", def_color) + active_str
+        s = color_wrap("# Profiles active: ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" (inactive: {} [-p NAME to activate]".format(inactive_str), def_color)
+        s += color_wrap(" - inactive: {}  [-p NAME to activate]".format(inactive_str), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profile(s): {} [-p NAME to activate]".format(inactive_str), def_color)
+        s = color_wrap("# Inactive profiles: {}  [-p NAME to activate]".format(inactive_str), def_color)
 
     if s:
         verbose(s)
@@ -215,13 +216,13 @@ def clear_default():
         os.remove(default)
         verbose("Default cleared")
     else:
-        verbose("No default environment set [-s to set]")
+        verbose("No default environment set  [-s to set]")
     return 0
 
 
 def reset_to_default():
     if not _default:
-        verbose("No default environment set [-s to set]")
+        verbose("No default environment set  [-s to set]")
         return 1
 
     remove = []
@@ -323,10 +324,11 @@ def main(arguments):
     has_hidden_password = False
     for group in sorted(grouped.keys()):
         is_hidden = (group[0] == ".")
+        is_no_diff = (group[0:2] == "..")
         if arguments.all or (filter_groups and group in arguments.group) or (not filter_groups and not is_hidden):
             output_group(group)
             for k in grouped[group]:
-                if output_key(k, maxlen, password=arguments.show_password):
+                if output_key(k, maxlen, no_diff=is_no_diff, password=arguments.show_password):
                     has_hidden_password = True
         else:
             not_displayed_group.append(group)
@@ -337,8 +339,11 @@ def main(arguments):
         for k in sorted(not_currently_set):
             output_key(k, maxlen)
 
+    if has_hidden_password:
+        output_group("Passwords hidden  [-w to show]")
+
     if len(not_displayed_group):
-        output_group("Hidden groups: {} [-a to show]".format(" ".join(not_displayed_group)))
+        output_group("Groups hidden: {}  [-a to show]".format(" ".join(not_displayed_group)))
 
     active_profiles = []
     inactive_profiles = []
@@ -353,9 +358,6 @@ def main(arguments):
             active_profiles.append(p)
         else:
             inactive_profiles.append(p)
-
-    if has_hidden_password:
-        output_group("Hiding passwords [-w to show]")
 
     output_profiles(active_profiles, inactive_profiles)
 

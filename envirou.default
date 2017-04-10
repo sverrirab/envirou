@@ -1,38 +1,48 @@
 ; Default configuration file for envirou - feel free to edit!
-; Remove this file to get a new default file.
-;
+; (If you remove it a new one will be generated).
+
 [groups]
+basic=TMP, TMPDIR, HOME, USER, LOGNAME, PATH
+
 ; Names starting with . are hidden by default
-.basic=TMP, TMPDIR, HOME, USER, LOGNAME
-.shell=_, PWD, SHLVL, OLDPWD, PS1, ZSH
-.progs=SHELL, EDITOR, LSCOLORS, PAGER, LESS, MAIL
+.progs=EDITOR, LSCOLORS, PAGER, LESS, MAIL
+.term=ZSH, SHELL, PS1
+.term=TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, LC_ALL, LC_CTYPE, LANG
+.term=SSH_AUTH_SOCK, SSH_CLIENT, SSH_TTY, SSH_CONNECTION
+.term=ITERM_PROFILE, COLORFGBG
 .devenv=GOPATH, JAVA_HOME, VIRTUAL_ENV
 .devenv=VERSIONER_PYTHON_PREFER_32_BIT, VERSIONER_PYTHON_VERSION, __PYVENV_LAUNCHER__
-.term=TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, TERM_SESSION_ID, LC_ALL, LC_CTYPE, LANG
-; SSH
-.term=SSH_AUTH_SOCK, SSH_CLIENT, SSH_TTY, SSH_CONNECTION
-; iTerm
-.term=ITERM_PROFILE, ITERM_SESSION_ID, COLORFGBG
+
 ; Apple
-.system=Apple_PubSub_Socket_Render, __CF_USER_TEXT_ENCODING, XPC_FLAGS, XPC_SERVICE_NAME
+.system=Apple_PubSub_Socket_Render, __CF_USER_TEXT_ENCODING
+.system=COMMAND_MODE, SECURITYSESSIONID
+.system=XPC_FLAGS, XPC_SERVICE_NAME
+
+; Linux
+.system=SUDO_USER, SUDO_UID, SUDO_GID, SUDO_COMMAND
+
+; Names starting with .. are hidden and not used in diff/reset to default.
+..ignore=_, PWD, OLDPWD, SHLVL, TERM_SESSION_ID, ITERM_SESSION_ID
 
 [custom]
 ; Add custom groups here.
 aws=AWS_URL, AWS_ACCESS_KEY, AWS_SECRET_KEY
 .aws=EC2_HOME, EC2_URL, S3_URL
+
 [highlight]
-; set as ENV_VARIABLE, "groups" or "profiles"
+; set as ENV_VARIABLE
+; predefined: groups, profiles, differences
 green=AWS_URL, EC2_URL, S3_URL
 magenta=groups
 green=profiles
+red=differences
 password=AWS_SECRET_KEY
 bold=
 underline=
-red=
 green=
 yellow=
 blue=
 
 [profile:example]
 EXAMPLE_OCCUPATION=elevator operator
-EXAMLE_SALARY=two bits
+EXAMPLE_SALARY=examplary
