@@ -30,6 +30,7 @@ _HIGHLIGHT_PASSWORD = "password"
 _NA_GROUP = "na"
 
 _verbose_level = 0
+_environ = {}
 _groups = defaultdict(list)
 _profiles = defaultdict(dict)
 _highlight = {}
@@ -135,6 +136,16 @@ def config_filename(short):
     return full
 
 
+def read_environ():
+    global _environ
+    if sys.stdin.isatty():
+        _environ = os.environ
+    else:
+        for line in sys.stdin.readlines():
+            k, v = clean_split(line)
+            _environ[k] = v
+
+
 def read_config():
     # Write/prepare first time configuration.
     config = config_filename(_CONFIG_FILE)
@@ -153,7 +164,8 @@ def read_config():
     with open(config, "r") as f:
         section = "(none)"
         for l in f.readlines():
-            l = l.split(";")[0].split("#")[0].strip()
+            raw = l.split(";")[0].split("#")[0]
+            l = raw.strip()
             if len(l) == 0:
                 continue
             if l[0] == "[" and l[-1] == "]":
@@ -193,7 +205,7 @@ def read_config():
 
 
 def edit_config_file():
-    if os.environ.get("EDITOR", ""):
+    if _environ.get("EDITOR", ""):
         shell_eval("$EDITOR", config_filename(_CONFIG_FILE))
         return 0
     else:
@@ -204,8 +216,8 @@ def edit_config_file():
 def save_default():
     default = config_filename(_DEFAULT_FILE)
     with open(default, "w") as f:
-        for k in sorted(os.environ.keys()):
-            f.write("{}={}\n".format(k, os.environ.get(k)))
+        for k in sorted(_environ.keys()):
+            f.write("{}={}\n".format(k, _environ.get(k)))
     verbose("Current environment set as default")
     return 0
 
@@ -227,7 +239,7 @@ def reset_to_default():
 
     remove = []
     update = []
-    for k, v in os.environ.items():
+    for k, v in _environ.items():
         if k not in _default.keys():
             remove.append(k)
         elif v != _default[k]:
@@ -235,7 +247,7 @@ def reset_to_default():
 
     add = []
     for k, v in _default.items():
-        if k not in os.environ.keys():
+        if k not in _environ.keys():
             add.append(k)
 
     if remove:
@@ -287,6 +299,8 @@ def activate_profile(p):
 def main(arguments):
     read_config()
 
+    read_environ()
+
     if arguments.edit:
         return edit_config_file()
     elif arguments.clear_default:
@@ -308,9 +322,9 @@ def main(arguments):
         for k in sorted(keys):
             match_group[k].append(name)
 
-    maxlen = max([len(k) for k in os.environ.keys()])
+    maxlen = max([len(k) for k in _environ.keys()])
     grouped = defaultdict(list)
-    for k in sorted(os.environ.keys()):
+    for k in sorted(_environ.keys()):
         matched_groups = match_group[k]
 
         if matched_groups:
@@ -333,7 +347,7 @@ def main(arguments):
         else:
             not_displayed_group.append(group)
 
-    not_currently_set = set(_default.keys()) - set(os.environ.keys())
+    not_currently_set = set(_default.keys()) - set(_environ.keys())
     if not_currently_set:
         output_group("Removed from current env (unset)")
         for k in sorted(not_currently_set):
@@ -343,7 +357,7 @@ def main(arguments):
         output_group("Passwords hidden  [-w to show]")
 
     if len(not_displayed_group):
-        output_group("Groups hidden: {}  [-a to show]".format(" ".join(not_displayed_group)))
+        output_group("Groups hidden: {}  [NAME or -a to show all]".format(" ".join(not_displayed_group)))
 
     active_profiles = []
     inactive_profiles = []
@@ -351,7 +365,7 @@ def main(arguments):
         ultra_verbose("profile", p)
         active = True
         for k, v in _profiles[p].items():
-            if k not in os.environ or os.environ[k] != v:
+            if k not in _environ or _environ[k] != v:
                 active = False
                 break
         if active:
@@ -373,7 +387,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-a", "--all", dest="all", action="store_true", help="Show all groups")
     parser.add_argument("--no-all", dest="all", action="store_false", help="Don't show hidden groups (default)")
-    parser.add_argument("-w", "--show-password", action="store_true", help="Clear out default")
+    parser.add_argument("-w", "--show-password", action="store_true", help="Display passwords")
     parser.add_argument("-s", "--set-default", action="store_true", help="Set current env as default")
     #parser.add_argument("-d", "--diff-default", action="store_true", help="Set current env as default")
     parser.add_argument("-c", "--clear-default", action="store_true", help="Clear out default")

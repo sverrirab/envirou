@@ -2,14 +2,14 @@
 
 if [ -n "${ZSH_VERSION}" ] ; then
     if [ -n "$(readlink ${(%):-%x})" ] ; then
-        eval $(python "$(dirname $(readlink ${(%):-%x}))/envirou.py" $*)
+        eval $(env | python "$(dirname $(readlink ${(%):-%x}))/envirou.py" $*)
     else
-        eval $(python "$(dirname ${(%):-%x})/envirou.py" $*)
+        eval $(env | python "$(dirname ${(%):-%x})/envirou.py" $*)
     fi
 else
     if [ -n "$(readlink ${BASH_SOURCE[0]})" ] ; then
-        eval $(python "$(dirname $(readlink ${BASH_SOURCE[0]}))/envirou.py" $*)
+        eval $(env | python "$(dirname $(readlink ${BASH_SOURCE[0]}))/envirou.py" $*)
     else
-        eval $(python "$(dirname ${BASH_SOURCE[0]})/envirou.py" $*)
+        eval $(env | python "$(dirname ${BASH_SOURCE[0]})/envirou.py" $*)
     fi
 fi
