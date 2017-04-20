@@ -17,9 +17,10 @@ _CONSOLE_COLORS = {
 }
 
 _CONFIG_ENV = "ENVIROU_HOME"
-_CONFIG_PATH = "~/.envirou"
-_CONFIG_FILE = "config"
-_DEFAULT_FILE = "default.envirou"
+_CONFIG_PATH = "~/.config/envirou"
+_CONFIG_FILE = "config.ini"
+_CONFIG_DEFAULT_FILE = "config.default.ini"
+_DEFAULT_FILE = "default"
 _SECTION_GROUPS = "groups"
 _SECTION_PROFILES = "profiles"
 _SECTION_DIFFERENCES = "differences"
@@ -151,8 +152,8 @@ def read_config():
     config = config_filename(_CONFIG_FILE)
     if not os.path.exists(config):
         very_verbose("First time initialization of config file:", config)
-        py_path = os.path.realpath(__file__)
-        config_path = py_path[:-3] + ".default"
+        py_path = os.path.dirname(__file__)
+        config_path = os.path.join(py_path, _CONFIG_DEFAULT_FILE)
         ultra_verbose("Reading from template:", py_path)
         with open(config_path, "r") as template:
             default_config = template.read()
@@ -232,11 +233,7 @@ def clear_default():
     return 0
 
 
-def reset_to_default():
-    if not _default:
-        verbose("No default environment set  [-s to set]")
-        return 1
-
+def changed_from_default():
     remove = []
     update = []
     for k, v in _environ.items():
@@ -249,6 +246,16 @@ def reset_to_default():
     for k, v in _default.items():
         if k not in _environ.keys():
             add.append(k)
+
+    return remove, update, add
+
+
+def reset_to_default():
+    if not _default:
+        verbose("No default environment set  [-s to set]")
+        return 1
+
+    remove, update, add = changed_from_default()
 
     if remove:
         very_verbose("Removing vars: " + ", ".join(remove))
@@ -269,6 +276,20 @@ def reset_to_default():
     else:
         verbose("No changes to environment required")
 
+    return 0
+
+
+def diff_default():
+    if not _default:
+        verbose("No default environment set  [-s to set]")
+        return 1
+
+    remove, update, add = changed_from_default()
+    keys = sorted(remove + update + add)
+    maxlen = max(len(k) for k in keys)
+
+    for k in keys:
+        output_key(k, maxlen)
     return 0
 
 
@@ -309,13 +330,17 @@ def main(arguments):
         return save_default()
     elif arguments.reset_to_default:
         return reset_to_default()
+    elif arguments.diff_default:
+        return diff_default()
     elif arguments.profile:
-        if activate_profile(arguments.profile):
-            verbose("Profile '{p}' activated", p=arguments.profile)
-            return 0
-
-        verbose("Profile '{p}' not found", p=arguments.profile)
-        return 1
+        very_verbose("Profiles to activate", repr(arguments.profile))
+        for profile in arguments.profile:
+            if activate_profile(profile):
+                verbose("Profile '{p}' activated", p=profile)
+            else:
+                verbose("Profile '{p}' not found", p=profile)
+                return 1
+        return 0
 
     match_group = defaultdict(list)
     for name, keys in _groups.items():
@@ -357,7 +382,7 @@ def main(arguments):
         output_group("Passwords hidden  [-w to show]")
 
     if len(not_displayed_group):
-        output_group("Groups hidden: {}  [NAME or -a to show all]".format(" ".join(not_displayed_group)))
+        output_group("Groups hidden: {}  [NAME or -a]".format(" ".join(not_displayed_group)))
 
     active_profiles = []
     inactive_profiles = []
@@ -380,21 +405,52 @@ def main(arguments):
 
 if __name__ == "__main__":
     redirect_stdout()
-    parser = argparse.ArgumentParser(description="Manage your environment with Envirou!")
+    parser = argparse.ArgumentParser(
+        description="Manage your environment with Envirou! [ev]")
 
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Increase output verbosity")
+    parser.add_argument(
+        "-w", "--show-password", action="store_true",
+        help="Display passwords")
+    parser.add_argument(
+        "-e", "--edit", action="store_true",
+        help="Edit Envirou configuration")
+    parser.add_argument(
+        "-v", "--verbose", action="count", default=0,
+        help="Increase output verbosity")
 
-    parser.add_argument("-a", "--all", dest="all", action="store_true", help="Show all groups")
-    parser.add_argument("--no-all", dest="all", action="store_false", help="Don't show hidden groups (default)")
-    parser.add_argument("-w", "--show-password", action="store_true", help="Display passwords")
-    parser.add_argument("-s", "--set-default", action="store_true", help="Set current env as default")
-    #parser.add_argument("-d", "--diff-default", action="store_true", help="Set current env as default")
-    parser.add_argument("-c", "--clear-default", action="store_true", help="Clear out default")
-    parser.add_argument("-r", "--reset-to-default", action="store_true", help="Reset env to default")
-    parser.add_argument("-e", "--edit", action="store_true", help="Edit Envirou configuration")
-    parser.add_argument("-p", "--profile", default="", help="Activate profile")
-    parser.add_argument("group", nargs="*", help="Display named group(s)")
+    defaults = parser.add_argument_group(
+        "Default env", "Compare environment with a fixed/default set")
+    defaults.add_argument(
+        "-s", "--set-default", action="store_true",
+        help="Set current env as default")
+    defaults.add_argument(
+        "-c", "--clear-default", action="store_true",
+        help="Clear out default")
+    defaults.add_argument(
+        "-d", "--diff-default", action="store_true",
+        help="Show differences from default")
+    defaults.add_argument(
+        "-r", "--reset-to-default", action="store_true",
+        help="Reset env to default")
+
+    profiles = parser.add_argument_group(
+        "Profiles", "Environment variable profiles")
+    profiles.add_argument(
+        "-p", "--profile", action="append",
+        help="Activate profile")
+
+    groups = parser.add_argument_group(
+        "Groups", "Groups of environment variables")
+    groups.add_argument(
+        "group",
+        nargs="*",
+        help="Display group or groups")
+    groups.add_argument(
+        "-a", "--all", dest="all", action="store_true",
+        help="Show all groups")
+    groups.add_argument(
+        "-n", "--no-all", dest="all", action="store_false",
+        help="Don't show hidden groups (default)")
 
     args = parser.parse_args()
     _verbose_level = args.verbose
