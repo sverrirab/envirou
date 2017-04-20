@@ -1,0 +1,34 @@
+#!/bin/bash
+
+cd $(dirname $0)
+ENVIROU="$PWD/envirou"
+ALIAS="alias ev=\"source ${ENVIROU}\""
+
+if [ ! -f "${ENVIROU}" ] ; then
+    echo "Install failed. Script not found in path: ${ENVIROU}"
+    exit 2
+fi
+
+if [ "${SHELL}" == "/bin/bash" ] ; then
+    echo "bash detected.  Adding alias 'ev' to ~/.bashrc"
+    echo "${ALIAS}" >> ~/.bashrc
+elif [ "${SHELL}" == "/bin/zsh" ] ; then
+    echo "zsh detected.  Adding alias 'ev' to ~/.zshrc"
+    echo "${ALIAS}" >> ~/.zshrc
+else
+    echo "Don't know how to install alias in shell: ${SHELL}"
+    echo "Manually run this in your shell/startup script:"
+    echo ""
+    echo "${ALIAS}"
+    echo ""
+    echo "... or switch to a folder in your PATH and create a symlink:"
+    echo ""
+    echo "ln -s ${ENVIROU} ev"
+    echo ""
+    echo "Note that the symlink will not be able to change your environment"
+    echo "and therefore some of the features of envirou will not work"
+    exit 1
+fi
+
+echo "Get started by starting a new shell or executing in your current one:"
+echo "${ALIAS}"
