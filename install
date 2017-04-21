@@ -3,6 +3,19 @@
 cd $(dirname $0)
 ENVIROU="$PWD/envirou"
 ALIAS="alias ev=\"source ${ENVIROU}\""
+INSTALLED=0
+
+function force_alias() {
+    echo "Adding alias 'ev' to $1"
+    echo "${ALIAS}" >> $1
+    INSTALLED=1
+}
+
+function add_alias () {
+    if [ -f $1 ] ; then
+        force_alias $1
+    fi
+}
 
 if [ ! -f "${ENVIROU}" ] ; then
     echo "Install failed. Script not found in path: ${ENVIROU}"
@@ -13,18 +26,28 @@ fi
 SHORT="${SHELL##*/}"
 
 if [ "${SHORT}" == "bash" ] ; then
-    echo "bash detected.  Adding alias 'ev' to ~/.bashrc"
-    echo "${ALIAS}" >> ~/.bashrc
+    echo "You seem to be using bash."
+    add_alias ~/.bashrc
+    add_alias ~/.bash_profile
+    add_alias ~/.profile
 elif [ "${SHORT}" == "zsh" ] ; then
-    echo "zsh detected.  Adding alias 'ev' to ~/.zshrc"
-    echo "${ALIAS}" >> ~/.zshrc
+    echo "You seem to be using zsh."
+    add_alias ~/.zshrc
 else
-    echo "Don't know how to install alias in shell: ${SHELL} [${SHORT}]"
-    echo "Manually run this in your shell/startup script:"
+    echo "Warning: Possibly unsupported shell."
+fi
+
+if [ ${INSTALLED} -eq 1 ] ; then
+    echo "Get started by starting a new shell or executing in your current one:"
+    echo "${ALIAS}"
+else
+    echo ""
+    echo "Failed to find configuration file for shell ${SHELL} [${SHORT}]"
+    echo "Run this and add it to your shell startup/configuration files:"
     echo ""
     echo "${ALIAS}"
     echo ""
-    echo "... or switch to a folder in your PATH and create a symlink:"
+    echo '... or switch to a folder in your $PATH and create a symlink:'
     echo ""
     echo "ln -s ${ENVIROU} ev"
     echo ""
@@ -32,6 +55,3 @@ else
     echo "and therefore some of the features of envirou will not work."
     exit 1
 fi
-
-echo "Get started by starting a new shell or executing in your current one:"
-echo "${ALIAS}"
