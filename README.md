@@ -14,7 +14,7 @@ Simple utility to manage your shell `env`.
 # Quickstart
 
 ```bash
-$ git clone git@github.com:sverrirab/envirou.git
+$ git clone https://github.com/sverrirab/envirou.git
 $ ./envirou/install
 $ ev
 $ ev --help     # Get information on how to use.
@@ -40,7 +40,7 @@ Activate the `test` profile.  Note that there are new keys and `test` is highlig
 Edit using:
 
 ```bash
-$ ev --edit     # To customize settings.
+$ ev --edit     # Customize settings.
 ```
 
 Example:
