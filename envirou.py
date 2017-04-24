@@ -46,24 +46,23 @@ def redirect_stdout():
 
 
 def shell_eval(fmt, *args, **kwargs):
-    output = fmt.format(**kwargs)
-    if _verbose_level > 0:
-        verbose(" [eval] " + output, *args)
-    print(output, *args, file=_stdout, end="")
+    out = fmt.format(**kwargs)
+    very_verbose(" [eval] " + out, *args)
+    print(out, *args, file=_stdout, end="")
     _stdout.flush()
 
 
 def ultra_verbose(fmt, *args, **kwargs):
     if _verbose_level > 1:
-        verbose(fmt, *args, **kwargs)
+        output(fmt, *args, **kwargs)
 
 
 def very_verbose(fmt, *args, **kwargs):
     if _verbose_level > 0:
-        verbose(fmt, *args, **kwargs)
+        output(fmt, *args, **kwargs)
 
 
-def verbose(fmt, *args, **kwargs):
+def output(fmt, *args, **kwargs):
     kwargs["file"] = sys.stderr
     kwargs.update(**_CONSOLE_COLORS)
     output = fmt.format(**kwargs)
@@ -78,7 +77,7 @@ def output_group(group):
     if group == _NA_GROUP:
         group += " (No Applicable group)"
     out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
-    verbose(out, group=group)
+    output(out, group=group)
 
 
 def output_key(k, maxlen, no_diff=False, password=False):
@@ -95,7 +94,7 @@ def output_key(k, maxlen, no_diff=False, password=False):
                 value = "*" * len(value)
         else:
             fmt = color_wrap(fmt, color)
-    verbose(fmt, key=k, value=value, maxlen=maxlen)
+    output(fmt, key=k, value=value, maxlen=maxlen)
     return has_password
 
 
@@ -106,15 +105,17 @@ def output_profiles(active, inactive):
     inactive_str = ", ".join(inactive)
     s = ""
     if active:
-        s = color_wrap("# Profiles active: ", def_color) + active_str
+        s = color_wrap("# Profiles: ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" - inactive: {}  [-p NAME to activate]".format(inactive_str), def_color)
+        s += color_wrap(" (inactive: {})  [-p NAME to activate]".format(
+            inactive_str), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profiles: {}  [-p NAME to activate]".format(inactive_str), def_color)
+        s = color_wrap("# Inactive profiles: {}  [-p NAME to activate]".format(
+            inactive_str), def_color)
 
     if s:
-        verbose(s)
+        output(s)
 
 
 def clean_split(s, sep="="):
@@ -172,7 +173,12 @@ def read_config():
             if l[0] == "[" and l[-1] == "]":
                 section = l[1:-1]
                 continue
-            key, value = clean_split(l)
+            if "=" in l:
+                key, value = clean_split(l)
+            else:
+                key = l
+                value = None
+
             if section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     ultra_verbose(_SECTION_GROUPS, key, env)
@@ -210,7 +216,7 @@ def edit_config_file():
         shell_eval("$EDITOR", config_filename(_CONFIG_FILE))
         return 0
     else:
-        verbose("Set your EDITOR env variable or edit file: ", config_filename(_CONFIG_FILE))
+        output("Set your EDITOR env variable or edit file: ", config_filename(_CONFIG_FILE))
         return 1
 
 
@@ -219,7 +225,7 @@ def save_default():
     with open(default, "w") as f:
         for k in sorted(_environ.keys()):
             f.write("{}={}\n".format(k, _environ.get(k)))
-    verbose("Current environment set as default")
+    output("Current environment set as default")
     return 0
 
 
@@ -227,40 +233,69 @@ def clear_default():
     default = config_filename(_DEFAULT_FILE)
     if os.path.exists(default):
         os.remove(default)
-        verbose("Default cleared")
+        output("Default cleared")
     else:
-        verbose("No default environment set  [-s to set]")
+        output("No default environment set  [-s to set]")
     return 0
 
 
 def changed_from_default():
+    ignore_keys = set()
+    for group in _groups:
+        is_no_diff = (group[0:2] == "..")
+        if is_no_diff:
+            ignore_keys.update(_groups[group])
+
+    ignored = []
     remove = []
     update = []
     for k, v in _environ.items():
         if k not in _default.keys():
-            remove.append(k)
+            if k in ignore_keys:
+                ignored.append(k)
+            else:
+                remove.append(k)
         elif v != _default[k]:
-            update.append(k)
+            if k in ignore_keys:
+                ignored.append(k)
+            else:
+                update.append(k)
 
     add = []
     for k, v in _default.items():
         if k not in _environ.keys():
-            add.append(k)
+            if k in ignore_keys:
+                ignored.append(k)
+            else:
+                add.append(k)
 
-    return remove, update, add
+    if _verbose_level > 1:
+        output("remove:", sorted(remove))
+        output("update:", sorted(update))
+        output("add:", sorted(add))
+        output("ignored:", sorted(ignored))
+    return remove, update, add, ignored
+
+
+def output_no_change_required(ignored):
+    if len(ignored) == 0:
+        output("Nothing changed (run script / export VAR and run again)")
+    else:
+        output("Nothing important changed  [-dv for details]")
+        very_verbose("Ignored changes in:", ", ".join(sorted(ignored)))
 
 
 def reset_to_default():
     if not _default:
-        verbose("No default environment set  [-s to set]")
+        output("No default environment set  [-s to set]")
         return 1
 
-    remove, update, add = changed_from_default()
+    remove, update, add, ignored = changed_from_default()
 
     if remove:
         very_verbose("Removing vars: " + ", ".join(remove))
     for k in remove:
-        unset_env_variable(k)
+        set_env_variable(k, None)
 
     if update:
         very_verbose("Updating vars: " + ", ".join(update))
@@ -272,28 +307,42 @@ def reset_to_default():
         set_env_variable(k, _default[k])
 
     if remove or update or add:
-        verbose("Environment reset to default")
+        output("Environment reset to default")
     else:
-        verbose("No changes to environment required")
-
+        output_no_change_required(ignored)
     return 0
 
 
 def diff_default():
     if not _default:
-        verbose("No default environment set  [-s to set]")
+        output("No default environment set  [-s to set]")
         return 1
 
-    remove, update, add = changed_from_default()
-    keys = sorted(remove + update + add)
-    maxlen = max(len(k) for k in keys)
+    # add <-> remove (since we are going the other way):
+    add, update, remove, ignored = changed_from_default()
 
-    for k in keys:
-        output_key(k, maxlen)
+    if not (add or update or remove):
+        output_no_change_required(ignored)
+        return 0
+
+    output_group("Changes required to get from default to current env")
+    for k in sorted(update + add):
+        output("export {k}={v}", k=k, v=shell_quote(os.environ.get(k, "")))
+    for k in sorted(remove):
+        output("unset {k}", k=k)
+
+    output_group("If you want to create a new profile  [--edit]")
+    output("[profile:new]")
+    for k in sorted(update + add + remove):
+        if k in remove:
+            output("{k}", k=k)
+        else:
+            output("{k}={v}", k=k, v=os.environ.get(k, ""))
+
     return 0
 
 
-def shell_escape(s):
+def shell_quote(s):
     if s.find(" ") != -1 and s[0] != "\"" and s[0] != "'":
         return "\"{}\"".format(s)   # s.replace(" ", "\\ ")
     else:
@@ -301,11 +350,11 @@ def shell_escape(s):
 
 
 def set_env_variable(k, v):
-    shell_eval("export {k}={v};", k=k, v=shell_escape(v))
-
-
-def unset_env_variable(k):
-    shell_eval("unset {k};", k=k)
+    ultra_verbose("set_env_variable", k, v)
+    if v is None:
+        shell_eval("unset {k};", k=k)
+    else:
+        shell_eval("export {k}={v};", k=k, v=shell_quote(v))
 
 
 def activate_profile(p):
@@ -336,9 +385,9 @@ def main(arguments):
         very_verbose("Profiles to activate", repr(arguments.profile))
         for profile in arguments.profile:
             if activate_profile(profile):
-                verbose("Profile '{p}' activated", p=profile)
+                output("Profile '{p}' activated", p=profile)
             else:
-                verbose("Profile '{p}' not found", p=profile)
+                output("Profile '{p}' not found", p=profile)
                 return 1
         return 0
 
@@ -388,9 +437,17 @@ def main(arguments):
     inactive_profiles = []
     for p in sorted(_profiles.keys()):
         ultra_verbose("profile", p)
+        ultra_verbose(" ", _profiles[p])
         active = True
         for k, v in _profiles[p].items():
-            if k not in _environ or _environ[k] != v:
+            ultra_verbose(" -> ", k, v, _environ.get(k, "[not found]"))
+            if v is None and k in _environ:
+                ultra_verbose("not active (should not be there but is)")
+                active = False
+                break
+            if v is not None and (k not in _environ or _environ[k] != v):
+                ultra_verbose("not active (not equal)".format(
+                    _environ.get(k, "[not found]"), v))
                 active = False
                 break
         if active:
