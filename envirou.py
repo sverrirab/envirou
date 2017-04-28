@@ -21,13 +21,15 @@ _CONFIG_PATH = "~/.config/envirou"
 _CONFIG_FILE = "config.ini"
 _CONFIG_DEFAULT_FILE = "config.default.ini"
 _DEFAULT_FILE = "default"
+_SECTION_SETTINGS = "settings"
 _SECTION_GROUPS = "groups"
 _SECTION_PROFILES = "profiles"
-_SECTION_DIFFERENCES = "differences"
 _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
 _SECTION_PROFILE_START = "profile:"
 _HIGHLIGHT_PASSWORD = "password"
+_CONFIG_DIFFERENCES = "differences"
+_SETTINGS_QUIET = "quiet"
 _NA_GROUP = "na"
 
 _verbose_level = 0
@@ -85,7 +87,7 @@ def output_key(k, maxlen, no_diff=False, password=False):
     fmt = "{key:<{maxlen}} {value}"
     value = os.environ.get(k, "")
     if _default and ((k in _default and value != _default[k]) or k not in _default) and not no_diff:
-        fmt = color_wrap(fmt, color=_highlight.get(_SECTION_DIFFERENCES, "red"))
+        fmt = color_wrap(fmt, color=_highlight.get(_CONFIG_DIFFERENCES, "red"))
     elif k in _highlight:
         color = _highlight.get(k)
         if color == _HIGHLIGHT_PASSWORD:
@@ -161,6 +163,8 @@ def read_config():
 
         with open(config, "w") as f:
             f.write(default_config)
+    else:
+        very_verbose("Reading existing config file:", config)
 
     # Read config file
     with open(config, "r") as f:
@@ -179,7 +183,13 @@ def read_config():
                 key = l
                 value = None
 
-            if section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
+            if section == _SECTION_SETTINGS:
+                for env in value.split(","):
+                    ultra_verbose(_SECTION_SETTINGS, key, env)
+                    if key == _SETTINGS_QUIET:
+                        global _verbose_level
+                        _verbose_level -= int(value)
+            elif section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     ultra_verbose(_SECTION_GROUPS, key, env)
                     _groups[key].append(env.strip())
@@ -427,11 +437,13 @@ def main(arguments):
         for k in sorted(not_currently_set):
             output_key(k, maxlen)
 
-    if has_hidden_password:
-        output_group("Passwords hidden  [-w to show]")
+    if _verbose_level >= 0:
+        # Suppressed if --quiet
+        if has_hidden_password:
+            output_group("Passwords hidden  [-w to show]")
 
-    if len(not_displayed_group):
-        output_group("Groups hidden: {}  [NAME or -a]".format(" ".join(not_displayed_group)))
+        if len(not_displayed_group):
+            output_group("Groups hidden: {}  [NAME or -a]".format(" ".join(not_displayed_group)))
 
     active_profiles = []
     inactive_profiles = []
@@ -474,6 +486,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--verbose", action="count", default=0,
         help="Increase output verbosity")
+    parser.add_argument(
+        "-q", "--quiet", action="count", default=0,
+        help="Suppress output verbosity")
 
     defaults = parser.add_argument_group(
         "Default env", "Compare environment with a fixed/default set")
@@ -510,5 +525,5 @@ if __name__ == "__main__":
         help="Don't show hidden groups (default)")
 
     args = parser.parse_args()
-    _verbose_level = args.verbose
+    _verbose_level = args.verbose - args.quiet
     exit(main(args))
