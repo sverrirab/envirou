@@ -86,9 +86,16 @@ def output_key(k, maxlen, no_diff=False, password=False):
     has_password = False
     fmt = "{key:<{maxlen}} {value}"
     value = os.environ.get(k, "")
-    if _default and ((k in _default and value != _default[k]) or k not in _default) and not no_diff:
-        fmt = color_wrap(fmt, color=_highlight.get(_CONFIG_DIFFERENCES, "red"))
-    elif k in _highlight:
+    prefix = ""
+    if _default:
+        prefix = "  "
+        if _default and ((k in _default and value != _default[k]) or k not in _default):
+            if not no_diff:
+                diff_color = _highlight.get(_CONFIG_DIFFERENCES, "red")
+                prefix = color_wrap("* ", color=diff_color)
+            else:
+                prefix = "* "
+    if k in _highlight:
         color = _highlight.get(k)
         if color == _HIGHLIGHT_PASSWORD:
             if not password:
@@ -96,11 +103,19 @@ def output_key(k, maxlen, no_diff=False, password=False):
                 value = "*" * len(value)
         else:
             fmt = color_wrap(fmt, color)
-    output(fmt, key=k, value=value, maxlen=maxlen)
+    output(prefix + fmt, key=k, value=value, maxlen=maxlen)
     return has_password
 
 
-def output_profiles(active, inactive):
+def output_profiles(active_profiles):
+    active = []
+    inactive = []
+    for p in sorted(_profiles.keys()):
+        if p in active_profiles:
+            active.append(p)
+        else:
+            inactive.append(p)
+
     def_color = _highlight.get(_SECTION_GROUPS, "magenta")
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     active_str = color_wrap(", ", def_color).join([color_wrap(p, active_color) for p in active])
@@ -219,6 +234,30 @@ def read_config():
                 key, value = l.split("=", 1)
                 ultra_verbose("reading default env", key, "=", value, ".")
                 _default[key] = value
+
+
+def get_active_profiles():
+    result = set()
+    for p in _profiles.keys():
+        ultra_verbose("profile", p)
+        ultra_verbose(" ", _profiles[p])
+        active = True
+        for k, v in _profiles[p].items():
+            ultra_verbose(" -> ", k, v,
+                          _environ.get(k, "[not found]"))
+            if v is None and k in _environ:
+                ultra_verbose(
+                    "not active (should not be there but is)")
+                active = False
+                break
+            if v is not None and (k not in _environ or _environ[k] != v):
+                ultra_verbose("not active (not equal)".format(
+                    _environ.get(k, "[not found]"), v))
+                active = False
+                break
+        if active:
+            result.add(p)
+    return result
 
 
 def edit_config_file():
@@ -376,6 +415,23 @@ def activate_profile(p):
         return False
 
 
+def activate_all_profiles(profiles):
+    very_verbose("Profiles to activate", repr(profiles))
+    for p in profiles:
+        if activate_profile(p):
+            output("Profile '{p}' activated", p=p)
+        else:
+            output("Profile '{p}' not found", p=p)
+            return 1
+    return 0
+
+
+def list_groups():
+    for g in sorted(_groups.keys()):
+        output_group(g)
+    return 0
+
+
 def main(arguments):
     read_config()
 
@@ -392,14 +448,9 @@ def main(arguments):
     elif arguments.diff_default:
         return diff_default()
     elif arguments.profile:
-        very_verbose("Profiles to activate", repr(arguments.profile))
-        for profile in arguments.profile:
-            if activate_profile(profile):
-                output("Profile '{p}' activated", p=profile)
-            else:
-                output("Profile '{p}' not found", p=profile)
-                return 1
-        return 0
+        return activate_all_profiles(arguments.profile)
+    elif arguments.list:
+        return list_groups()
 
     match_group = defaultdict(list)
     for name, keys in _groups.items():
@@ -443,31 +494,11 @@ def main(arguments):
             output_group("Passwords hidden  [-w to show]")
 
         if len(not_displayed_group):
-            output_group("Groups hidden: {}  [NAME or -a]".format(" ".join(not_displayed_group)))
+            output_group("Groups hidden: {}  [NAME or -a]".format(
+                " ".join(not_displayed_group)))
 
-    active_profiles = []
-    inactive_profiles = []
-    for p in sorted(_profiles.keys()):
-        ultra_verbose("profile", p)
-        ultra_verbose(" ", _profiles[p])
-        active = True
-        for k, v in _profiles[p].items():
-            ultra_verbose(" -> ", k, v, _environ.get(k, "[not found]"))
-            if v is None and k in _environ:
-                ultra_verbose("not active (should not be there but is)")
-                active = False
-                break
-            if v is not None and (k not in _environ or _environ[k] != v):
-                ultra_verbose("not active (not equal)".format(
-                    _environ.get(k, "[not found]"), v))
-                active = False
-                break
-        if active:
-            active_profiles.append(p)
-        else:
-            inactive_profiles.append(p)
-
-    output_profiles(active_profiles, inactive_profiles)
+    active_profiles = get_active_profiles()
+    output_profiles(active_profiles)
 
     return 0
 
@@ -517,6 +548,9 @@ if __name__ == "__main__":
         "group",
         nargs="*",
         help="Display group or groups")
+    groups.add_argument(
+        "-l", "--list", dest="list", action="store_true",
+        help="List groups")
     groups.add_argument(
         "-a", "--all", dest="all", action="store_true",
         help="Show all groups")
