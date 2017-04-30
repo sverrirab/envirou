@@ -30,9 +30,11 @@ _SECTION_PROFILE_START = "profile:"
 _HIGHLIGHT_PASSWORD = "password"
 _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
+_SETTINGS_SORT_KEYS = "sort_keys"
 _NA_GROUP = "na"
 
 _verbose_level = 0
+_sort_keys = False
 _environ = {}
 _groups = defaultdict(list)
 _profiles = defaultdict(dict)
@@ -201,11 +203,13 @@ def read_config():
                 value = None
 
             if section == _SECTION_SETTINGS:
+                global _verbose_level, _sort_keys
                 for env in value.split(","):
                     ultra_verbose(_SECTION_SETTINGS, key, env)
                     if key == _SETTINGS_QUIET:
-                        global _verbose_level
                         _verbose_level -= int(value)
+                    elif key == _SETTINGS_SORT_KEYS:
+                        _sort_keys = (int(value) > 0)
             elif section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     ultra_verbose(_SECTION_GROUPS, key, env)
@@ -455,33 +459,31 @@ def main(arguments):
     elif arguments.list:
         return list_groups()
 
+    maxlen = max([len(k) for k in _environ.keys()])
+
+    remaining_environ = set(_environ.keys())
     match_group = defaultdict(list)
     for name, keys in _groups.items():
-        for k in sorted(keys):
-            match_group[k].append(name)
-
-    maxlen = 0
-    grouped = defaultdict(list)
-    for k in sorted(_environ.keys()):
-        maxlen = max([maxlen, len(k)])
-        matched_groups = match_group[k]
-
-        if matched_groups:
-            for group in matched_groups:
-                grouped[group].append(k)
-        else:
-            grouped[_NA_GROUP].append(k)
+        for k in keys:
+            if k in _environ:
+                match_group[name].append(k)
+                remaining_environ.discard(k)
+    if remaining_environ:
+        match_group[_NA_GROUP] = sorted(remaining_environ)
 
     filter_groups = len(arguments.group) > 0
     not_displayed_group = []
     has_hidden_password = False
-    for group in sorted(grouped.keys()):
+    for group in sorted(match_group.keys()):
         is_hidden = (group[0] == ".")
         is_no_diff = (group[0:2] == "..")
         if arguments.all or (filter_groups and group in arguments.group) or (
                     not filter_groups and not is_hidden):
             output_group(group)
-            for k in grouped[group]:
+            keys = match_group[group]
+            if _sort_keys:
+                keys = sorted(keys)
+            for k in keys:
                 if output_key(k, maxlen, no_diff=is_no_diff,
                               password=arguments.show_password):
                     has_hidden_password = True
