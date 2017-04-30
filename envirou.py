@@ -67,8 +67,8 @@ def very_verbose(fmt, *args, **kwargs):
 def output(fmt, *args, **kwargs):
     kwargs["file"] = sys.stderr
     kwargs.update(**_CONSOLE_COLORS)
-    output = fmt.format(**kwargs)
-    print(output, *args)
+    out = fmt.format(**kwargs)
+    print(out, *args)
 
 
 def color_wrap(s, color):
@@ -78,7 +78,8 @@ def color_wrap(s, color):
 def output_group(group):
     if group == _NA_GROUP:
         group += " (No Applicable group)"
-    out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
+    out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS,
+                                                       "magenta"))
     output(out, group=group)
 
 
@@ -89,7 +90,7 @@ def output_key(k, maxlen, no_diff=False, password=False):
     prefix = ""
     if _default:
         prefix = "  "
-        if _default and ((k in _default and value != _default[k]) or k not in _default):
+        if (k in _default and value != _default[k]) or k not in _default:
             if not no_diff:
                 diff_color = _highlight.get(_CONFIG_DIFFERENCES, "red")
                 prefix = color_wrap("* ", color=diff_color)
@@ -118,7 +119,8 @@ def output_profiles(active_profiles):
 
     def_color = _highlight.get(_SECTION_GROUPS, "magenta")
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
-    active_str = color_wrap(", ", def_color).join([color_wrap(p, active_color) for p in active])
+    active_str = color_wrap(", ", def_color).join(
+        [color_wrap(p, active_color) for p in active])
     inactive_str = ", ".join(inactive)
     s = ""
     if active:
@@ -265,7 +267,8 @@ def edit_config_file():
         shell_eval("$EDITOR", config_filename(_CONFIG_FILE))
         return 0
     else:
-        output("Set your EDITOR env variable or edit file: ", config_filename(_CONFIG_FILE))
+        output("Set your EDITOR env variable or edit file: ",
+               config_filename(_CONFIG_FILE))
         return 1
 
 
@@ -457,9 +460,10 @@ def main(arguments):
         for k in sorted(keys):
             match_group[k].append(name)
 
-    maxlen = max([len(k) for k in _environ.keys()])
+    maxlen = 0
     grouped = defaultdict(list)
     for k in sorted(_environ.keys()):
+        maxlen = max([maxlen, len(k)])
         matched_groups = match_group[k]
 
         if matched_groups:
@@ -474,10 +478,12 @@ def main(arguments):
     for group in sorted(grouped.keys()):
         is_hidden = (group[0] == ".")
         is_no_diff = (group[0:2] == "..")
-        if arguments.all or (filter_groups and group in arguments.group) or (not filter_groups and not is_hidden):
+        if arguments.all or (filter_groups and group in arguments.group) or (
+                    not filter_groups and not is_hidden):
             output_group(group)
             for k in grouped[group]:
-                if output_key(k, maxlen, no_diff=is_no_diff, password=arguments.show_password):
+                if output_key(k, maxlen, no_diff=is_no_diff,
+                              password=arguments.show_password):
                     has_hidden_password = True
         else:
             not_displayed_group.append(group)
