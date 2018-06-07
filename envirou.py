@@ -562,9 +562,6 @@ if __name__ == "__main__":
     groups.add_argument(
         "-a", "--all", dest="all", action="store_true",
         help="Show all groups")
-    groups.add_argument(
-        "-n", "--no-all", dest="all", action="store_false",
-        help="Don't show hidden groups (default)")
 
     args = parser.parse_args()
     _verbose_level = args.verbose - args.quiet
