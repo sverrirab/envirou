@@ -129,10 +129,10 @@ def output_profiles(active_profiles):
         s = color_wrap("# Profiles: ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" (inactive: {})  [-p NAME to activate]".format(
+        s += color_wrap(" (inactive: {})  [NAME to activate]".format(
             inactive_str), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profiles: {}  [-p NAME to activate]".format(
+        s = color_wrap("# Inactive profiles: {}  [NAME to activate]".format(
             inactive_str), def_color)
 
     if s:
@@ -444,6 +444,10 @@ def main(arguments):
 
     read_environ()
 
+    if arguments.old_profile:
+        # Temporary for backward compatibility
+        arguments.profile.extend(arguments.old_profile)
+
     if arguments.edit:
         return edit_config_file()
     elif arguments.clear_default:
@@ -454,7 +458,7 @@ def main(arguments):
         return reset_to_default()
     elif arguments.diff_default:
         return diff_default()
-    elif arguments.profile:
+    elif len(arguments.profile) > 0:
         return activate_all_profiles(arguments.profile)
     elif arguments.list:
         return list_groups()
@@ -502,7 +506,7 @@ def main(arguments):
             output_group("Passwords hidden  [-w to show]")
 
         if len(not_displayed_group):
-            output_group("Groups hidden: {}  [NAME or -a]".format(
+            output_group("Groups hidden: {}  [-g NAME or --all]".format(
                 " ".join(not_displayed_group)))
 
     active_profiles = get_active_profiles()
@@ -547,14 +551,17 @@ if __name__ == "__main__":
     profiles = parser.add_argument_group(
         "Profiles", "Environment variable profiles")
     profiles.add_argument(
-        "-p", "--profile", action="append",
+        "profile",
+        nargs="*",
         help="Activate profile")
+    profiles.add_argument(
+        "-p", "--profile", dest="old_profile", action="append",
+        help=argparse.SUPPRESS)
 
     groups = parser.add_argument_group(
         "Groups", "Groups of environment variables")
     groups.add_argument(
-        "group",
-        nargs="*",
+        "-g", "--group", default=[], action="append",
         help="Display group or groups")
     groups.add_argument(
         "-l", "--list", dest="list", action="store_true",
