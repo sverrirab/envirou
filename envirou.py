@@ -67,9 +67,10 @@ def very_verbose(fmt, *args, **kwargs):
 
 
 def output(fmt, *args, **kwargs):
-    kwargs["file"] = sys.stderr
-    kwargs.update(**_CONSOLE_COLORS)
-    out = fmt.format(**kwargs)
+    fmtargs = _CONSOLE_COLORS.copy()
+    fmtargs["file"] = sys.stderr
+    fmtargs.update(kwargs)
+    out = fmt.format(**fmtargs)
     print(out, *args)
 
 
@@ -424,11 +425,12 @@ def activate_profile(p):
 
 def activate_all_profiles(profiles):
     very_verbose("Profiles to activate", repr(profiles))
+    active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     for p in profiles:
         if activate_profile(p):
-            output("Profile '{p}' activated", p=p)
+            output("Profile {p} activated".format(p=color_wrap(p, active_color)))
         else:
-            output("Profile '{p}' not found", p=p)
+            output("Profile {p} not found", p=p)
             return 1
     return 0
 
