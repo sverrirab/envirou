@@ -296,6 +296,15 @@ def clear_default():
     return 0
 
 
+def glob_match(glob, match):
+    if glob == match:
+        return True
+    if glob[-1] == "*":
+        if match.startswith(glob[:-1]):
+            return True
+    return False
+
+
 def changed_from_default():
     ignore_keys = set()
     for group in _groups:
@@ -307,16 +316,15 @@ def changed_from_default():
     remove = []
     update = []
     for k, v in _environ.items():
-        if k not in _default.keys():
-            if k in ignore_keys:
-                ignored.append(k)
-            else:
+        if k not in _default.keys() or v != _default[k]:
+            append = True
+            for ignore in ignore_keys:
+                if glob_match(ignore, k):
+                    ignored.append(k)
+                    append = False
+                    break
+            if append:
                 remove.append(k)
-        elif v != _default[k]:
-            if k in ignore_keys:
-                ignored.append(k)
-            else:
-                update.append(k)
 
     add = []
     for k, v in _default.items():
@@ -471,9 +479,10 @@ def main(arguments):
     match_group = defaultdict(list)
     for name, keys in _groups.items():
         for k in keys:
-            if k in _environ:
-                match_group[name].append(k)
-                remaining_environ.discard(k)
+            for env_item in _environ.keys():
+                if glob_match(k, env_item):
+                    match_group[name].append(env_item)
+                    remaining_environ.discard(env_item)
     if remaining_environ:
         match_group[_NA_GROUP] = sorted(remaining_environ)
 
