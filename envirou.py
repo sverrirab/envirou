@@ -243,6 +243,14 @@ def read_config():
                 _default[key] = value
 
 
+def add_to_config_file(lines):
+    # write to config file
+    config = config_filename(_CONFIG_FILE)
+    very_verbose("Adding to config file:\n" + "\n".join(lines))
+    with open(config, "a") as f:
+        f.writelines(os.linesep.join(lines))
+
+
 def get_active_profiles():
     result = set()
     for p in _profiles.keys():
@@ -396,14 +404,35 @@ def diff_default():
     for k in sorted(remove):
         output("unset {k}", k=k)
 
-    output_group("If you want to create a new profile  [--edit]")
-    output("[profile:new]")
+    output_group("To create a new profile use: -n PROFILE_NAME")
+    return 0
+
+
+def new_profile(profile_name):
+    if not _default:
+        output("No default environment set  [-s to set]")
+        return 1
+
+    if profile_name in _profiles:
+        output_profiles(get_active_profiles())
+        output("Profile {profile_name} already exists. You need a new name.", profile_name=profile_name)
+        return 1
+
+    # add <-> remove (since we are going the other way):
+    add, update, remove, ignored = changed_from_default()
+
+    if not (add or update or remove):
+        output_no_change_required(ignored)
+        return 0
+
+    lines = ["", ""]
+    lines.append("[profile:{profile_name}]".format(profile_name=profile_name))
     for k in sorted(update + add + remove):
         if k in remove:
-            output("{k}", k=k)
+            lines.append("{k}".format(k=k))
         else:
-            output("{k}={v}", k=k, v=os.environ.get(k, ""))
-
+            lines.append("{k}={v}".format(k=k, v=os.environ.get(k, "")))
+    add_to_config_file(lines)
     return 0
 
 
@@ -468,6 +497,8 @@ def main(arguments):
         return reset_to_default()
     elif arguments.diff_default:
         return diff_default()
+    elif arguments.new_profile:
+        return new_profile(arguments.new_profile)
     elif len(arguments.profile) > 0:
         return activate_all_profiles(arguments.profile)
     elif arguments.list:
@@ -555,6 +586,9 @@ if __name__ == "__main__":
     defaults.add_argument(
         "-d", "--diff-default", action="store_true",
         help="Show differences from default")
+    defaults.add_argument(
+        "-n", "--new-profile",
+        help="Create a new profile named NEW_PROFILE from differences from default")
     defaults.add_argument(
         "-r", "--reset-to-default", action="store_true",
         help="Reset env to default")
