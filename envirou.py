@@ -111,7 +111,12 @@ def output_key(k, maxlen, no_diff=False, password=False):
         if color == _HIGHLIGHT_PASSWORD:
             if not password:
                 has_password = True
-                value = "*" * len(value)
+                if len(value) >= 16:
+                    # Display last four digits of keys.
+                    mask = "*" * (len(value) - 4)
+                    value = mask + value[-4:]
+                else:
+                    value = "*" * len(value)
         else:
             fmt = color_wrap(fmt, color)
     output(prefix + fmt, key=k, value=value, maxlen=maxlen)
