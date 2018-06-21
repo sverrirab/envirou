@@ -31,7 +31,7 @@ _HIGHLIGHT_PASSWORD = "password"
 _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
-_NA_GROUP = "na"
+_NA_GROUP = "N/A"
 
 _verbose_level = 0
 _sort_keys = False
@@ -66,6 +66,13 @@ def very_verbose(fmt, *args, **kwargs):
         output(fmt, *args, **kwargs)
 
 
+def display_additional(s):
+    if _verbose_level >= 0:
+        return s
+    else:
+        return ""
+
+
 def output(fmt, *args, **kwargs):
     fmtargs = _CONSOLE_COLORS.copy()
     fmtargs["file"] = sys.stderr
@@ -80,7 +87,7 @@ def color_wrap(s, color):
 
 def output_group(group):
     if group == _NA_GROUP:
-        group += " (No Applicable group)"
+        group += display_additional(" (No Applicable group)")
     out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS,
                                                        "magenta"))
     output(out, group=group)
@@ -130,11 +137,11 @@ def output_profiles(active_profiles):
         s = color_wrap("# Profiles: ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" (inactive: {})  [NAME to activate]".format(
-            inactive_str), def_color)
+        s += color_wrap(" (inactive: {profiles})  {help}".format(
+            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profiles: {}  [NAME to activate]".format(
-            inactive_str), def_color)
+        s = color_wrap("# Inactive profiles: {profiles}  {help}".format(
+            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
 
     if s:
         output(s)
@@ -300,7 +307,7 @@ def clear_default():
         os.remove(default)
         output("Default cleared")
     else:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
     return 0
 
 
@@ -352,15 +359,15 @@ def changed_from_default():
 
 def output_no_change_required(ignored):
     if len(ignored) == 0:
-        output("Nothing changed (run script / export VAR and run again)")
+        output("Nothing changed  {help}", help=display_additional("(run script / export VAR and run again)"))
     else:
-        output("Nothing important changed  [-dv for details]")
+        output("Nothing important changed  {help}", help=display_additional("[-dv for details]"))
         very_verbose("Ignored changes in:", ", ".join(sorted(ignored)))
 
 
 def reset_to_default():
     if not _default:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
         return 1
 
     remove, update, add, ignored = changed_from_default()
@@ -388,7 +395,7 @@ def reset_to_default():
 
 def diff_default():
     if not _default:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
         return 1
 
     # add <-> remove (since we are going the other way):
@@ -398,19 +405,19 @@ def diff_default():
         output_no_change_required(ignored)
         return 0
 
-    output_group("Changes required to get from default to current env")
+    output_group("To get from default to current env  {help}".format(
+        help=display_additional("[-n PROFILE_NAME for new profile]")))
     for k in sorted(update + add):
         output("export {k}={v}", k=k, v=shell_quote(os.environ.get(k, "")))
     for k in sorted(remove):
         output("unset {k}", k=k)
 
-    output_group("To create a new profile use: -n PROFILE_NAME")
     return 0
 
 
 def new_profile(profile_name):
     if not _default:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
         return 1
 
     if profile_name in _profiles:
@@ -433,6 +440,8 @@ def new_profile(profile_name):
         else:
             lines.append("{k}={v}".format(k=k, v=os.environ.get(k, "")))
     add_to_config_file(lines)
+
+    output("Profile {profile} created", profile=profile_name)
     return 0
 
 
