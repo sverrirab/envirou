@@ -173,8 +173,12 @@ def read_environ():
         _environ = os.environ
     else:
         for line in sys.stdin.readlines():
-            k, v = clean_split(line)
-            _environ[k] = v
+            ultra_verbose("Parsing env line:", line)
+            try:
+                k, v = clean_split(line)
+                _environ[k] = v
+            except ValueError:
+                ultra_verbose("Malformed env (linefeed in values?)")
 
 
 def read_config():
