@@ -1,17 +1,34 @@
 # envirou - Manage your shell environment variables
 
-Simple utility to manage your shell `env`.  
+Simple utility to view and manage your shell `env`.
 
-# Features 
+Everyone that works with complex infrastructure from the command line has gathered dozens and
+sometimes hundreds of files that manipulate your command line environment.  Classical examples 
+are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments
+etc etc.
+
+There are two basic problems with this: firstly you are having to memorize a bunch of script 
+names and secondly you are never 100% which environment is active at any point and in which 
+shell window.
+ 
+Tools such as zsh (oh-my-zsh) and shell prompt configuration but those are fragile and 
+complicated to set up and add clutter to your terminal session window.
+
+The name Envirou is inspired by Spirou the comic book character.  
+The alias `ev` is both short for *Envirou* and `env`. 
+
+
+## Features 
 
 * Fully customizable env variable groups (aws, java).
 * Quickly switch between profiles (test vs dev).
-* Color code important ones.
-* Quickly diff changes in your environment.
-* Prevent passwords to be revealed accidentally.
 * Hide "useless" environment variables (SHLVL, LSCOLORS).
+* Quickly diff changes in your environment and create new profiles.
+* Prevent passwords to be revealed accidentally.
+* Color code important ones.
+* Works on Mac OS X and Linux, bash and zsh.
 
-# Quickstart
+## Quickstart
 
 ```bash
 $ git clone https://github.com/sverrirab/envirou.git
@@ -20,70 +37,59 @@ $ ev
 $ ev --help     # Get information on how to use.
 ```
 
-# Screenshots 
+## How to use 
 
-Basic usage:
-
+See the below screenshot for an example on how `ev` can switch between different
+python runtime and aws profiles with a single command line:
 ![Basic Usage](./screenshots/ev.png)
 
-Show only the `aws` group with passwords `-w`
-
-![Show Single Group](./screenshots/ev_aws_w.png)
-
-Activate the `test` profile.  Note that there are new keys and `test` is highlighted instead of `dev`.
-
-![Activate Profile](./screenshots/ev_p_test.png)
+See how the selected profiles are highlighted.
 
 
-# Configuration
+Create a new profile using a python virtualenv:
 
-Edit using:
+![Activate Profile](./screenshots/ev_new_profile.png)
+
+See how the variables that have changed are marked with a red asterisk.
+You can also ask `ev` what has changed if you don't want to use the profile feature:
+
+![View Difference](./screenshots/ev_diff.png)
+
+
+## Advanced configuration
+
+Edit the ini file:
 
 ```bash
 $ ev --edit     # Customize settings.
 ```
 
-Example:
+Example from `envirou.ini`:
 
 ```inifile
-[custom]
-aws=AWS_ACCESS_KEY, AWS_SECRET_KEY
-java=JAVA_HOME
+[profile:system]
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:
+VIRTUAL_ENV
 
-[highlight]
-password=AWS_SECRET_KEY
-yellow=JAVA_HOME
+[profile:py2]
+PATH=/Users/sab/sdk/py2/bin:/usr/bin:/bin:/usr/sbin:/sbin:
+VIRTUAL_ENV=/Users/sab/sdk/py2
+
+[profile:py3]
+PATH=/Users/sab/sdk/py3/bin:/usr/bin:/bin:/usr/sbin:/sbin:
+VIRTUAL_ENV=/Users/sab/sdk/py3
 
 [profile:prod]
-AWS_ACCESS_KEY=5OEzQI01rIeoKGFo8OGsC9NR4U1MI1AH1aBRNbibSZNX
-AWS_SECRET_KEY=wj5IJES3qPYw35MlpBIiiIwNraVHTjE0rCc22nUjDWEC
+AWS_PROFILE=production
 
 [profile:test]
-AWS_ACCESS_KEY=wj5IJES3qPYw35MlpBIiiIwNraVHTjE0rCc22nUjDWEC
-AWS_SECRET_KEY=5OEzQI01rIeoKGFo8OGsC9NR4U1MI1AH1aBRNbibSZNX
+AWS_PROFILE=test
 
 [profile:dev]
-AWS_ACCESS_KEY=XNZSbibNRBa1HA1IM1U4RN9CsGO8oFGKoeIr10IQzEO5
-AWS_SECRET_KEY=CEWDjUn22cCr0EjTHVarNwIiiIBplM53wYPq3SEJI5jw
-
-[profile:java11]
-JAVA_HOME=/wish/you/were/here
-
-[profile:java12]
-JAVA_HOME=/hope/we/never/get/here
+AWS_PROFILE=development
 ```
 
-# Background
-
-Everyone that works with complex infrastructure from the command line has gathered dozens and sometimes hundreds of files that manipulate your command line environment.  Classical examples are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments etc etc.
-
-There are two basic problems with this: firstly you are having to memorize a bunch of script names and secondly you are never 100% which environment is active at any point and in which shell window.
- 
-Tools such as zsh (oh-my-zsh) and shell prompt configuration but those risk adding too much clutter to your terminal session window.
-
-The name Envirou is inspired by Spirou the comic book character.  
-The alias `ev` is both short for *Envirou* and `env`. 
 
 # License
 
-Free for any use - see [MIT License](./LICENSE) for details.
+Free for any use see [MIT License](./LICENSE) for details.
