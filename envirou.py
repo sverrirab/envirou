@@ -31,7 +31,7 @@ _HIGHLIGHT_PASSWORD = "password"
 _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
-_NA_GROUP = "na"
+_NA_GROUP = "N/A"
 
 _verbose_level = 0
 _sort_keys = False
@@ -66,10 +66,18 @@ def very_verbose(fmt, *args, **kwargs):
         output(fmt, *args, **kwargs)
 
 
+def display_additional(s):
+    if _verbose_level >= 0:
+        return s
+    else:
+        return ""
+
+
 def output(fmt, *args, **kwargs):
-    kwargs["file"] = sys.stderr
-    kwargs.update(**_CONSOLE_COLORS)
-    out = fmt.format(**kwargs)
+    fmtargs = _CONSOLE_COLORS.copy()
+    fmtargs["file"] = sys.stderr
+    fmtargs.update(kwargs)
+    out = fmt.format(**fmtargs)
     print(out, *args)
 
 
@@ -79,7 +87,7 @@ def color_wrap(s, color):
 
 def output_group(group):
     if group == _NA_GROUP:
-        group += " (No Applicable group)"
+        group += display_additional(" (No Applicable group)")
     out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS,
                                                        "magenta"))
     output(out, group=group)
@@ -103,7 +111,12 @@ def output_key(k, maxlen, no_diff=False, password=False):
         if color == _HIGHLIGHT_PASSWORD:
             if not password:
                 has_password = True
-                value = "*" * len(value)
+                if len(value) >= 16:
+                    # Display last four digits of keys.
+                    mask = "*" * (len(value) - 4)
+                    value = mask + value[-4:]
+                else:
+                    value = "*" * len(value)
         else:
             fmt = color_wrap(fmt, color)
     output(prefix + fmt, key=k, value=value, maxlen=maxlen)
@@ -129,11 +142,11 @@ def output_profiles(active_profiles):
         s = color_wrap("# Profiles: ", def_color) + active_str
 
     if inactive and active:
-        s += color_wrap(" (inactive: {})  [-p NAME to activate]".format(
-            inactive_str), def_color)
+        s += color_wrap(" (inactive: {profiles})  {help}".format(
+            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
     elif inactive:
-        s = color_wrap("# Inactive profiles: {}  [-p NAME to activate]".format(
-            inactive_str), def_color)
+        s = color_wrap("# Inactive profiles: {profiles}  {help}".format(
+            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
 
     if s:
         output(s)
@@ -165,8 +178,12 @@ def read_environ():
         _environ = os.environ
     else:
         for line in sys.stdin.readlines():
-            k, v = clean_split(line)
-            _environ[k] = v
+            ultra_verbose("Parsing env line:", line)
+            try:
+                k, v = clean_split(line)
+                _environ[k] = v
+            except ValueError:
+                ultra_verbose("Malformed env (linefeed in values?)")
 
 
 def read_config():
@@ -242,6 +259,14 @@ def read_config():
                 _default[key] = value
 
 
+def add_to_config_file(lines):
+    # write to config file
+    config = config_filename(_CONFIG_FILE)
+    very_verbose("Adding to config file:\n" + "\n".join(lines))
+    with open(config, "a") as f:
+        f.writelines(os.linesep.join(lines))
+
+
 def get_active_profiles():
     result = set()
     for p in _profiles.keys():
@@ -291,8 +316,17 @@ def clear_default():
         os.remove(default)
         output("Default cleared")
     else:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
     return 0
+
+
+def glob_match(glob, match):
+    if glob == match:
+        return True
+    if glob[-1] == "*":
+        if match.startswith(glob[:-1]):
+            return True
+    return False
 
 
 def changed_from_default():
@@ -306,16 +340,15 @@ def changed_from_default():
     remove = []
     update = []
     for k, v in _environ.items():
-        if k not in _default.keys():
-            if k in ignore_keys:
-                ignored.append(k)
-            else:
+        if k not in _default.keys() or v != _default[k]:
+            append = True
+            for ignore in ignore_keys:
+                if glob_match(ignore, k):
+                    ignored.append(k)
+                    append = False
+                    break
+            if append:
                 remove.append(k)
-        elif v != _default[k]:
-            if k in ignore_keys:
-                ignored.append(k)
-            else:
-                update.append(k)
 
     add = []
     for k, v in _default.items():
@@ -335,15 +368,15 @@ def changed_from_default():
 
 def output_no_change_required(ignored):
     if len(ignored) == 0:
-        output("Nothing changed (run script / export VAR and run again)")
+        output("Nothing changed  {help}", help=display_additional("(run script / export VAR and run again)"))
     else:
-        output("Nothing important changed  [-dv for details]")
+        output("Nothing important changed  {help}", help=display_additional("[-dv for details]"))
         very_verbose("Ignored changes in:", ", ".join(sorted(ignored)))
 
 
 def reset_to_default():
     if not _default:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
         return 1
 
     remove, update, add, ignored = changed_from_default()
@@ -371,7 +404,7 @@ def reset_to_default():
 
 def diff_default():
     if not _default:
-        output("No default environment set  [-s to set]")
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
         return 1
 
     # add <-> remove (since we are going the other way):
@@ -381,20 +414,43 @@ def diff_default():
         output_no_change_required(ignored)
         return 0
 
-    output_group("Changes required to get from default to current env")
+    output_group("To get from default to current env  {help}".format(
+        help=display_additional("[-n PROFILE_NAME for new profile]")))
     for k in sorted(update + add):
         output("export {k}={v}", k=k, v=shell_quote(os.environ.get(k, "")))
     for k in sorted(remove):
         output("unset {k}", k=k)
 
-    output_group("If you want to create a new profile  [--edit]")
-    output("[profile:new]")
+    return 0
+
+
+def new_profile(profile_name):
+    if not _default:
+        output("No default environment set  {help}", help=display_additional("[-s to set]"))
+        return 1
+
+    if profile_name in _profiles:
+        output_profiles(get_active_profiles())
+        output("Profile {profile_name} already exists. You need a new name.", profile_name=profile_name)
+        return 1
+
+    # add <-> remove (since we are going the other way):
+    add, update, remove, ignored = changed_from_default()
+
+    if not (add or update or remove):
+        output_no_change_required(ignored)
+        return 0
+
+    lines = ["", ""]
+    lines.append("[profile:{profile_name}]".format(profile_name=profile_name))
     for k in sorted(update + add + remove):
         if k in remove:
-            output("{k}", k=k)
+            lines.append("{k}".format(k=k))
         else:
-            output("{k}={v}", k=k, v=os.environ.get(k, ""))
+            lines.append("{k}={v}".format(k=k, v=os.environ.get(k, "")))
+    add_to_config_file(lines)
 
+    output("Profile {profile} created", profile=profile_name)
     return 0
 
 
@@ -424,11 +480,12 @@ def activate_profile(p):
 
 def activate_all_profiles(profiles):
     very_verbose("Profiles to activate", repr(profiles))
+    active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     for p in profiles:
         if activate_profile(p):
-            output("Profile '{p}' activated", p=p)
+            output("Profile {p} activated".format(p=color_wrap(p, active_color)))
         else:
-            output("Profile '{p}' not found", p=p)
+            output("Profile {p} not found", p=p)
             return 1
     return 0
 
@@ -444,6 +501,10 @@ def main(arguments):
 
     read_environ()
 
+    if arguments.old_profile:
+        # Temporary for backward compatibility
+        arguments.profile.extend(arguments.old_profile)
+
     if arguments.edit:
         return edit_config_file()
     elif arguments.clear_default:
@@ -454,7 +515,9 @@ def main(arguments):
         return reset_to_default()
     elif arguments.diff_default:
         return diff_default()
-    elif arguments.profile:
+    elif arguments.new_profile:
+        return new_profile(arguments.new_profile)
+    elif len(arguments.profile) > 0:
         return activate_all_profiles(arguments.profile)
     elif arguments.list:
         return list_groups()
@@ -465,9 +528,10 @@ def main(arguments):
     match_group = defaultdict(list)
     for name, keys in _groups.items():
         for k in keys:
-            if k in _environ:
-                match_group[name].append(k)
-                remaining_environ.discard(k)
+            for env_item in _environ.keys():
+                if glob_match(k, env_item):
+                    match_group[name].append(env_item)
+                    remaining_environ.discard(env_item)
     if remaining_environ:
         match_group[_NA_GROUP] = sorted(remaining_environ)
 
@@ -502,7 +566,7 @@ def main(arguments):
             output_group("Passwords hidden  [-w to show]")
 
         if len(not_displayed_group):
-            output_group("Groups hidden: {}  [NAME or -a]".format(
+            output_group("Groups hidden: {}  [-g NAME or --all]".format(
                 " ".join(not_displayed_group)))
 
     active_profiles = get_active_profiles()
@@ -541,20 +605,26 @@ if __name__ == "__main__":
         "-d", "--diff-default", action="store_true",
         help="Show differences from default")
     defaults.add_argument(
+        "-n", "--new-profile",
+        help="Create a new profile named NEW_PROFILE from differences from default")
+    defaults.add_argument(
         "-r", "--reset-to-default", action="store_true",
         help="Reset env to default")
 
     profiles = parser.add_argument_group(
         "Profiles", "Environment variable profiles")
     profiles.add_argument(
-        "-p", "--profile", action="append",
+        "profile",
+        nargs="*",
         help="Activate profile")
+    profiles.add_argument(
+        "-p", "--profile", dest="old_profile", action="append",
+        help=argparse.SUPPRESS)
 
     groups = parser.add_argument_group(
         "Groups", "Groups of environment variables")
     groups.add_argument(
-        "group",
-        nargs="*",
+        "-g", "--group", default=[], action="append",
         help="Display group or groups")
     groups.add_argument(
         "-l", "--list", dest="list", action="store_true",
@@ -562,9 +632,6 @@ if __name__ == "__main__":
     groups.add_argument(
         "-a", "--all", dest="all", action="store_true",
         help="Show all groups")
-    groups.add_argument(
-        "-n", "--no-all", dest="all", action="store_false",
-        help="Don't show hidden groups (default)")
 
     args = parser.parse_args()
     _verbose_level = args.verbose - args.quiet

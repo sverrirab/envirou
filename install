@@ -38,7 +38,9 @@ else
 fi
 
 if [ ${INSTALLED} -eq 1 ] ; then
-    echo "Get started by starting a new shell or executing in your current one:"
+    echo "Get started by starting a new shell:"
+    echo "$ exec $SHELL"
+    echo "Alternatively by executing in your current one:"
     echo "${ALIAS}"
 else
     echo ""
