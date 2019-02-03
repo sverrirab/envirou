@@ -260,7 +260,6 @@ def read_config():
 
 
 def add_to_config_file(lines):
-    # write to config file
     config = config_filename(_CONFIG_FILE)
     very_verbose("Adding to config file:\n" + "\n".join(lines))
     with open(config, "a") as f:
@@ -441,7 +440,7 @@ def new_profile(profile_name):
         output_no_change_required(ignored)
         return 0
 
-    lines = ["", ""]
+    lines = list(["", ""])
     lines.append("[profile:{profile_name}]".format(profile_name=profile_name))
     for k in sorted(update + add + remove):
         if k in remove:
@@ -496,6 +495,15 @@ def list_groups():
     return 0
 
 
+def should_display_group(arguments, group_name):
+    filter_groups = len(arguments.group) > 0
+    is_hidden = (group_name[0] == ".")
+    if arguments.all or (filter_groups and group_name in arguments.group) or (
+                not filter_groups and not is_hidden):
+        return True
+    return False
+
+
 def main(arguments):
     read_config()
 
@@ -522,8 +530,6 @@ def main(arguments):
     elif arguments.list:
         return list_groups()
 
-    maxlen = max([len(k) for k in _environ.keys()])
-
     remaining_environ = set(_environ.keys())
     match_group = defaultdict(list)
     for name, keys in _groups.items():
@@ -535,21 +541,25 @@ def main(arguments):
     if remaining_environ:
         match_group[_NA_GROUP] = sorted(remaining_environ)
 
+    # Calculate maximum length of output string
+    maxlen = 1
+    for group in match_group.keys():
+        if should_display_group(arguments, group):
+            for k in match_group[group]:
+                maxlen = max(maxlen, len(k))
+
     filter_groups = len(arguments.group) > 0
     not_displayed_group = []
     has_hidden_password = False
     for group in sorted(match_group.keys()):
-        is_hidden = (group[0] == ".")
-        is_no_diff = (group[0:2] == "..")
-        if arguments.all or (filter_groups and group in arguments.group) or (
-                    not filter_groups and not is_hidden):
+        if should_display_group(arguments, group):
+            is_no_diff = (group[0:2] == "..")
             output_group(group)
             keys = match_group[group]
             if _sort_keys:
                 keys = sorted(keys)
             for k in keys:
-                if output_key(k, maxlen, no_diff=is_no_diff,
-                              password=arguments.show_password):
+                if output_key(k, maxlen, no_diff=is_no_diff, password=arguments.show_password):
                     has_hidden_password = True
         else:
             not_displayed_group.append(group)
@@ -611,13 +621,13 @@ if __name__ == "__main__":
         "-r", "--reset-to-default", action="store_true",
         help="Reset env to default")
 
-    profiles = parser.add_argument_group(
+    profile_group = parser.add_argument_group(
         "Profiles", "Environment variable profiles")
-    profiles.add_argument(
+    profile_group.add_argument(
         "profile",
         nargs="*",
         help="Activate profile")
-    profiles.add_argument(
+    profile_group.add_argument(
         "-p", "--profile", dest="old_profile", action="append",
         help=argparse.SUPPRESS)
 
