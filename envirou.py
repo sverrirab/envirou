@@ -28,6 +28,7 @@ _SECTION_CUSTOM = "custom"
 _SECTION_HIGHLIGHT = "highlight"
 _SECTION_PROFILE_START = "profile:"
 _HIGHLIGHT_PASSWORD = "password"
+_HIGHLIGHT_PATH = "path"
 _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
@@ -77,7 +78,7 @@ def output(fmt, *args, **kwargs):
     fmtargs = _CONSOLE_COLORS.copy()
     fmtargs["file"] = sys.stderr
     fmtargs.update(kwargs)
-    out = fmt.format(**fmtargs)
+    out = fmt.format(**fmtargs).format(**fmtargs)
     print(out, *args)
 
 
@@ -93,21 +94,21 @@ def output_group(group):
     output(out, group=group)
 
 
-def output_key(k, maxlen, no_diff=False, password=False):
+def output_key(key, maxlen, no_diff=False, password=False):
     has_password = False
     fmt = "{key:<{maxlen}} {value}"
-    value = os.environ.get(k, "")
+    value = os.environ.get(key, "")
     prefix = ""
     if _default:
         prefix = "  "
-        if (k in _default and value != _default[k]) or k not in _default:
+        if (key in _default and value != _default[key]) or key not in _default:
             if not no_diff:
                 diff_color = _highlight.get(_CONFIG_DIFFERENCES, "red")
                 prefix = color_wrap("* ", color=diff_color)
             else:
                 prefix = "* "
-    if k in _highlight:
-        color = _highlight.get(k)
+    if key in _highlight:
+        color = _highlight.get(key)
         if color == _HIGHLIGHT_PASSWORD:
             if not password:
                 has_password = True
@@ -117,9 +118,14 @@ def output_key(k, maxlen, no_diff=False, password=False):
                     value = mask + value[-4:]
                 else:
                     value = "*" * len(value)
+        elif color == _HIGHLIGHT_PATH:
+            new_value = list()
+            for i, path in enumerate(value.split(":")):
+                new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
+            value = ":".join(new_value)
         else:
             fmt = color_wrap(fmt, color)
-    output(prefix + fmt, key=k, value=value, maxlen=maxlen)
+    output(prefix + fmt, key=key, value=value, maxlen=maxlen)
     return has_password
 
 
