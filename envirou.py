@@ -32,10 +32,12 @@ _HIGHLIGHT_PATH = "path"
 _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
+_SETTINGS_PATH_TILDE = "path_tilde"
 _NA_GROUP = "N/A"
 
 _verbose_level = 0
 _sort_keys = False
+_use_tilde = False
 _environ = {}
 _groups = defaultdict(list)
 _profiles = defaultdict(dict)
@@ -121,6 +123,9 @@ def output_key(key, maxlen, no_diff=False, password=False):
         elif color == _HIGHLIGHT_PATH:
             new_value = list()
             for i, path in enumerate(value.split(":")):
+                if _use_tilde:
+                    home_path = os.environ.get("HOME", "")
+                    path = path.replace(home_path, "~", 1)
                 new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
             value = ":".join(new_value)
         else:
@@ -226,13 +231,15 @@ def read_config():
                 value = None
 
             if section == _SECTION_SETTINGS:
-                global _verbose_level, _sort_keys
+                global _verbose_level, _sort_keys, _use_tilde
                 for env in value.split(","):
                     ultra_verbose(_SECTION_SETTINGS, key, env)
                     if key == _SETTINGS_QUIET:
                         _verbose_level -= int(value)
                     elif key == _SETTINGS_SORT_KEYS:
                         _sort_keys = (int(value) > 0)
+                    elif key == _SETTINGS_PATH_TILDE:
+                        _use_tilde = (int(value) > 0)
             elif section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     ultra_verbose(_SECTION_GROUPS, key, env)
