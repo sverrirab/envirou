@@ -498,9 +498,9 @@ def activate_all_profiles(profiles):
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     for p in profiles:
         if activate_profile(p):
-            output("Profile {p} activated".format(p=color_wrap(p, active_color)))
+            output("Envirou profile {p} activated".format(p=color_wrap(p, active_color)))
         else:
-            output("Profile {p} not found", p=p)
+            output("Envirou profile {p} not found", p=p)
             return 1
     return 0
 
