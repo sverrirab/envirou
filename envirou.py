@@ -353,7 +353,10 @@ def changed_from_default():
                     append = False
                     break
             if append:
-                remove.append(k)
+                if k not in _default.keys():
+                    remove.append(k)
+                else:
+                    update.append(k)
 
     add = []
     for k, v in _default.items():
