@@ -135,31 +135,19 @@ def output_key(key, maxlen, no_diff=False, password=False):
 
 
 def output_profiles(active_profiles):
-    active = []
-    inactive = []
-    for p in sorted(_profiles.keys()):
-        if p in active_profiles:
-            active.append(p)
-        else:
-            inactive.append(p)
-
     def_color = _highlight.get(_SECTION_GROUPS, "magenta")
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
-    active_str = color_wrap(", ", def_color).join(
-        [color_wrap(p, active_color) for p in active])
-    inactive_str = ", ".join(inactive)
     s = ""
-    if active:
-        s = color_wrap("# Profiles: ", def_color) + active_str
-
-    if inactive and active:
-        s += color_wrap(" (inactive: {profiles})  {help}".format(
-            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
-    elif inactive:
-        s = color_wrap("# Inactive profiles: {profiles}  {help}".format(
-            profiles=inactive_str, help=display_additional("[NAME to activate]")), def_color)
+    for p in sorted(_profiles.keys()):
+        if p in active_profiles:
+            s += " " + color_wrap(p, active_color)
+        else:
+            s += " " + p
 
     if s:
+        s = color_wrap("# Profiles:", def_color) + s
+        s += color_wrap(display_additional(" [NAME to activate]"), def_color)
+
         output(s)
 
 
@@ -505,6 +493,11 @@ def activate_all_profiles(profiles):
     return 0
 
 
+def list_active_profiles():
+    output(" ".join(sorted(get_active_profiles())))
+    return 0
+
+
 def list_groups():
     for g in sorted(_groups.keys()):
         output_group(g)
@@ -543,6 +536,8 @@ def main(arguments):
         return new_profile(arguments.new_profile)
     elif len(arguments.profile) > 0:
         return activate_all_profiles(arguments.profile)
+    elif arguments.active_profiles:
+        return list_active_profiles()
     elif arguments.list:
         return list_groups()
 
@@ -564,7 +559,6 @@ def main(arguments):
             for k in match_group[group]:
                 maxlen = max(maxlen, len(k))
 
-    filter_groups = len(arguments.group) > 0
     not_displayed_group = []
     has_hidden_password = False
     for group in sorted(match_group.keys()):
@@ -643,6 +637,9 @@ if __name__ == "__main__":
         "profile",
         nargs="*",
         help="Activate profile")
+    profile_group.add_argument(
+        "-t", "--active-profiles", action="store_true",
+        help="List active profiles")
     profile_group.add_argument(
         "-p", "--profile", dest="old_profile", action="append",
         help=argparse.SUPPRESS)
