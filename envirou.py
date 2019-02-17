@@ -6,14 +6,14 @@ import sys
 from collections import defaultdict
 
 _CONSOLE_COLORS = {
-    "c-end":        "\033[0m",
-    "c-bold":       "\033[1m",
-    "c-underline":  "\033[4m",
-    "c-red":        "\033[31m",
-    "c-green":      "\033[32m",
-    "c-yellow":     "\033[33m",
-    "c-blue":       "\033[34m",
-    "c-magenta":    "\033[35m",
+    "[[c-end]]":        "\033[0m",
+    "[[c-bold]]":       "\033[1m",
+    "[[c-underline]]":  "\033[4m",
+    "[[c-red]]":        "\033[31m",
+    "[[c-green]]":      "\033[32m",
+    "[[c-yellow]]":     "\033[33m",
+    "[[c-blue]]":       "\033[34m",
+    "[[c-magenta]]":    "\033[35m",
 }
 
 _CONFIG_ENV = "ENVIROU_HOME"
@@ -76,16 +76,20 @@ def display_additional(s):
         return ""
 
 
+def expand_console_colors(s):
+    result = s
+    for k, v in _CONSOLE_COLORS.items():
+        result = result.replace(k, v)
+    return result
+
+
 def output(fmt, *args, **kwargs):
-    fmtargs = _CONSOLE_COLORS.copy()
-    fmtargs["file"] = sys.stderr
-    fmtargs.update(kwargs)
-    out = fmt.format(**fmtargs).format(**fmtargs)
+    out = expand_console_colors(fmt).format(**kwargs)
     print(out, *args)
 
 
 def color_wrap(s, color):
-    return "{c-" + color + "}" + s + "{c-end}"
+    return "[[c-" + color + "]]" + s + "[[c-end]]"
 
 
 def output_group(group):
@@ -130,7 +134,7 @@ def output_key(key, maxlen, no_diff=False, password=False):
             value = ":".join(new_value)
         else:
             fmt = color_wrap(fmt, color)
-    output(prefix + fmt, key=key, value=value, maxlen=maxlen)
+    output(prefix + fmt, key=key, value=expand_console_colors(value), maxlen=maxlen)
     return has_password
 
 
@@ -613,6 +617,31 @@ if __name__ == "__main__":
         "-q", "--quiet", action="count", default=0,
         help="Suppress output verbosity")
 
+    profile_group = parser.add_argument_group(
+        "Profiles", "Environment variable profiles")
+    profile_group.add_argument(
+        "profile",
+        nargs="*",
+        help="Activate profile")
+    profile_group.add_argument(
+        "-t", "--active-profiles", action="store_true",
+        help="List active profiles")
+    profile_group.add_argument(
+        "-p", "--profile", dest="old_profile", action="append",
+        help=argparse.SUPPRESS)
+
+    groups = parser.add_argument_group(
+        "Groups", "Groups of environment variables")
+    groups.add_argument(
+        "-a", "--all", dest="all", action="store_true",
+        help="Show all (including hidden groups)")
+    groups.add_argument(
+        "-g", "--group", default=[], action="append",
+        help="Display group or groups")
+    groups.add_argument(
+        "-l", "--list", dest="list", action="store_true",
+        help="List groups")
+
     defaults = parser.add_argument_group(
         "Default env", "Compare environment with a fixed/default set")
     defaults.add_argument(
@@ -630,31 +659,6 @@ if __name__ == "__main__":
     defaults.add_argument(
         "-r", "--reset-to-default", action="store_true",
         help="Reset env to default")
-
-    profile_group = parser.add_argument_group(
-        "Profiles", "Environment variable profiles")
-    profile_group.add_argument(
-        "profile",
-        nargs="*",
-        help="Activate profile")
-    profile_group.add_argument(
-        "-t", "--active-profiles", action="store_true",
-        help="List active profiles")
-    profile_group.add_argument(
-        "-p", "--profile", dest="old_profile", action="append",
-        help=argparse.SUPPRESS)
-
-    groups = parser.add_argument_group(
-        "Groups", "Groups of environment variables")
-    groups.add_argument(
-        "-g", "--group", default=[], action="append",
-        help="Display group or groups")
-    groups.add_argument(
-        "-l", "--list", dest="list", action="store_true",
-        help="List groups")
-    groups.add_argument(
-        "-a", "--all", dest="all", action="store_true",
-        help="Show all groups")
 
     args = parser.parse_args()
     _verbose_level = args.verbose - args.quiet
