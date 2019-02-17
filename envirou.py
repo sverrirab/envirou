@@ -35,9 +35,9 @@ _SETTINGS_SORT_KEYS = "sort_keys"
 _SETTINGS_PATH_TILDE = "path_tilde"
 _NA_GROUP = "N/A"
 
-_verbose_level = 0
-_sort_keys = False
-_use_tilde = False
+_verbose_level = 1
+_sort_keys = True
+_use_tilde = True
 _environ = {}
 _groups = defaultdict(list)
 _profiles = defaultdict(dict)
