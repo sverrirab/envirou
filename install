@@ -1,13 +1,29 @@
 #!/bin/bash
 
-cd $(dirname $0)
+cd $(dirname $0) || exit 1
 ENVIROU="$PWD/envirou"
 ALIAS="alias ev=\"source ${ENVIROU}\""
+SYMLINK_FOLDER="/usr/local/bin/"
 INSTALLED=0
+SHORT_SHELL="${SHELL##*/}"
+
+function get_completion() {
+    if [ "${SHORT_SHELL}" == "bash" ] ; then
+        echo "ev --bash-completions"
+    elif [ "${SHORT_SHELL}" == "zsh" ] ; then
+        echo "ev --zsh-completions"
+    else
+        # Unknown shell type.
+        echo "# (envirou could not detect shell type for command completions)."
+    fi
+}
+
+SHELL_COMPLETIONS=$(get_completion)
 
 function force_alias() {
     echo "Adding alias 'ev' to $1"
     echo "${ALIAS}" >> $1
+    echo "${SHELL_COMPLETIONS}" >> $1
     INSTALLED=1
 }
 
@@ -22,19 +38,23 @@ if [ ! -f "${ENVIROU}" ] ; then
     exit 2
 fi
 
-# Strip everything up to the last / in $SHELL env variable
-SHORT="${SHELL##*/}"
-
-if [ "${SHORT}" == "bash" ] ; then
+if [ "${SHORT_SHELL}" == "bash" ] ; then
     echo "You seem to be using bash."
     add_alias ~/.bashrc
     add_alias ~/.bash_profile
     add_alias ~/.profile
-elif [ "${SHORT}" == "zsh" ] ; then
+elif [ "${SHORT_SHELL}" == "zsh" ] ; then
     echo "You seem to be using zsh."
     add_alias ~/.zshrc
 else
     echo "Warning: Possibly unsupported shell."
+fi
+
+if [ -d "${SYMLINK_FOLDER}" ] && [ ! -f "${SYMLINK_FOLDER}/envirou" ] ; then
+    echo "Adding symbolic link to ${SYMLINK_FOLDER}"
+    ln -s "${ENVIROU}" "${SYMLINK_FOLDER}/envirou"
+else
+    echo "Failed to install symlink in ${SYMLINK_FOLDER} (envirou already there?)"
 fi
 
 if [ ${INSTALLED} -eq 1 ] ; then
@@ -42,18 +62,14 @@ if [ ${INSTALLED} -eq 1 ] ; then
     echo "$ exec $SHELL"
     echo "Alternatively by executing in your current one:"
     echo "${ALIAS}"
+    echo "${SHELL_COMPLETIONS}"
 else
     echo ""
-    echo "Failed to find configuration file for shell ${SHELL} [${SHORT}]"
+    echo "Failed to find configuration file for shell ${SHELL} [${SHORT_SHELL}]"
+    echo ""
     echo "Run this and add it to your shell startup/configuration files:"
     echo ""
     echo "${ALIAS}"
-    echo ""
-    echo '... or switch to a folder in your $PATH and create a symlink:'
-    echo ""
-    echo "ln -s ${ENVIROU} ev"
-    echo ""
-    echo "Note that the symlink will not be able to change your environment"
-    echo "and therefore some of the features of envirou will not work."
+    echo "${SHELL_COMPLETIONS}"
     exit 1
 fi

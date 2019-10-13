@@ -16,6 +16,8 @@ Key hightlights:
 * Simple to customize.
 * Works on Mac / Linux using bash and zsh.  
 * Fully standalone with no dependencies - uses any python 2.7 or 3.4+ you have installed.
+* New: Command completion support for bash and zsh.
+* New: Includes [oh-my-zsh](https://ohmyz.sh/) theme.
 
 ## Quickstart
 

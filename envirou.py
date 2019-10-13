@@ -34,6 +34,13 @@ _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
 _SETTINGS_PATH_TILDE = "path_tilde"
 _NA_GROUP = "N/A"
+_BASH_COMPLETION_SCRIPT = """_envirou_completions() {
+    COMPREPLY=($(compgen -W "$(envirou --inactive-profiles 2>&1)" -- "${COMP_WORDS[${COMP_CWORD}]}"));
+};
+complete -F _envirou_completions ev;
+complete -F _envirou_completions envirou;"""
+
+_ZSH_COMPLETION_SCRIPT = """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
 
 _verbose_level = 1
 _sort_keys = True
@@ -54,7 +61,10 @@ def redirect_stdout():
 
 def shell_eval(fmt, *args, **kwargs):
     out = fmt.format(**kwargs)
-    very_verbose(" [eval] " + out, *args)
+    if _verbose_level > 1:
+        with open('envirou_shell_debug.txt', 'a') as f:
+            print(out, *args, file=f, end="")
+    very_verbose("{noformat}", noformat=" ".join([" [eval] ", out]))
     print(out, *args, file=_stdout, end="")
     _stdout.flush()
 
@@ -208,18 +218,18 @@ def read_config():
     # Read config file
     with open(config, "r") as f:
         section = "(none)"
-        for l in f.readlines():
-            raw = l.split(";")[0].split("#")[0]
-            l = raw.strip()
-            if len(l) == 0:
+        for line in f.readlines():
+            raw = line.split(";")[0].split("#")[0]
+            line = raw.strip()
+            if len(line) == 0:
                 continue
-            if l[0] == "[" and l[-1] == "]":
-                section = l[1:-1]
+            if line[0] == "[" and line[-1] == "]":
+                section = line[1:-1]
                 continue
-            if "=" in l:
-                key, value = clean_split(l)
+            if "=" in line:
+                key, value = clean_split(line)
             else:
-                key = l
+                key = line
                 value = None
 
             if section == _SECTION_SETTINGS:
@@ -241,7 +251,7 @@ def read_config():
                     ultra_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
             elif section.startswith(_SECTION_PROFILE_START):
-                profile = section[len(_SECTION_PROFILE_START):]
+                profile = section[len(_SECTION_PROFILE_START):].strip()
                 ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
                 _profiles[profile][key] = value
             else:
@@ -257,9 +267,9 @@ def read_config():
     default_file = config_filename(_DEFAULT_FILE)
     if os.path.exists(default_file):
         with open(default_file, "r") as f:
-            for l in f.readlines():
-                l = l.strip()   # Removing trailing LF
-                key, value = l.split("=", 1)
+            for line in f.readlines():
+                line = line.strip()   # Removing trailing LF
+                key, value = line.split("=", 1)
                 ultra_verbose("reading default env", key, "=", value, ".")
                 _default[key] = value
 
@@ -271,7 +281,7 @@ def add_to_config_file(lines):
         f.writelines(os.linesep.join(lines))
 
 
-def get_active_profiles():
+def get_profiles(inactive_only=False):
     result = set()
     for p in _profiles.keys():
         ultra_verbose("profile", p)
@@ -290,7 +300,8 @@ def get_active_profiles():
                     _environ.get(k, "[not found]"), v))
                 active = False
                 break
-        if active:
+        ultra_verbose("profile", p, "is", "active" if active else "not active")
+        if (active and (not inactive_only)) or ((not active) and inactive_only):
             result.add(p)
     return result
 
@@ -437,7 +448,7 @@ def new_profile(profile_name):
         return 1
 
     if profile_name in _profiles:
-        output_profiles(get_active_profiles())
+        output_profiles(get_profiles())
         output("Profile {profile_name} already exists. You need a new name.", profile_name=profile_name)
         return 1
 
@@ -497,8 +508,24 @@ def activate_all_profiles(profiles):
     return 0
 
 
-def list_active_profiles():
-    output(" ".join(sorted(get_active_profiles())))
+def list_active_profiles_colored():
+    active_color = _highlight.get(_SECTION_PROFILES, "yellow")
+    output(color_wrap(" ".join(sorted(get_profiles())), active_color))
+    return 0
+
+
+def list_profiles(inactive_only=False):
+    output(" ".join(sorted(get_profiles(inactive_only))))
+    return 0
+
+
+def bash_completions():
+    shell_eval("{noformat}", noformat=_BASH_COMPLETION_SCRIPT)
+    return 0
+
+
+def zsh_completions():
+    shell_eval("{noformat}", noformat=_ZSH_COMPLETION_SCRIPT)
     return 0
 
 
@@ -540,10 +567,18 @@ def main(arguments):
         return new_profile(arguments.new_profile)
     elif len(arguments.profile) > 0:
         return activate_all_profiles(arguments.profile)
+    elif arguments.active_profiles_colored:
+        return list_active_profiles_colored()
     elif arguments.active_profiles:
-        return list_active_profiles()
+        return list_profiles()
+    elif arguments.inactive_profiles:
+        return list_profiles(inactive_only=True)
     elif arguments.list:
         return list_groups()
+    elif arguments.zsh_completions:
+        return zsh_completions()
+    elif arguments.bash_completions:
+        return bash_completions()
 
     remaining_environ = set(_environ.keys())
     match_group = defaultdict(list)
@@ -593,7 +628,7 @@ def main(arguments):
             output_group("Groups hidden: {}  [-g NAME or --all]".format(
                 " ".join(not_displayed_group)))
 
-    active_profiles = get_active_profiles()
+    active_profiles = get_profiles()
     output_profiles(active_profiles)
 
     return 0
@@ -622,10 +657,13 @@ if __name__ == "__main__":
     profile_group.add_argument(
         "profile",
         nargs="*",
-        help="Activate profile")
+        help="Activate profile(s)")
     profile_group.add_argument(
         "-t", "--active-profiles", action="store_true",
         help="List active profiles")
+    profile_group.add_argument(
+        "-i", "--inactive-profiles", action="store_true",
+        help="List inactive profiles")
     profile_group.add_argument(
         "-p", "--profile", dest="old_profile", action="append",
         help=argparse.SUPPRESS)
@@ -659,6 +697,18 @@ if __name__ == "__main__":
     defaults.add_argument(
         "-r", "--reset-to-default", action="store_true",
         help="Reset env to default")
+
+    scripting = parser.add_argument_group(
+        "Scripting", "Helpful information for scripts")
+    scripting.add_argument(
+         "--active-profiles-colored", action="store_true",
+        help="List active profiles in color")
+    scripting.add_argument(
+        "--zsh-completions", action="store_true",
+        help="Enable zsh completions")
+    scripting.add_argument(
+        "--bash-completions", action="store_true",
+        help="Enable bash completions")
 
     args = parser.parse_args()
     _verbose_level = args.verbose - args.quiet
