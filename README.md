@@ -22,10 +22,7 @@ Key hightlights:
 ## Quickstart
 
 ```bash
-$ git clone https://github.com/sverrirab/envirou.git
-$ ./envirou/install
-$ ...
-$ ev --help     # Get information on how to use.
+$ curl -o- https://raw.githubusercontent.com/sverrirab/envirou/master/curl_install.sh | bash
 ```
 
 ## Create a new python profile
