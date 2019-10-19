@@ -14,7 +14,7 @@ clean_dir .envirou
 
 echo "Downloading Envirou..."
 cd .envirou
-curl -S -s -L -o- https://github.com/sverrirab/envirou/archive/master.tar.gz | tar x
+curl -S -s -L -o- https://github.com/sverrirab/envirou/archive/master.tar.gz | tar zx
 
 echo ""
 echo "Installing..."
