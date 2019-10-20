@@ -1,5 +1,7 @@
 # envirou - View and manage your shell environment
 
+![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
+
 Envirou (`ev`) helps you to quickly configure your shell environment.
 Stop writing `export` statemenents and maintaining custom shell scripts.
 
