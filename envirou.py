@@ -149,11 +149,15 @@ def output_key(key, maxlen, no_diff=False, password=False):
     return has_password
 
 
+def case_insensitive_sort(c):
+    return sorted(c, key=lambda s: s.lower())
+
+
 def output_profiles(active_profiles):
     def_color = _highlight.get(_SECTION_GROUPS, "magenta")
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     s = ""
-    for p in sorted(_profiles.keys()):
+    for p in case_insensitive_sort(_profiles.keys()):
         if p in active_profiles:
             s += " " + color_wrap(p, active_color)
         else:
@@ -535,12 +539,12 @@ def activate_all_profiles(profiles):
 
 def list_active_profiles_colored():
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
-    output(color_wrap(" ".join(sorted(get_profiles())), active_color))
+    output(color_wrap(" ".join(case_insensitive_sort(get_profiles())), active_color))
     return 0
 
 
 def list_profiles(inactive_only=False):
-    output(" ".join(sorted(get_profiles(inactive_only))))
+    output(" ".join(case_insensitive_sort(get_profiles(inactive_only))))
     return 0
 
 
