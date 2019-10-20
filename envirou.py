@@ -59,24 +59,24 @@ def redirect_stdout():
     sys.stdout = sys.stderr
 
 
-def shell_eval(fmt, *args, **kwargs):
+def shell_eval(fmt, *arguments, **kwargs):
     out = fmt.format(**kwargs)
     if _verbose_level > 1:
         with open('envirou_shell_debug.txt', 'a') as f:
-            print(out, *args, file=f, end="")
+            print(out, *arguments, file=f, end="")
     very_verbose("{noformat}", noformat=" ".join([" [eval] ", out]))
-    print(out, *args, file=_stdout, end="")
+    print(out, *arguments, file=_stdout, end="")
     _stdout.flush()
 
 
-def ultra_verbose(fmt, *args, **kwargs):
+def ultra_verbose(fmt, *arguments, **kwargs):
     if _verbose_level > 1:
-        output(fmt, *args, **kwargs)
+        output(fmt, *arguments, **kwargs)
 
 
-def very_verbose(fmt, *args, **kwargs):
+def very_verbose(fmt, *arguments, **kwargs):
     if _verbose_level > 0:
-        output(fmt, *args, **kwargs)
+        output(fmt, *arguments, **kwargs)
 
 
 def display_additional(s):
@@ -93,9 +93,9 @@ def expand_console_colors(s):
     return result
 
 
-def output(fmt, *args, **kwargs):
+def output(fmt, *arguments, **kwargs):
     out = expand_console_colors(fmt).format(**kwargs)
-    print(out, *args)
+    print(out, *arguments)
 
 
 def color_wrap(s, color):
@@ -703,7 +703,7 @@ if __name__ == "__main__":
     scripting = parser.add_argument_group(
         "Scripting", "Helpful information for scripts")
     scripting.add_argument(
-         "--active-profiles-colored", action="store_true",
+        "--active-profiles-colored", action="store_true",
         help="List active profiles in color")
     scripting.add_argument(
         "--zsh-completions", action="store_true",
