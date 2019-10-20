@@ -8,6 +8,9 @@ Stop writing `export` statemenents and maintaining custom shell scripts.
 Example after minimal configuration:
 ![Simple View](./screenshots/header.png)
 
+# Demo session
+
+[![asciicast](https://asciinema.org/a/hVaeBUd4zJ21LT3yRqQhvR0p8.svg)](https://asciinema.org/a/hVaeBUd4zJ21LT3yRqQhvR0p8)
 
 # Key hightlights 
 * Works with any other tool - just views and optionally sets environment variables.
