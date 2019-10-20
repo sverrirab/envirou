@@ -308,7 +308,9 @@ def get_profiles(inactive_only=False):
 
 def edit_config_file():
     if _environ.get("EDITOR", ""):
-        shell_eval("$EDITOR", config_filename(_CONFIG_FILE))
+        fn = config_filename(_CONFIG_FILE)
+        output('Editing config file: ', fn)
+        shell_eval("$EDITOR", fn)
         return 0
     else:
         output("Set your EDITOR env variable or edit file: ",
