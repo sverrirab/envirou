@@ -1,18 +1,19 @@
 # envirou - View and manage your shell environment
 
-Envirou (`ev`) helps you to quickly configure your shell environment. 
+![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
 
-Example using starting configuration:
-![Default View](./screenshots/default_view.png)
+Envirou (`ev`) helps you to quickly configure your shell environment.
+Stop writing `export` statemenents and maintaining custom shell scripts.
 
-After simple configuration changes you can use it to switch python profiles:
-![Simple Configuration](./screenshots/simple_configuration.png)
+Example after minimal configuration:
+![Simple View](./screenshots/header.png)
 
-Key hightlights: 
+
+# Key hightlights 
+* Works with any other tool - just views and optionally sets environment variables.
 * Shows instantly what profiles are active (`dev` AWS profile above).
 * Compact output (replaces $HOME with `~` and _underscores_ paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
-* Works with any other tool - just views and optionally sets environment variables.
 * Simple to customize.
 * Works on Mac / Linux using bash and zsh.  
 * Fully standalone with no dependencies - uses any python 2.7 or 3.4+ you have installed.
@@ -24,10 +25,6 @@ Key hightlights:
 ```bash
 $ curl -o- https://raw.githubusercontent.com/sverrirab/envirou/master/curl_install.sh | bash
 ```
-
-## Create a new python profile
-
-![Activate Profile](./screenshots/ev_new_profile2.png)
 
 ## Example use cases
 ### AWS configuration

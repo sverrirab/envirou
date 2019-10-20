@@ -6,14 +6,14 @@ import sys
 from collections import defaultdict
 
 _CONSOLE_COLORS = {
-    "[[c-end]]":        "\033[0m",
-    "[[c-bold]]":       "\033[1m",
-    "[[c-underline]]":  "\033[4m",
-    "[[c-red]]":        "\033[31m",
-    "[[c-green]]":      "\033[32m",
-    "[[c-yellow]]":     "\033[33m",
-    "[[c-blue]]":       "\033[34m",
-    "[[c-magenta]]":    "\033[35m",
+    "[[c-end]]": "\033[0m",
+    "[[c-bold]]": "\033[1m",
+    "[[c-underline]]": "\033[4m",
+    "[[c-red]]": "\033[31m",
+    "[[c-green]]": "\033[32m",
+    "[[c-yellow]]": "\033[33m",
+    "[[c-blue]]": "\033[34m",
+    "[[c-magenta]]": "\033[35m",
 }
 
 _CONFIG_ENV = "ENVIROU_HOME"
@@ -40,7 +40,9 @@ _BASH_COMPLETION_SCRIPT = """_envirou_completions() {
 complete -F _envirou_completions ev;
 complete -F _envirou_completions envirou;"""
 
-_ZSH_COMPLETION_SCRIPT = """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
+_ZSH_COMPLETION_SCRIPT = (
+    """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
+)
 
 _verbose_level = 1
 _sort_keys = True
@@ -62,7 +64,7 @@ def redirect_stdout():
 def shell_eval(fmt, *arguments, **kwargs):
     out = fmt.format(**kwargs)
     if _verbose_level > 1:
-        with open('envirou_shell_debug.txt', 'a') as f:
+        with open("envirou_shell_debug.txt", "a") as f:
             print(out, *arguments, file=f, end="")
     very_verbose("{noformat}", noformat=" ".join([" [eval] ", out]))
     print(out, *arguments, file=_stdout, end="")
@@ -105,8 +107,7 @@ def color_wrap(s, color):
 def output_group(group):
     if group == _NA_GROUP:
         group += display_additional(" (No Applicable group)")
-    out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS,
-                                                       "magenta"))
+    out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
     output(out, group=group)
 
 
@@ -239,9 +240,9 @@ def read_config():
                     if key == _SETTINGS_QUIET:
                         _verbose_level -= int(value)
                     elif key == _SETTINGS_SORT_KEYS:
-                        _sort_keys = (int(value) > 0)
+                        _sort_keys = int(value) > 0
                     elif key == _SETTINGS_PATH_TILDE:
-                        _use_tilde = (int(value) > 0)
+                        _use_tilde = int(value) > 0
             elif section == _SECTION_GROUPS or section == _SECTION_CUSTOM:
                 for env in value.split(","):
                     ultra_verbose(_SECTION_GROUPS, key, env)
@@ -251,7 +252,7 @@ def read_config():
                     ultra_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
             elif section.startswith(_SECTION_PROFILE_START):
-                profile = section[len(_SECTION_PROFILE_START):].strip()
+                profile = section[len(_SECTION_PROFILE_START) :].strip()
                 ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
                 _profiles[profile][key] = value
             else:
@@ -268,7 +269,7 @@ def read_config():
     if os.path.exists(default_file):
         with open(default_file, "r") as f:
             for line in f.readlines():
-                line = line.strip()   # Removing trailing LF
+                line = line.strip()  # Removing trailing LF
                 key, value = line.split("=", 1)
                 ultra_verbose("reading default env", key, "=", value, ".")
                 _default[key] = value
@@ -288,16 +289,15 @@ def get_profiles(inactive_only=False):
         ultra_verbose(" ", _profiles[p])
         active = True
         for k, v in _profiles[p].items():
-            ultra_verbose(" -> ", k, v,
-                          _environ.get(k, "[not found]"))
+            ultra_verbose(" -> ", k, v, _environ.get(k, "[not found]"))
             if v is None and k in _environ:
-                ultra_verbose(
-                    "not active (should not be there but is)")
+                ultra_verbose("not active (should not be there but is)")
                 active = False
                 break
             if v is not None and (k not in _environ or _environ[k] != v):
-                ultra_verbose("not active (not equal)".format(
-                    _environ.get(k, "[not found]"), v))
+                ultra_verbose(
+                    "not active (not equal)".format(_environ.get(k, "[not found]"), v)
+                )
                 active = False
                 break
         ultra_verbose("profile", p, "is", "active" if active else "not active")
@@ -309,12 +309,13 @@ def get_profiles(inactive_only=False):
 def edit_config_file():
     if _environ.get("EDITOR", ""):
         fn = config_filename(_CONFIG_FILE)
-        output('Editing config file: ', fn)
+        output("Editing config file: ", fn)
         shell_eval("$EDITOR", fn)
         return 0
     else:
-        output("Set your EDITOR env variable or edit file: ",
-               config_filename(_CONFIG_FILE))
+        output(
+            "Set your EDITOR env variable or edit file: ", config_filename(_CONFIG_FILE)
+        )
         return 1
 
 
@@ -333,7 +334,9 @@ def clear_default():
         os.remove(default)
         output("Default cleared")
     else:
-        output("No default environment set  {help}", help=display_additional("[-s to set]"))
+        output(
+            "No default environment set  {help}", help=display_additional("[-s to set]")
+        )
     return 0
 
 
@@ -349,7 +352,7 @@ def glob_match(glob, match):
 def changed_from_default():
     ignore_keys = set()
     for group in _groups:
-        is_no_diff = (group[0:2] == "..")
+        is_no_diff = group[0:2] == ".."
         if is_no_diff:
             ignore_keys.update(_groups[group])
 
@@ -388,15 +391,23 @@ def changed_from_default():
 
 def output_no_change_required(ignored):
     if len(ignored) == 0:
-        output("Nothing changed  {help}", help=display_additional("(run script / export VAR and run again)"))
+        output(
+            "Nothing changed  {help}",
+            help=display_additional("(run script / export VAR and run again)"),
+        )
     else:
-        output("Nothing important changed  {help}", help=display_additional("[-dv for details]"))
+        output(
+            "Nothing important changed  {help}",
+            help=display_additional("[-dv for details]"),
+        )
         very_verbose("Ignored changes in:", ", ".join(sorted(ignored)))
 
 
 def reset_to_default():
     if not _default:
-        output("No default environment set  {help}", help=display_additional("[-s to set]"))
+        output(
+            "No default environment set  {help}", help=display_additional("[-s to set]")
+        )
         return 1
 
     remove, update, add, ignored = changed_from_default()
@@ -424,7 +435,9 @@ def reset_to_default():
 
 def diff_default():
     if not _default:
-        output("No default environment set  {help}", help=display_additional("[-s to set]"))
+        output(
+            "No default environment set  {help}", help=display_additional("[-s to set]")
+        )
         return 1
 
     # add <-> remove (since we are going the other way):
@@ -434,8 +447,11 @@ def diff_default():
         output_no_change_required(ignored)
         return 0
 
-    output_group("To get from default to current env  {help}".format(
-        help=display_additional("[-n PROFILE_NAME for new profile]")))
+    output_group(
+        "To get from default to current env  {help}".format(
+            help=display_additional("[-n PROFILE_NAME for new profile]")
+        )
+    )
     for k in sorted(update + add):
         output("export {k}={v}", k=k, v=shell_quote(os.environ.get(k, "")))
     for k in sorted(remove):
@@ -446,12 +462,17 @@ def diff_default():
 
 def new_profile(profile_name):
     if not _default:
-        output("No default environment set  {help}", help=display_additional("[-s to set]"))
+        output(
+            "No default environment set  {help}", help=display_additional("[-s to set]")
+        )
         return 1
 
     if profile_name in _profiles:
         output_profiles(get_profiles())
-        output("Profile {profile_name} already exists. You need a new name.", profile_name=profile_name)
+        output(
+            "Profile {profile_name} already exists. You need a new name.",
+            profile_name=profile_name,
+        )
         return 1
 
     # add <-> remove (since we are going the other way):
@@ -475,8 +496,8 @@ def new_profile(profile_name):
 
 
 def shell_quote(s):
-    if s.find(" ") != -1 and s[0] != "\"" and s[0] != "'":
-        return "\"{}\"".format(s)   # s.replace(" ", "\\ ")
+    if s.find(" ") != -1 and s[0] != '"' and s[0] != "'":
+        return '"{}"'.format(s)  # s.replace(" ", "\\ ")
     else:
         return s
 
@@ -503,7 +524,9 @@ def activate_all_profiles(profiles):
     active_color = _highlight.get(_SECTION_PROFILES, "yellow")
     for p in profiles:
         if activate_profile(p):
-            output("Envirou profile {p} activated".format(p=color_wrap(p, active_color)))
+            output(
+                "Envirou profile {p} activated".format(p=color_wrap(p, active_color))
+            )
         else:
             output("Envirou profile {p} not found", p=p)
             return 1
@@ -539,9 +562,12 @@ def list_groups():
 
 def should_display_group(arguments, group_name):
     filter_groups = len(arguments.group) > 0
-    is_hidden = (group_name[0] == ".")
-    if arguments.all or (filter_groups and group_name in arguments.group) or (
-                not filter_groups and not is_hidden):
+    is_hidden = group_name[0] == "."
+    if (
+        arguments.all
+        or (filter_groups and group_name in arguments.group)
+        or (not filter_groups and not is_hidden)
+    ):
         return True
     return False
 
@@ -604,13 +630,15 @@ def main(arguments):
     has_hidden_password = False
     for group in sorted(match_group.keys()):
         if should_display_group(arguments, group):
-            is_no_diff = (group[0:2] == "..")
+            is_no_diff = group[0:2] == ".."
             output_group(group)
             keys = match_group[group]
             if _sort_keys:
                 keys = sorted(keys)
             for k in keys:
-                if output_key(k, maxlen, no_diff=is_no_diff, password=arguments.show_password):
+                if output_key(
+                    k, maxlen, no_diff=is_no_diff, password=arguments.show_password
+                ):
                     has_hidden_password = True
         else:
             not_displayed_group.append(group)
@@ -627,8 +655,11 @@ def main(arguments):
             output_group("Passwords hidden  [-w to show]")
 
         if len(not_displayed_group):
-            output_group("Groups hidden: {}  [-g NAME or --all]".format(
-                " ".join(not_displayed_group)))
+            output_group(
+                "Groups hidden: {}  [-g NAME or --all]".format(
+                    " ".join(not_displayed_group)
+                )
+            )
 
     active_profiles = get_profiles()
     output_profiles(active_profiles)
@@ -639,78 +670,89 @@ def main(arguments):
 if __name__ == "__main__":
     redirect_stdout()
     parser = argparse.ArgumentParser(
-        description="Manage your environment with Envirou! [ev]")
+        description="Manage your environment with Envirou! [ev]"
+    )
 
     parser.add_argument(
-        "-w", "--show-password", action="store_true",
-        help="Display passwords")
+        "-w", "--show-password", action="store_true", help="Display passwords"
+    )
     parser.add_argument(
-        "-e", "--edit", action="store_true",
-        help="Edit Envirou configuration")
+        "-e", "--edit", action="store_true", help="Edit Envirou configuration"
+    )
     parser.add_argument(
-        "-v", "--verbose", action="count", default=0,
-        help="Increase output verbosity")
+        "-v", "--verbose", action="count", default=0, help="Increase output verbosity"
+    )
     parser.add_argument(
-        "-q", "--quiet", action="count", default=0,
-        help="Suppress output verbosity")
+        "-q", "--quiet", action="count", default=0, help="Suppress output verbosity"
+    )
 
     profile_group = parser.add_argument_group(
-        "Profiles", "Environment variable profiles")
+        "Profiles", "Environment variable profiles"
+    )
+    profile_group.add_argument("profile", nargs="*", help="Activate profile(s)")
     profile_group.add_argument(
-        "profile",
-        nargs="*",
-        help="Activate profile(s)")
+        "-t", "--active-profiles", action="store_true", help="List active profiles"
+    )
     profile_group.add_argument(
-        "-t", "--active-profiles", action="store_true",
-        help="List active profiles")
+        "-i", "--inactive-profiles", action="store_true", help="List inactive profiles"
+    )
     profile_group.add_argument(
-        "-i", "--inactive-profiles", action="store_true",
-        help="List inactive profiles")
-    profile_group.add_argument(
-        "-p", "--profile", dest="old_profile", action="append",
-        help=argparse.SUPPRESS)
+        "-p", "--profile", dest="old_profile", action="append", help=argparse.SUPPRESS
+    )
 
-    groups = parser.add_argument_group(
-        "Groups", "Groups of environment variables")
+    groups = parser.add_argument_group("Groups", "Groups of environment variables")
     groups.add_argument(
-        "-a", "--all", dest="all", action="store_true",
-        help="Show all (including hidden groups)")
+        "-a",
+        "--all",
+        dest="all",
+        action="store_true",
+        help="Show all (including hidden groups)",
+    )
     groups.add_argument(
-        "-g", "--group", default=[], action="append",
-        help="Display group or groups")
+        "-g", "--group", default=[], action="append", help="Display group or groups"
+    )
     groups.add_argument(
-        "-l", "--list", dest="list", action="store_true",
-        help="List groups")
+        "-l", "--list", dest="list", action="store_true", help="List groups"
+    )
 
     defaults = parser.add_argument_group(
-        "Default env", "Compare environment with a fixed/default set")
+        "Default env", "Compare environment with a fixed/default set"
+    )
     defaults.add_argument(
-        "-s", "--set-default", action="store_true",
-        help="Set current env as default")
+        "-s", "--set-default", action="store_true", help="Set current env as default"
+    )
     defaults.add_argument(
-        "-c", "--clear-default", action="store_true",
-        help="Clear out default")
+        "-c", "--clear-default", action="store_true", help="Clear out default"
+    )
     defaults.add_argument(
-        "-d", "--diff-default", action="store_true",
-        help="Show differences from default")
+        "-d",
+        "--diff-default",
+        action="store_true",
+        help="Show differences from default",
+    )
     defaults.add_argument(
-        "-n", "--new-profile",
-        help="Create a new profile named NEW_PROFILE from differences from default")
+        "-n",
+        "--new-profile",
+        help="Create a new profile named NEW_PROFILE from differences from default",
+    )
     defaults.add_argument(
-        "-r", "--reset-to-default", action="store_true",
-        help="Reset env to default")
+        "-r", "--reset-to-default", action="store_true", help="Reset env to default"
+    )
 
     scripting = parser.add_argument_group(
-        "Scripting", "Helpful information for scripts")
+        "Scripting", "Helpful information for scripts"
+    )
     scripting.add_argument(
-        "--active-profiles-colored", action="store_true",
-        help="List active profiles in color")
+        "--active-profiles-colored",
+        action="store_true",
+        help="List active profiles in color",
+    )
     scripting.add_argument(
-        "--zsh-completions", action="store_true",
-        help="Enable zsh completions")
+        "--zsh-completions", action="store_true", help="Enable zsh completions"
+    )
     scripting.add_argument(
-        "--bash-completions", action="store_true",
-        help="Enable bash completions")
+        "--bash-completions", action="store_true", help="Enable bash completions"
+    )
 
     args = parser.parse_args()
     _verbose_level = args.verbose - args.quiet
