@@ -25,17 +25,27 @@ def envirou(args=""):
     }
     cwd = get_path()
     cmd = " ".join(["python3", "envirou.py", args])
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, cwd=cwd, env=env)
+    p = subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=0,
+        cwd=cwd,
+        env=env,
+    )
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise ExecException("Failed to execute {} [{}]: \nstdout: {}\nstderr: {}".format(
-            cmd, p.returncode, stdout.decode(), stderr.decode()))
+        raise ExecException(
+            "Failed to execute {} [{}]: \nstdout: {}\nstderr: {}".format(
+                cmd, p.returncode, stdout.decode(), stderr.decode()
+            )
+        )
 
     return stdout.decode(), stderr.decode()
 
 
 class TestFailure(unittest.TestCase):
-
     def test_simple(self):
         stdout, stderr = envirou("--help")
         self.assertEqual(0, len(stdout))
@@ -63,14 +73,14 @@ class TestFailure(unittest.TestCase):
 
     def test_profile(self):
         stdout, stderr = envirou("example")
-        self.assertFind("Profile", stderr)
+        self.assertFind("profile", stderr)
         self.assertFind("example", stderr)
         self.assertFind("activated", stderr)
         shell_cmd = sorted(stdout.split(";"))
         self.assertEqual(4, len(shell_cmd))
         self.assertEqual("", shell_cmd[0])
         self.assertEqual("export EXAMPLE_EMPTY_VARIABLE=", shell_cmd[1])
-        self.assertEqual("export EXAMPLE_OCCUPATION=\"elevator operator\"", shell_cmd[2])
+        self.assertEqual('export EXAMPLE_OCCUPATION="elevator operator"', shell_cmd[2])
         self.assertEqual("unset EXAMPLE_UNSET_VARIABLE", shell_cmd[3])
 
     def test_invalid_usage(self):
@@ -80,7 +90,11 @@ class TestFailure(unittest.TestCase):
     # Utility functions
 
     def assertFind(self, partial, full):
-        self.assertNotEqual(-1, full.find(partial), "'{}' not found in '{}'".format(partial, full))
+        self.assertNotEqual(
+            -1, full.find(partial), "'{}' not found in '{}'".format(partial, full)
+        )
 
     def assertNotFind(self, partial, full):
-        self.assertEqual(-1, full.find(partial), "'{}' found in '{}'".format(partial, full))
+        self.assertEqual(
+            -1, full.find(partial), "'{}' found in '{}'".format(partial, full)
+        )
