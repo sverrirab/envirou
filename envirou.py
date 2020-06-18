@@ -179,7 +179,7 @@ def config_filename(short):
     if os.name == "nt":
         default_prefix = os.environ.get("APPDATA", "~")
     else:
-        default_prefix = "~"
+        default_prefix = "~/.config"
     folder = os.environ.get(_CONFIG_ENV, os.path.join(default_prefix, "envirou"))
     folder = os.path.expanduser(folder)
     if not os.path.isdir(folder):
