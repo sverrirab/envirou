@@ -17,7 +17,6 @@ _CONSOLE_COLORS = {
 }
 
 _CONFIG_ENV = "ENVIROU_HOME"
-_CONFIG_PATH = "~/.config/envirou"
 _CONFIG_FILE = "config.ini"
 _CONFIG_DEFAULT_FILE = "config.default.ini"
 _DEFAULT_FILE = "default"
@@ -33,7 +32,7 @@ _CONFIG_DIFFERENCES = "differences"
 _SETTINGS_QUIET = "quiet"
 _SETTINGS_SORT_KEYS = "sort_keys"
 _SETTINGS_PATH_TILDE = "path_tilde"
-_NA_GROUP = "N/A"
+_NA_GROUP = "(no group)"
 _BASH_COMPLETION_SCRIPT = """_envirou_completions() {
     COMPREPLY=($(compgen -W "$(envirou --inactive-profiles 2>&1)" -- "${COMP_WORDS[${COMP_CWORD}]}"));
 };
@@ -67,7 +66,7 @@ def shell_eval(fmt, *arguments, **kwargs):
         with open("envirou_shell_debug.txt", "a") as f:
             print(out, *arguments, file=f, end="")
     very_verbose("{noformat}", noformat=" ".join([" [eval] ", out]))
-    print(out, *arguments, file=_stdout, end="")
+    print(out, *arguments, file=_stdout)
     _stdout.flush()
 
 
@@ -105,8 +104,6 @@ def color_wrap(s, color):
 
 
 def output_group(group):
-    if group == _NA_GROUP:
-        group += display_additional(" (No Applicable group)")
     out = color_wrap("# {group}", color=_highlight.get(_SECTION_GROUPS, "magenta"))
     output(out, group=group)
 
@@ -137,12 +134,11 @@ def output_key(key, maxlen, no_diff=False, password=False):
                     value = "*" * len(value)
         elif color == _HIGHLIGHT_PATH:
             new_value = list()
-            for i, path in enumerate(value.split(":")):
+            for i, path in enumerate(value.split(os.pathsep)):
                 if _use_tilde:
-                    home_path = os.environ.get("HOME", "")
-                    path = path.replace(home_path, "~", 1)
+                    path = os.path.expanduser(path)
                 new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
-            value = ":".join(new_value)
+            value = os.pathsep.join(new_value)
         else:
             fmt = color_wrap(fmt, color)
     output(prefix + fmt, key=key, value=expand_console_colors(value), maxlen=maxlen)
@@ -180,7 +176,11 @@ def config_filename(short):
     :param short: short name
     :return: Get full path to config filename.
     """
-    folder = os.environ.get(_CONFIG_ENV, _CONFIG_PATH)
+    if os.name == "nt":
+        default_prefix = os.environ.get("APPDATA", "~")
+    else:
+        default_prefix = "~/.config"
+    folder = os.environ.get(_CONFIG_ENV, os.path.join(default_prefix, "envirou"))
     folder = os.path.expanduser(folder)
     if not os.path.isdir(folder):
         very_verbose("Creating configuration folder:", folder)
@@ -299,9 +299,7 @@ def get_profiles(inactive_only=False):
                 active = False
                 break
             if v is not None and (k not in _environ or _environ[k] != v):
-                ultra_verbose(
-                    "not active (not equal)".format(_environ.get(k, "[not found]"), v)
-                )
+                ultra_verbose("not active (not equal)")
                 active = False
                 break
         ultra_verbose("profile", p, "is", "active" if active else "not active")
@@ -314,7 +312,7 @@ def edit_config_file():
     if _environ.get("EDITOR", ""):
         fn = config_filename(_CONFIG_FILE)
         output("Editing config file: ", fn)
-        shell_eval("$EDITOR", fn)
+        shell_eval(_environ["EDITOR"], fn)
         return 0
     else:
         output(
@@ -347,7 +345,7 @@ def clear_default():
 def glob_match(glob, match):
     if glob == match:
         return True
-    if glob[-1] == "*":
+    if len(glob) > 0 and glob[-1] == "*":
         if match.startswith(glob[:-1]):
             return True
     return False
@@ -456,11 +454,9 @@ def diff_default():
             help=display_additional("[-n PROFILE_NAME for new profile]")
         )
     )
-    for k in sorted(update + add):
-        output("export {k}={v}", k=k, v=shell_quote(os.environ.get(k, "")))
-    for k in sorted(remove):
-        output("unset {k}", k=k)
-
+    for k in sorted(update + add + remove):
+        output(set_env_variable_command(k, os.environ.get(k)))
+ 
     return 0
 
 
@@ -501,17 +497,24 @@ def new_profile(profile_name):
 
 def shell_quote(s):
     if s.find(" ") != -1 and s[0] != '"' and s[0] != "'":
-        return '"{}"'.format(s)  # s.replace(" ", "\\ ")
+        return '"{}"'.format(s)
     else:
         return s
 
 
 def set_env_variable(k, v):
     ultra_verbose("set_env_variable", k, v)
-    if v is None:
-        shell_eval("unset {k};", k=k)
-    else:
-        shell_eval("export {k}={v};", k=k, v=shell_quote(v))
+    shell_eval(set_env_variable_command(k, v))
+    
+    
+def set_env_variable_command(k, v):
+    if os.name == 'posix':
+        if v is None:
+            return "unset {k}".format(k=k)
+        else:
+            return "export {k}={v}".format(k=k, v=shell_quote(v))
+    else:  # nt
+        return "set {k}={v}".format(k=k, v=v or "")
 
 
 def activate_profile(p):

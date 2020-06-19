@@ -76,7 +76,7 @@ class TestFailure(unittest.TestCase):
         self.assertFind("profile", stderr)
         self.assertFind("example", stderr)
         self.assertFind("activated", stderr)
-        shell_cmd = sorted(stdout.split(";"))
+        shell_cmd = sorted(stdout.split("\n"))
         self.assertEqual(4, len(shell_cmd))
         self.assertEqual("", shell_cmd[0])
         self.assertEqual("export EXAMPLE_EMPTY_VARIABLE=", shell_cmd[1])
