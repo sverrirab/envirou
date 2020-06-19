@@ -20,13 +20,26 @@ Example after minimal configuration:
 * Simple to customize.
 * Works on Mac / Linux using bash and zsh.  
 * Fully standalone with no dependencies - uses any python 2.7 or 3.4+ you have installed.
-* New: Command completion support for bash and zsh.
-* New: Includes [oh-my-zsh](https://ohmyz.sh/) theme.
+* Command completion support for bash and zsh.
+* Includes [oh-my-zsh](https://ohmyz.sh/) theme.
+* New: Windows support.
 
 ## Quickstart
 
+### Using Mac OS X or Linux
+
 ```bash
 $ curl -o- https://raw.githubusercontent.com/sverrirab/envirou/master/curl_install.sh | bash
+```
+
+### Using Windows
+
+1) Make sure you have python installed (`py` should work, 3.7+ recommended).
+1) Download the [zip file](https://github.com/sverrirab/envirou/archive/master.zip) (or do git checkout).
+3) Extract the zip file and open a shell in that folder.
+
+```cmd
+> echo @%CD%\envirou.bat %* > <tools-folder-on-path>\ev.bat 
 ```
 
 ## Example use cases
