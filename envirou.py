@@ -510,9 +510,9 @@ def set_env_variable(k, v):
 def set_env_variable_command(k, v):
     if os.name == 'posix':
         if v is None:
-            return "unset {k}".format(k=k)
+            return "unset {k};".format(k=k)
         else:
-            return "export {k}={v}".format(k=k, v=shell_quote(v))
+            return "export {k}={v};".format(k=k, v=shell_quote(v))
     else:  # nt
         return "set {k}={v}".format(k=k, v=v or "")
 
