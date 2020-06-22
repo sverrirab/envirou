@@ -79,9 +79,9 @@ class TestFailure(unittest.TestCase):
         shell_cmd = sorted(stdout.split("\n"))
         self.assertEqual(4, len(shell_cmd))
         self.assertEqual("", shell_cmd[0])
-        self.assertEqual("export EXAMPLE_EMPTY_VARIABLE=", shell_cmd[1])
-        self.assertEqual('export EXAMPLE_OCCUPATION="elevator operator"', shell_cmd[2])
-        self.assertEqual("unset EXAMPLE_UNSET_VARIABLE", shell_cmd[3])
+        self.assertEqual("export EXAMPLE_EMPTY_VARIABLE=;", shell_cmd[1])
+        self.assertEqual('export EXAMPLE_OCCUPATION="elevator operator";', shell_cmd[2])
+        self.assertEqual("unset EXAMPLE_UNSET_VARIABLE;", shell_cmd[3])
 
     def test_invalid_usage(self):
         with self.assertRaises(ExecException):
