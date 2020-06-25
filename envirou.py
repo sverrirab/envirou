@@ -223,8 +223,10 @@ def read_config():
     with open(config, "r") as f:
         section = "(none)"
         for line in f.readlines():
-            raw = line.split(";")[0].split("#")[0]
-            line = raw.strip()
+            line = line.strip()
+            if len(line) == 0 or line[0] == ";" or line[0] == "#":
+                continue
+            line = line.split(" ;", 1)[0].split(" #")[0].strip()
             if len(line) == 0:
                 continue
             if line[0] == "[" and line[-1] == "]":
