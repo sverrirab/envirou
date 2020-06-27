@@ -41,8 +41,9 @@ complete -F _envirou_completions envirou;"""
 _ZSH_COMPLETION_SCRIPT = (
     """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
 )
-_CONFIG_ESCAPES_REQUIRED=[("\\", "\\\\"), ("\r", "\\r"), ("\n", "\\n"), ("\t", "\\t")]
-_POSIX_ESCAPES_REQUIRED=[("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""), ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")]
+_CONFIG_ESCAPES_REQUIRED="\\\r\n\t"
+_POSIX_ESCAPES_REQUIRED="\\$`\"\n\r\t"
+_ESCAPE_PAIRS=[("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""), ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")]
 _verbose_level = 1
 _sort_keys = True
 _use_tilde = True
@@ -171,15 +172,44 @@ def clean_split(s, sep="="):
     return k.strip(), v.strip()
 
 
-def escape(s, reverse, escape_pairs):
-    if s is not None:
-        for a, b in escape_pairs:
-            if reverse:
-                s = s.replace(b, a)
-            else:
-                s = s.replace(a, b)
-    return s
+def escape(s, reverse, escapes_required):
+    if s is None:
+        return s
+    result = []
+    if reverse:
+        got_escape = False
+        for c in s:
+            if got_escape:
+                for a, b in _ESCAPE_PAIRS:
+                    print("checking", repr(a), repr(b), repr(c))
+                    if c == b[1]:
+                        print("found pair:", repr(a), repr(b))
+                        result.append(a)
+                        got_escape = False
+                        continue                    
+                if got_escape:
+                    result.extend(["\\", c])
+                    got_escape = False
+                    continue
 
+            if c == "\\":
+                print("found escape")
+                got_escape = True
+                continue
+            result.append(c)
+        if got_escape:
+            result.append("\\")
+    else:
+        for c in s:
+            if c in escapes_required:
+                for a, b in _ESCAPE_PAIRS:
+                    if c == a:
+                        result.append(b)
+                        continue
+            else:
+                result.append(c)
+    return "".join(result)
+    
 
 def escape_config(s, reverse=False):
     return escape(s, reverse, _CONFIG_ESCAPES_REQUIRED)
@@ -218,6 +248,7 @@ def read_environ():
             try:
                 k, v = clean_split(line)
                 _environ[k] = escape_shell(v, reverse=True)
+                ultra_verbose(repr(k), " == ", repr(_environ[k]))
             except ValueError:
                 ultra_verbose("Malformed env (linefeed in values?)")
 
@@ -310,13 +341,13 @@ def get_profiles(inactive_only=False):
         ultra_verbose(" ", _profiles[p])
         active = True
         for k, v in _profiles[p].items():
-            ultra_verbose(" -> ", k, v, _environ.get(k, "[not found]"))
+            ultra_verbose(" -> ", repr(k), repr(v), repr(_environ.get(k, "[not found]")))
             if v is None and k in _environ:
                 ultra_verbose("not active (should not be there but is)")
                 active = False
                 break
             if v is not None and (k not in _environ or _environ[k] != v):
-                ultra_verbose("not active (not equal)")
+                ultra_verbose("not active (not equal)", repr(_environ.get(k)), repr(v))
                 active = False
                 break
         ultra_verbose("profile", p, "is", "active" if active else "not active")
