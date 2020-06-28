@@ -224,7 +224,18 @@ def config_filename(short):
 
 def read_environ():
     global _environ
-    _environ = os.environ
+    _environ = {}
+    if sys.stdin.isatty():
+        for k, v in os.environ.items():
+            _environ[k] = escape_config(v, reverse=True)
+    else:
+        for line in sys.stdin.readlines():
+            output("Parsing env line:" + line)
+            try:
+                k, v = clean_split(line)
+                _environ[k] = v
+            except ValueError:
+                ultra_verbose("Malformed env (linefeed in values?)")
 
 
 def read_config():
@@ -279,7 +290,7 @@ def read_config():
                     _highlight[env.strip()] = key
             elif section.startswith(_SECTION_PROFILE_START):
                 profile = section[len(_SECTION_PROFILE_START):].strip()
-                ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
+                ultra_verbose(_SECTION_PROFILE_START, profile, key, value, repr(escape_config(value, reverse=True)))
                 _profiles[profile][key] = escape_config(value, reverse=True)
             else:
                 very_verbose("Ignoring config item:", section, key, value)
