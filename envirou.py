@@ -43,7 +43,10 @@ _ZSH_COMPLETION_SCRIPT = (
 )
 _CONFIG_ESCAPES_REQUIRED = "\\\r\n\t"
 _POSIX_ESCAPES_REQUIRED = "\\$`\"\n\r\t"
-_ESCAPE_PAIRS = [("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""), ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")]
+_ESCAPE_PAIRS = [
+    ("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""),
+    ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")
+]
 _verbose_level = 1
 _sort_keys = True
 _use_tilde = True
@@ -221,17 +224,7 @@ def config_filename(short):
 
 def read_environ():
     global _environ
-    if sys.stdin.isatty():
-        _environ = os.environ
-    else:
-        for line in sys.stdin.readlines():
-            ultra_verbose("Parsing env line:", line)
-            try:
-                k, v = clean_split(line)
-                _environ[k] = escape_shell(v, reverse=True)
-                ultra_verbose(repr(k), " == ", repr(_environ[k]))
-            except ValueError:
-                ultra_verbose("Malformed env (linefeed in values?)")
+    _environ = os.environ
 
 
 def read_config():
@@ -285,7 +278,7 @@ def read_config():
                     ultra_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
             elif section.startswith(_SECTION_PROFILE_START):
-                profile = section[len(_SECTION_PROFILE_START) :].strip()
+                profile = section[len(_SECTION_PROFILE_START):].strip()
                 ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
                 _profiles[profile][key] = escape_config(value, reverse=True)
             else:
@@ -305,7 +298,7 @@ def read_config():
                 line = line.strip()  # Removing trailing LF
                 key, value = line.split("=", 1)
                 ultra_verbose("reading default env", key, "=", value, ".")
-                _default[key] = value
+                _default[key] = escape_config(value, reverse=True)
 
 
 def add_to_config_file(lines):
@@ -354,7 +347,7 @@ def save_default():
     default = config_filename(_DEFAULT_FILE)
     with open(default, "w") as f:
         for k in sorted(_environ.keys()):
-            f.write("{}={}\n".format(k, _environ.get(k)))
+            f.write("{}={}\n".format(k, escape_config(_environ.get(k))))
     output("Current environment set as default")
     return 0
 
