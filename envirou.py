@@ -41,9 +41,9 @@ complete -F _envirou_completions envirou;"""
 _ZSH_COMPLETION_SCRIPT = (
     """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
 )
-_CONFIG_ESCAPES_REQUIRED="\\\r\n\t"
-_POSIX_ESCAPES_REQUIRED="\\$`\"\n\r\t"
-_ESCAPE_PAIRS=[("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""), ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")]
+_CONFIG_ESCAPES_REQUIRED = "\\\r\n\t"
+_POSIX_ESCAPES_REQUIRED = "\\$`\"\n\r\t"
+_ESCAPE_PAIRS = [("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""), ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")]
 _verbose_level = 1
 _sort_keys = True
 _use_tilde = True
@@ -177,28 +177,9 @@ def escape(s, reverse, escapes_required):
         return s
     result = []
     if reverse:
-        got_escape = False
-        for c in s:
-            if got_escape:
-                for a, b in _ESCAPE_PAIRS:
-                    print("checking", repr(a), repr(b), repr(c))
-                    if c == b[1]:
-                        print("found pair:", repr(a), repr(b))
-                        result.append(a)
-                        got_escape = False
-                        continue                    
-                if got_escape:
-                    result.extend(["\\", c])
-                    got_escape = False
-                    continue
-
-            if c == "\\":
-                print("found escape")
-                got_escape = True
-                continue
-            result.append(c)
-        if got_escape:
-            result.append("\\")
+        for a, b in _ESCAPE_PAIRS:
+            s = s.replace(b, a)
+        return s
     else:
         for c in s:
             if c in escapes_required:
@@ -208,7 +189,7 @@ def escape(s, reverse, escapes_required):
                         continue
             else:
                 result.append(c)
-    return "".join(result)
+        return "".join(result)
     
 
 def escape_config(s, reverse=False):
