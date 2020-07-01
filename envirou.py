@@ -238,7 +238,10 @@ def read_environ():
     _environ = {}
     if sys.stdin.isatty():
         for k, v in os.environ.items():
-            _environ[k] = escape_config(v, reverse=True)
+            if os.name == "posix":
+                _environ[k] = escape_config(v, reverse=True)
+            else:
+                _environ[k] = v
     else:
         for line in sys.stdin.readlines():
             output("Parsing env line:" + line)
@@ -310,7 +313,7 @@ def read_config():
         for p in sorted(_profiles.keys()):
             ultra_verbose("profile", p)
             for k, v in _profiles[p].items():
-                ultra_verbose("  {k}={v}", k=k, v=escape_config(v))
+                ultra_verbose("  {k}={v}", k=k, v=repr(v))
 
     # Read default environment file
     default_file = config_filename(_DEFAULT_FILE)
