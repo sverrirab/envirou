@@ -82,20 +82,33 @@ class TestFailure(unittest.TestCase):
         self.assertEqual(6, len(shell_cmd))
         self.assertEqual("", shell_cmd[0])
         self.assertEqual('export EXAMPLE_EMPTY_VARIABLE="";', shell_cmd[1])
-        self.assertEqual('export EXAMPLE_ESCAPED="#;\\n\\t\\r\\\\*\\$~\'\\`=\\\"";', shell_cmd[2])
-        self.assertEqual('export EXAMPLE_OCCUPATION="elevator operator";', shell_cmd[3])
-        self.assertEqual('export EXAMPLE_WINDOWS="c:\\\\";', shell_cmd[4])
+        self.assertEqual('export EXAMPLE_OCCUPATION="elevator operator";', shell_cmd[2])
+        self.assertEqual('export EXAMPLE_WINDOWS="c:\\\\test\\\\with\\ttab\\\\";', shell_cmd[3])
+        self.assertEqual('export EXAMPLE_Z_ESCAPED="#;\\n\\t\\r\\\\*\\$~\'\\`=\\\"";', shell_cmd[4])
         self.assertEqual("unset EXAMPLE_UNSET_VARIABLE;", shell_cmd[5])
 
     def test_invalid_usage(self):
         with self.assertRaises(ExecException):
             run_envirou("--invalid")
 
-    def test_escape_shell(self):
-        self.assertEqual("hello", envirou.escape_shell(envirou.escape_shell("hello"), reverse=True))
-        self.assertEqual("hello\\nworld", envirou.escape_shell("hello\nworld"))
-        self.assertEqual("hello\nworld", envirou.escape_shell("hello\\nworld", reverse=True))
-        self.assertEqual("hello\nworld", envirou.escape_shell(envirou.escape_shell("hello\nworld"), reverse=True))
+    def test_escape_config(self):
+        # two characters <-> 4 characters
+        self.assertEqual("\\\\\\t", envirou.escape_config("\\\t"))  
+        self.assertEqual("\\\t", envirou.escape_config("\\\\\\t", reverse=True))
+
+        self.assertEqual("hello\\\\world\\ttab", envirou.escape_config("hello\\world\ttab"))
+        self.assertEqual("hello\\world\ttab", envirou.escape_config("hello\\\\world\\ttab", reverse=True))
+
+    def test_escape_posix_shell(self):
+        self.assertEqual("hello world", envirou.escape_posix_shell("hello world", reverse=True))
+        self.assertEqual("\\t", envirou.escape_posix_shell("\\\\t", reverse=True))
+        self.assertEqual("\\\\t", envirou.escape_posix_shell(envirou.escape_posix_shell("\\\\t", reverse=True)))
+        self.assertEqual("\\\t", envirou.escape_posix_shell(envirou.escape_posix_shell("\\\t"), reverse=True))
+        self.assertEqual("hello", envirou.escape_posix_shell(envirou.escape_posix_shell("hello"), reverse=True))
+        self.assertEqual("hello\\\\tabs", envirou.escape_posix_shell("hello\\tabs"))
+        self.assertEqual("hello\nworld", envirou.escape_posix_shell("hello\\nworld", reverse=True))
+        self.assertEqual("hello\nworld", envirou.escape_posix_shell(envirou.escape_posix_shell("hello\nworld"), reverse=True))
+        self.assertEqual("hello\nworld", envirou.escape_posix_shell("hello\\nworld", reverse=True))
 
     # Utility functions
 

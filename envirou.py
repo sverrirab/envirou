@@ -180,26 +180,37 @@ def escape(s, reverse, escapes_required):
         return s
     result = []
     if reverse:
-        for a, b in _ESCAPE_PAIRS:
-            s = s.replace(b, a)
-        return s
+        skip_next = False
+        for i, c in enumerate(s):
+            if skip_next:
+                skip_next = False
+                continue
+            if c == "\\" and i + 1 < len(s):
+                match = s[i:i+2]
+                for a, b in _ESCAPE_PAIRS:
+                    if b == match:
+                        result.append(a)
+                        skip_next = True
+                        break
+            else:
+                result.append(c)
     else:
         for c in s:
             if c in escapes_required:
                 for a, b in _ESCAPE_PAIRS:
                     if c == a:
                         result.append(b)
-                        continue
+                        break
             else:
                 result.append(c)
-        return "".join(result)
+    return "".join(result)
     
 
 def escape_config(s, reverse=False):
     return escape(s, reverse, _CONFIG_ESCAPES_REQUIRED)
 
 
-def escape_shell(s, reverse=False):
+def escape_posix_shell(s, reverse=False):
     return escape(s, reverse, _POSIX_ESCAPES_REQUIRED)
 
 
@@ -538,7 +549,7 @@ def set_env_variable_command(k, v):
         if v is None:
             return "unset {k};".format(k=k)
         else:
-            return "export {k}=\"{v}\";".format(k=k, v=escape_shell(v))
+            return "export {k}=\"{v}\";".format(k=k, v=escape_posix_shell(v))
     else:  # nt
         return "set {k}={v}".format(k=k, v=v or "")
 
