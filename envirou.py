@@ -41,7 +41,12 @@ complete -F _envirou_completions envirou;"""
 _ZSH_COMPLETION_SCRIPT = (
     """compdef '_values $(envirou --inactive-profiles 2>&1)' ev; compdef envirou=ev;"""
 )
-
+_CONFIG_ESCAPES_REQUIRED = "\\\r\n\t"
+_POSIX_ESCAPES_REQUIRED = "\\$`\"\n\r\t"
+_ESCAPE_PAIRS = [
+    ("\\", "\\\\"), ("$", "\\$"), ("`", "\\`"), ("\"", "\\\""),
+    ("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")
+]
 _verbose_level = 1
 _sort_keys = True
 _use_tilde = True
@@ -170,6 +175,45 @@ def clean_split(s, sep="="):
     return k.strip(), v.strip()
 
 
+def escape(s, reverse, escapes_required):
+    if s is None:
+        return s
+    result = []
+    if reverse:
+        skip_next = False
+        for i, c in enumerate(s):
+            if skip_next:
+                skip_next = False
+                continue
+            if c == "\\" and i + 1 < len(s):
+                match = s[i:i+2]
+                for a, b in _ESCAPE_PAIRS:
+                    if b == match:
+                        result.append(a)
+                        skip_next = True
+                        break
+            else:
+                result.append(c)
+    else:
+        for c in s:
+            if c in escapes_required:
+                for a, b in _ESCAPE_PAIRS:
+                    if c == a:
+                        result.append(b)
+                        break
+            else:
+                result.append(c)
+    return "".join(result)
+    
+
+def escape_config(s, reverse=False):
+    return escape(s, reverse, _CONFIG_ESCAPES_REQUIRED)
+
+
+def escape_posix_shell(s, reverse=False):
+    return escape(s, reverse, _POSIX_ESCAPES_REQUIRED)
+
+
 def config_filename(short):
     """
     :param short: short name
@@ -191,11 +235,16 @@ def config_filename(short):
 
 def read_environ():
     global _environ
+    _environ = {}
     if sys.stdin.isatty():
-        _environ = os.environ
+        for k, v in os.environ.items():
+            if os.name == "posix":
+                _environ[k] = escape_config(v, reverse=True)
+            else:
+                _environ[k] = v
     else:
         for line in sys.stdin.readlines():
-            ultra_verbose("Parsing env line:", line)
+            output("Parsing env line:" + line)
             try:
                 k, v = clean_split(line)
                 _environ[k] = v
@@ -223,9 +272,8 @@ def read_config():
     with open(config, "r") as f:
         section = "(none)"
         for line in f.readlines():
-            raw = line.split(";")[0].split("#")[0]
-            line = raw.strip()
-            if len(line) == 0:
+            line = line.strip()
+            if len(line) == 0 or line[0] == ";" or line[0] == "#":
                 continue
             if line[0] == "[" and line[-1] == "]":
                 section = line[1:-1]
@@ -255,9 +303,9 @@ def read_config():
                     ultra_verbose(_SECTION_HIGHLIGHT, env, key)
                     _highlight[env.strip()] = key
             elif section.startswith(_SECTION_PROFILE_START):
-                profile = section[len(_SECTION_PROFILE_START) :].strip()
-                ultra_verbose(_SECTION_PROFILE_START, profile, key, value)
-                _profiles[profile][key] = value
+                profile = section[len(_SECTION_PROFILE_START):].strip()
+                ultra_verbose(_SECTION_PROFILE_START, profile, key, value, repr(escape_config(value, reverse=True)))
+                _profiles[profile][key] = escape_config(value, reverse=True)
             else:
                 very_verbose("Ignoring config item:", section, key, value)
 
@@ -265,7 +313,7 @@ def read_config():
         for p in sorted(_profiles.keys()):
             ultra_verbose("profile", p)
             for k, v in _profiles[p].items():
-                ultra_verbose("  {k}={v}", k=k, v=v)
+                ultra_verbose("  {k}={v}", k=k, v=repr(v))
 
     # Read default environment file
     default_file = config_filename(_DEFAULT_FILE)
@@ -275,14 +323,14 @@ def read_config():
                 line = line.strip()  # Removing trailing LF
                 key, value = line.split("=", 1)
                 ultra_verbose("reading default env", key, "=", value, ".")
-                _default[key] = value
+                _default[key] = escape_config(value, reverse=True)
 
 
 def add_to_config_file(lines):
     config = config_filename(_CONFIG_FILE)
     very_verbose("Adding to config file:\n" + "\n".join(lines))
     with open(config, "a") as f:
-        f.writelines(os.linesep.join(lines))
+        f.writelines("\n".join(lines))
 
 
 def get_profiles(inactive_only=False):
@@ -292,13 +340,13 @@ def get_profiles(inactive_only=False):
         ultra_verbose(" ", _profiles[p])
         active = True
         for k, v in _profiles[p].items():
-            ultra_verbose(" -> ", k, v, _environ.get(k, "[not found]"))
+            ultra_verbose(" -> ", repr(k), repr(v), repr(_environ.get(k, "[not found]")))
             if v is None and k in _environ:
                 ultra_verbose("not active (should not be there but is)")
                 active = False
                 break
             if v is not None and (k not in _environ or _environ[k] != v):
-                ultra_verbose("not active (not equal)")
+                ultra_verbose("not active (not equal)", repr(_environ.get(k)), repr(v))
                 active = False
                 break
         ultra_verbose("profile", p, "is", "active" if active else "not active")
@@ -324,7 +372,7 @@ def save_default():
     default = config_filename(_DEFAULT_FILE)
     with open(default, "w") as f:
         for k in sorted(_environ.keys()):
-            f.write("{}={}\n".format(k, _environ.get(k)))
+            f.write("{}={}\n".format(k, escape_config(_environ.get(k))))
     output("Current environment set as default")
     return 0
 
@@ -487,18 +535,11 @@ def new_profile(profile_name):
         if k in remove:
             lines.append("{k}".format(k=k))
         else:
-            lines.append("{k}={v}".format(k=k, v=os.environ.get(k, "")))
+            lines.append("{k}={v}".format(k=k, v=escape_config(os.environ.get(k, ""))))
     add_to_config_file(lines)
 
     output("Profile {profile} created", profile=profile_name)
     return 0
-
-
-def shell_quote(s):
-    if s.find(" ") != -1 and s[0] != '"' and s[0] != "'":
-        return '"{}"'.format(s)
-    else:
-        return s
 
 
 def set_env_variable(k, v):
@@ -511,7 +552,7 @@ def set_env_variable_command(k, v):
         if v is None:
             return "unset {k};".format(k=k)
         else:
-            return "export {k}={v};".format(k=k, v=shell_quote(v))
+            return "export {k}=\"{v}\";".format(k=k, v=escape_posix_shell(v))
     else:  # nt
         return "set {k}={v}".format(k=k, v=v or "")
 
