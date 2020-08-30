@@ -137,10 +137,11 @@ def output_key(key, maxlen, no_diff=False, password=False):
                 else:
                     value = "*" * len(value)
         elif color == _HIGHLIGHT_PATH:
+            user_path = os.path.expanduser('~')
             new_value = list()
             for i, path in enumerate(value.split(os.pathsep)):
                 if _use_tilde:
-                    path = os.path.expanduser(path)
+                    path = path.replace(user_path, '~')
                 new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
             value = os.pathsep.join(new_value)
         else:
