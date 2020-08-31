@@ -2,25 +2,32 @@
 
 ![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
 
-Envirou (`ev`) helps you to quickly view and configure your shell environment.  Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment!
+Envirou (`ev`) helps you to quickly view and configure your shell 
+ environment. Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment or guessing which one is active!
+ 
 
-Example after minimal configuration:
 ![Simple View](./screenshots/header.png)
 
-# Demo session
-
-[![asciicast](https://asciinema.org/a/hVaeBUd4zJ21LT3yRqQhvR0p8.svg)](https://asciinema.org/a/hVaeBUd4zJ21LT3yRqQhvR0p8)
 
 # Key hightlights 
 * Works with any other tool - just views and optionally sets environment variables.
-* Shows instantly what profiles are active (`dev` AWS profile above).
 * Compact output (replaces $HOME with `~` and _underscores_ paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
-* Simple to customize.
-* Works on Mac / Linux using bash and zsh and on Windows.  
+* Fully customizable.
+* Works on Mac + Linux (bash + zsh) and Windows.  
 * Fully standalone with no dependencies except any python 2.7 or 3.4+ you have installed.
-* Command completion support for bash and zsh.
+* Command completion support (bash + zsh).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme.
+
+
+## Why?
+Everyone that works with complex infrastructure or multiple development environments from the command line know the feeling of using the wrong toolchain or environment and having the nagging suspicion that you have mixed something up in your configuration. Classical examples 
+are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments
+etc etc.
+
+Most tools have some way of switching between environments but that has two problems - you have to learn the idiosyncrasies of each one and often it is very opaque what configuration is currently in effect.
+Most tools are configurable using environment variables and Envirou allows you to quickly switch and display what configuration is currently effect.
+
 
 ## Quickstart
 
@@ -84,16 +91,8 @@ AWS_PROFILE=prod
 AWS_PROFILE=dev
 ```
 
-## Why?
-Everyone that works with complex infrastructure from the command line has gathered dozens and
-sometimes hundreds of files that manipulate your command line environment.  Classical examples 
-are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments
-etc etc.
 
-There are two basic problems with this: firstly you are having to memorize a bunch of script 
-names and secondly you are never 100% which environment is active at any point and in which 
-shell window.
- 
+## Where does the name come from? 
 The name Envirou is inspired by Spirou the comic book character.  
 The alias `ev` is both short for *Envirou* and `env`. 
 
