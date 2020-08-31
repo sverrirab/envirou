@@ -2,8 +2,7 @@
 
 ![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
 
-Envirou (`ev`) helps you to quickly configure your shell environment.
-Stop writing `export` statemenents and maintaining custom shell scripts.
+Envirou (`ev`) helps you to quickly view and configure your shell environment.  Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment!
 
 Example after minimal configuration:
 ![Simple View](./screenshots/header.png)
@@ -18,11 +17,10 @@ Example after minimal configuration:
 * Compact output (replaces $HOME with `~` and _underscores_ paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
 * Simple to customize.
-* Works on Mac / Linux using bash and zsh.  
-* Fully standalone with no dependencies - uses any python 2.7 or 3.4+ you have installed.
+* Works on Mac / Linux using bash and zsh and on Windows.  
+* Fully standalone with no dependencies except any python 2.7 or 3.4+ you have installed.
 * Command completion support for bash and zsh.
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme.
-* New: Windows support.
 
 ## Quickstart
 
@@ -96,9 +94,6 @@ There are two basic problems with this: firstly you are having to memorize a bun
 names and secondly you are never 100% which environment is active at any point and in which 
 shell window.
  
-Tools such as zsh (oh-my-zsh) and shell prompt configuration but those are fragile and 
-complicated to set up and add clutter to your terminal session window.
-
 The name Envirou is inspired by Spirou the comic book character.  
 The alias `ev` is both short for *Envirou* and `env`. 
 
