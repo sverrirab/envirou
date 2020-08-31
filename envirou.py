@@ -112,41 +112,44 @@ def output_group(group):
     output(out, group=group)
 
 
-def output_key(key, maxlen, no_diff=False, password=False):
+def output_key(key, maxlen, no_diff=False, password=False, unformatted=False):
     has_password = False
     fmt = "{key:<{maxlen}} {value}"
     value = os.environ.get(key, "")
     prefix = ""
-    if _default:
-        prefix = "  "
-        if (key in _default and value != _default[key]) or key not in _default:
-            if not no_diff:
-                diff_color = _highlight.get(_CONFIG_DIFFERENCES, "red")
-                prefix = color_wrap("* ", color=diff_color)
-            else:
-                prefix = "* "
-    if key in _highlight:
-        color = _highlight.get(key)
-        if color == _HIGHLIGHT_PASSWORD:
-            if not password:
-                has_password = True
-                if len(value) >= 16:
-                    # Display last four digits of keys.
-                    mask = "*" * (len(value) - 4)
-                    value = mask + value[-4:]
+    if unformatted:
+        output(key + "=" + value)
+    else:
+        if _default:
+            prefix = "  "
+            if (key in _default and value != _default[key]) or key not in _default:
+                if not no_diff:
+                    diff_color = _highlight.get(_CONFIG_DIFFERENCES, "red")
+                    prefix = color_wrap("* ", color=diff_color)
                 else:
-                    value = "*" * len(value)
-        elif color == _HIGHLIGHT_PATH:
-            user_path = os.path.expanduser('~')
-            new_value = list()
-            for i, path in enumerate(value.split(os.pathsep)):
-                if _use_tilde:
-                    path = path.replace(user_path, '~')
-                new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
-            value = os.pathsep.join(new_value)
-        else:
-            fmt = color_wrap(fmt, color)
-    output(prefix + fmt, key=key, value=expand_console_colors(value), maxlen=maxlen)
+                    prefix = "* "
+        if key in _highlight:
+            color = _highlight.get(key)
+            if color == _HIGHLIGHT_PASSWORD:
+                if not password:
+                    has_password = True
+                    if len(value) >= 16:
+                        # Display last four digits of keys.
+                        mask = "*" * (len(value) - 4)
+                        value = mask + value[-4:]
+                    else:
+                        value = "*" * len(value)
+            elif color == _HIGHLIGHT_PATH:
+                user_path = os.path.expanduser('~')
+                new_value = list()
+                for i, path in enumerate(value.split(os.pathsep)):
+                    if _use_tilde:
+                        path = path.replace(user_path, '~')
+                    new_value.append(color_wrap(path, "end" if i % 2 == 0 else "underline"))
+                value = os.pathsep.join(new_value)
+            else:
+                fmt = color_wrap(fmt, color)
+        output(prefix + fmt, key=key, value=expand_console_colors(value), maxlen=maxlen)
     return has_password
 
 
@@ -685,7 +688,7 @@ def main(arguments):
                 keys = sorted(keys)
             for k in keys:
                 if output_key(
-                    k, maxlen, no_diff=is_no_diff, password=arguments.show_password
+                    k, maxlen, no_diff=is_no_diff, password=arguments.show_password, unformatted=args.unformatted
                 ):
                     has_hidden_password = True
         else:
@@ -723,6 +726,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-w", "--show-password", action="store_true", help="Display passwords"
+    )
+    parser.add_argument(
+        "-u", "--unformatted", action="store_true", help="Display without fancy formatting"
     )
     parser.add_argument(
         "-e", "--edit", action="store_true", help="Edit Envirou configuration"
