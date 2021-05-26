@@ -94,3 +94,6 @@ ENV/
 # temporary files
 tmp
 *.tmp
+
+# golang version
+./envirou
