@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/sverrirab/envirou/util"
+	"github.com/sverrirab/envirou/pkg/util"
 	"github.com/zieckey/goini"
 )
 

@@ -5,12 +5,13 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/sverrirab/envirou/config"
-	"github.com/sverrirab/envirou/util"
+	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/util"
 )
 
 var verbose bool
 var debug bool
+var group string
 
 func init() {
 	const (
@@ -22,18 +23,18 @@ func init() {
 	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
 	flag.BoolVar(&verbose, "v", verboseDefault, verboseDescription)
 	flag.BoolVar(&debug, "debug", debugDefault, debugDescription)
+
+	flag.StringVar(&group, "group", "", "groups!!")
 }
 
 func main() {
-
-	//var svar string
-	//flag.StringVar(&svar, "svar", "bar", "a string var")
 
 	flag.Parse()
 
 	if debug {
 		util.Printlnf("verbose: %v", verbose)
 		util.Printlnf("debug: %v", verbose)
+		util.Printlnf("group: %v", group)
 		util.Printlnf("tail: %v", flag.Args())
 	}
 
