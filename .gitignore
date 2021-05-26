@@ -96,4 +96,4 @@ tmp
 *.tmp
 
 # golang version
-./envirou
+/envirou
