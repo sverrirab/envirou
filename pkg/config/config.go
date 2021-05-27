@@ -12,18 +12,16 @@ type Configuration struct {
 	Groups    map[string]util.Patterns
 }
 
-func ReadConfiguration() (*Configuration, error) {
+func ReadConfiguration(configPath string) (*Configuration, error) {
 	configuration := &Configuration{
-		Quiet:     true,
-		SortKeys:  true,
-		PathTilde: true,
+		Quiet:     false,
+		SortKeys:  false,
+		PathTilde: false,
 		Groups:    make(map[string]util.Patterns),
 	}
 	ini := goini.New()
-	configPath := GetDefaultConfigFilePath()
 	err := ini.ParseFile(configPath)
 	if err != nil {
-		util.Printlnf("Missing configfile? [%s]", configPath, err.Error())
 		err := WriteDefaultConfigFile(configPath)
 		if err != nil {
 			util.Printlnf("Writing config file failed [%s]", err.Error())
@@ -42,10 +40,14 @@ func ReadConfiguration() (*Configuration, error) {
 
 	// Groups
 	groups, ok := ini.GetKvmap("groups")
-	util.Printlnf("groups: %v", groups)
 	if ok {
 		for k, v := range groups {
-			util.Printlnf("group %s -> %s", k, v)
+			configuration.Groups[k] = *util.ParsePatterns(v)
+		}
+	}
+	custom, ok := ini.GetKvmap("custom")
+	if ok {
+		for k, v := range custom {
 			configuration.Groups[k] = *util.ParsePatterns(v)
 		}
 	}

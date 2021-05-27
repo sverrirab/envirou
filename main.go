@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/state"
 	"github.com/sverrirab/envirou/pkg/util"
 )
 
@@ -38,9 +39,8 @@ func main() {
 		util.Printlnf("tail: %v", flag.Args())
 	}
 
-	env, keys := util.ParseEnvironment(os.Environ())
-
-	cfg, err := config.ReadConfiguration()
+	env := state.NewEnvirou(os.Environ())
+	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
 	if err != nil {
 		util.Printlnf("Failed to read config file: %v", err)
 		os.Exit(3)
@@ -53,7 +53,7 @@ func main() {
 
 	yellow := color.New(color.FgYellow).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
-	for _, key := range keys {
+	for _, key := range env.SortedKeys {
 		if len(flag.Args()) == 1 {
 			pattern := flag.Args()[0]
 			if util.Match(key, util.Pattern(pattern)) {
@@ -62,7 +62,7 @@ func main() {
 				util.Printlnf("No match %s vs %s", pattern, key)
 			}
 		} else {
-			util.Printf("%s -> %s\t", yellow(key), red(env[key]))
+			util.Printf("%s -> %s\t", yellow(key), red(env.Env[key]))
 			matchAny := false
 			for group, patterns := range cfg.Groups {
 				if util.MatchAny(key, &patterns) {
