@@ -39,44 +39,44 @@ func main() {
 	flag.Parse()
 
 	if debug {
-		util.Printlnf("verbose: %v", verbose)
-		util.Printlnf("debug: %v", verbose)
-		util.Printlnf("group: %v", group)
-		util.Printlnf("tail: %v", flag.Args())
+		util.Printf("verbose: %v\n", verbose)
+		util.Printf("debug: %v\n", verbose)
+		util.Printf("group: %v\n", group)
+		util.Printf("tail: %v\n", flag.Args())
 	}
 
 	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
 	if err != nil {
-		util.Printlnf("Failed to read config file: %v", err)
+		util.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
 	}
 	if debug {
-		util.Printlnf("quiet: %v", cfg.Quiet)
-		util.Printlnf("sort_keys: %v", cfg.SortKeys)
-		util.Printlnf("path_tilde: %v", cfg.PathTilde)
+		util.Printf("quiet: %v\n", cfg.Quiet)
+		util.Printf("sort_keys: %v\n", cfg.SortKeys)
+		util.Printf("path_tilde: %v\n", cfg.PathTilde)
 	}
 
 	env := state.NewEnvirou(os.Environ())
 
 	//displayGroups := 
 	magenta := color.New(color.FgHiMagenta).SprintfFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintfFunc()
+	red := color.New(color.FgRed).SprintfFunc()
 	if listGroups {
 		for _, group := range cfg.GroupsSorted {
-			util.Printlnf(magenta("# %s", group))
+			util.Printf(magenta("# %s\n", group))
 		}
 	} else {
 		for _, key := range env.SortedKeys {
 			if len(flag.Args()) == 1 {
 				pattern := flag.Args()[0]
 				if util.Match(key, util.Pattern(pattern)) {
-					util.Printlnf("Matched %s vs %s", pattern, key)
+					util.Printf("Matched %s vs %s\n", pattern, key)
 				} else {
-					util.Printlnf("No match %s vs %s", pattern, key)
+					util.Printf("No match %s vs %s\n", pattern, key)
 				}
 			} else {
-				util.Printf("%s -> %s\t", yellow(key), red(env.Env[key]))
+				util.Printf("%s -> %s\t\n", yellow(key), red(env.Env[key]))
 				matchAny := false
 				for group, patterns := range cfg.Groups {
 					if util.MatchAny(key, &patterns) {
@@ -87,7 +87,7 @@ func main() {
 				if !matchAny {
 					util.Printf(" - NO MATCH - ")
 				}
-				util.Printlnf("")
+				util.Printf("\n")
 			}
 		}
 	}

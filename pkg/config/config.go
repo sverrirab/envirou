@@ -3,6 +3,7 @@ package config
 import (
 	"sort"
 
+	"github.com/sverrirab/envirou/pkg/ini"
 	"github.com/sverrirab/envirou/pkg/util"
 )
 
@@ -12,6 +13,7 @@ type Configuration struct {
 	PathTilde    bool
 	Groups       map[string]util.Patterns
 	GroupsSorted []string
+	
 }
 
 func ReadConfiguration(configPath string) (*Configuration, error) {
@@ -22,32 +24,30 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 		Groups:       make(map[string]util.Patterns),
 		GroupsSorted: make([]string, 0, 10),
 	}
-	ini, err := util.NewIni(configPath)
+	config, err := ini.NewIni(configPath)
 	if err != nil {
 		err := WriteDefaultConfigFile(configPath)
 		if err != nil {
-			util.Printlnf("Writing config file failed [%s]", err.Error())
 			return configuration, err
 		}
 		// Read again now that we have written the default file
-		ini, err = util.NewIni(configPath)
+		config, err = ini.NewIni(configPath)
 		if err != nil {
-			util.Printlnf("Parsing of %s failed [%s]", configPath, err.Error())
 			return configuration, err
 		}
 	}
-	configuration.Quiet = ini.GetBool("settings", "quiet", false)
-	configuration.SortKeys = ini.GetBool("settings", "sort_keys", true)
-	configuration.PathTilde = ini.GetBool("settings", "path_tilde", true)
+	configuration.Quiet = config.GetBool("settings", "quiet", false)
+	configuration.SortKeys = config.GetBool("settings", "sort_keys", true)
+	configuration.PathTilde = config.GetBool("settings", "path_tilde", true)
 
 	// Groups
-	groups:= ini.GetAllVariables("groups")
+	groups:= config.GetAllVariables("groups")
 	for _, k := range groups {
-		configuration.Groups[k] = *util.ParsePatterns(ini.GetString("groups", k, ""))
+		configuration.Groups[k] = *util.ParsePatterns(config.GetString("groups", k, ""))
 	}
-	custom := ini.GetAllVariables("custom")
+	custom := config.GetAllVariables("custom")
 	for _, k := range custom {
-		configuration.Groups[k] = *util.ParsePatterns(ini.GetString("custom", k, ""))
+		configuration.Groups[k] = *util.ParsePatterns(config.GetString("custom", k, ""))
 	}
 	// Create sorted list of groups
 	for k := range configuration.Groups {

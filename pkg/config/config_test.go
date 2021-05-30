@@ -58,7 +58,6 @@ func TestReadConfig(t *testing.T) {
 	if len(config.Groups) != 3 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
-
 }
 
 func TestReadDefault(t *testing.T) {
