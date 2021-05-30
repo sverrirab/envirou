@@ -6,7 +6,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/config"
-	"github.com/sverrirab/envirou/pkg/state"
 	"github.com/sverrirab/envirou/pkg/util"
 )
 
@@ -14,6 +13,7 @@ var verbose bool
 var debug bool
 var group string
 var listGroups bool
+// var listProfiles bool
 
 func init() {
 	const (
@@ -30,7 +30,8 @@ func init() {
 	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
 	flag.BoolVar(&debug, "debug", debugDefault, debugDescription)
 
-	flag.StringVar(&group, "group", "", "groups!!")
+	flag.StringVar(&group, "groups", "", "groups!!")
+	// flag.StringVar(&listProfiles, "profiles", "", "groups!!")
 	// --dry-run for shell code?
 }
 
@@ -56,18 +57,23 @@ func main() {
 		util.Printf("path_tilde: %v\n", cfg.PathTilde)
 	}
 
-	env := state.NewEnvirou(os.Environ())
+	baseEnv := util.NewProfile()
+	baseEnv.MergeStrings(os.Environ())
 
-	//displayGroups := 
 	magenta := color.New(color.FgHiMagenta).SprintfFunc()
 	yellow := color.New(color.FgYellow).SprintfFunc()
 	red := color.New(color.FgRed).SprintfFunc()
+	green := color.New(color.FgGreen).SprintfFunc()
+	util.Printf("GROUPS: %v\n", cfg.Groups)
 	if listGroups {
 		for _, group := range cfg.GroupsSorted {
 			util.Printf(magenta("# %s\n", group))
 		}
+		for profileName, profile := range cfg.Profiles {
+			util.Printf(green("# %s [%v]\n", profileName, profile))
+		}
 	} else {
-		for _, key := range env.SortedKeys {
+		for _, key := range baseEnv.SortedNames(false) {
 			if len(flag.Args()) == 1 {
 				pattern := flag.Args()[0]
 				if util.Match(key, util.Pattern(pattern)) {
@@ -76,7 +82,8 @@ func main() {
 					util.Printf("No match %s vs %s\n", pattern, key)
 				}
 			} else {
-				util.Printf("%s -> %s\t\n", yellow(key), red(env.Env[key]))
+				value, _ := baseEnv.Get(key)
+				util.Printf("%s -> %s\t", yellow(key), red(value))
 				matchAny := false
 				for group, patterns := range cfg.Groups {
 					if util.MatchAny(key, &patterns) {

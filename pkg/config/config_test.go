@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -21,23 +20,22 @@ two= FIRST, SECOND,
 [custom]
 tree= UNO, *DOS*, TRES
 
-[profile:foo]
+[ Profile:foo]
 ONE=one
 TWO=first second
-THREE=
+THREE
 ; TODO: FOUR
 FIVE= magic 
 
 `
 
-func TestReadConfig(t *testing.T) {
+func readTestConfig(t *testing.T, stringConfig string) *Configuration {
 	file, err := ioutil.TempFile("", "config")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("file.Name(): %v", file)
 	defer os.Remove(file.Name())
-	_, err = file.WriteString(testConfig)
+	_, err = file.WriteString(stringConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,6 +44,11 @@ func TestReadConfig(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
+	return config 
+}
+
+func TestReadConfig(t *testing.T) {
+	config := readTestConfig(t, testConfig)
 	if config.Quiet != true {
 		t.Error("Quiet should be true")
 	}
@@ -85,4 +88,32 @@ func TestReadDefault(t *testing.T) {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
 	os.Remove(file.Name())
+}
+
+func validateProfileValue(t *testing.T, config *Configuration, profile string, entry string, expectedValue string) {
+	p := config.Profiles[profile]
+	value, ok := p.Get(entry)
+	if ! ok {
+		t.Errorf("Missing entry %s in profile %s", entry, profile)
+	}
+	if value != expectedValue {
+		t.Errorf("Entry %s in profile %s - wrong value %s != %s", entry, profile, expectedValue, value)
+	}
+}
+
+func validateProfileNil(t *testing.T, config *Configuration, profile string, entry string, expectedNil bool) {
+	p := config.Profiles[profile]
+	isNil := p.GetNil(entry)
+	if expectedNil != isNil {
+		t.Errorf("Entry %s in profile %s - wrong value %v != %v", entry, profile, expectedNil, isNil)
+	}
+}
+
+func TestProfile(t *testing.T) {
+	config := readTestConfig(t, testConfig)
+
+	validateProfileValue(t, config, "foo", "ONE", "one")
+	validateProfileValue(t, config, "foo", "TWO", "first second")
+	validateProfileNil(t, config, "foo", "THREE", true)
+	validateProfileNil(t, config, "foo", "NOT-THREE", false)
 }

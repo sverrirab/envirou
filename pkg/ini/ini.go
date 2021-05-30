@@ -33,7 +33,7 @@ func NewIni(path string) (*IniFile, error) {
 		return nil, err
 	}
 	lines := bytes.Split(b, []byte{'\n'})
-	section_name := "_" // Default section name
+	sectionName := "_" // Default section name
 	for _, line := range lines {
 		line := bytes.TrimSpace(line)
 		if len(line) == 0 {
@@ -47,27 +47,27 @@ func NewIni(path string) (*IniFile, error) {
 		}
 		if first_char == '[' && line[len(line)-1] == ']' {
 			// Section header
-			section_name = string(bytes.TrimSpace(line[1 : len(line)-1]))
+			sectionName = string(bytes.TrimSpace(line[1 : len(line)-1]))
 			continue
 		}
 		split := bytes.SplitN(line, []byte{'='}, 2)
-		var_name := string(bytes.TrimSpace(split[0]))
-		var_type := typeNil
-		var_value := ""
+		varName := string(bytes.TrimSpace(split[0]))
+		varType := typeNil
+		varValue := ""
 		if len(split) == 2 {
-			var_value = string(bytes.TrimSpace(split[1]))
-			if len(var_value) == 0 {
-				var_type = typeEmpty
+			varValue = string(bytes.TrimSpace(split[1]))
+			if len(varValue) == 0 {
+				varType = typeEmpty
 			} else {
-				var_type = typeString
+				varType = typeString
 			}
 		}
-		section, ok := ini.sections[section_name]
+		section, ok := ini.sections[sectionName]
 		if !ok {
 			section = Section{variables: make(map[string]Variable)}
-			ini.sections[section_name] = section
+			ini.sections[sectionName] = section
 		}
-		section.variables[var_name] = Variable{varType: var_type, value: var_value}
+		section.variables[varName] = Variable{varType: varType, value: varValue}
 	}
 	return &ini, nil
 }
