@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"testing"
-
-	"github.com/sverrirab/envirou/pkg/util"
 )
 
 const testConfig = `
@@ -32,7 +30,6 @@ FIVE= magic
 
 `
 
-
 func TestReadConfig(t *testing.T) {
 	file, err := ioutil.TempFile("", "config")
 	if err != nil {
@@ -46,7 +43,6 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	config, err := ReadConfiguration(file.Name())
-	util.Printlnf("%v", config)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
@@ -62,4 +58,32 @@ func TestReadConfig(t *testing.T) {
 	if len(config.Groups) != 3 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
+
+}
+
+func TestReadDefault(t *testing.T) {
+	file, err := ioutil.TempFile("", "config")
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.Remove(file.Name())
+
+	// Deleted temp file so it does not exist - this should create the file:
+	config, err := ReadConfiguration(file.Name())
+	if err != nil {
+		t.Error("Failed to read configuration")
+	}
+	if config.Quiet != false {
+		t.Error("Quiet should be false")
+	}
+	if config.SortKeys != true {
+		t.Error("SortKeys should be true")
+	}
+	if config.PathTilde != true {
+		t.Error("PathTilde should be false")
+	}
+	if len(config.Groups) != 10 {
+		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
+	}
+	os.Remove(file.Name())
 }
