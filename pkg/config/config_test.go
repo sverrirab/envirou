@@ -27,10 +27,11 @@ tree= UNO, *DOS*, TRES
 ONE=one
 TWO=first second
 THREE=
-FOUR
+; TODO: FOUR
 FIVE= magic 
 
 `
+
 
 func TestReadConfig(t *testing.T) {
 	file, err := ioutil.TempFile("", "config")
@@ -55,7 +56,7 @@ func TestReadConfig(t *testing.T) {
 	if config.SortKeys != false {
 		t.Error("SortKeys should be false")
 	}
-	if config.PathTilde != false {
+	if config.PathTilde != true {
 		t.Error("PathTilde should be false")
 	}
 	if len(config.Groups) != 3 {

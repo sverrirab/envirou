@@ -46,6 +46,8 @@ func main() {
 	}
 
 	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
+	iniFile, err := util.NewIni(config.GetDefaultConfigFilePath())
+	util.Printf("INI: %v", iniFile)
 	if err != nil {
 		util.Printlnf("Failed to read config file: %v", err)
 		os.Exit(3)

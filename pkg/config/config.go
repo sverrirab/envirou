@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/sverrirab/envirou/pkg/util"
-	"github.com/zieckey/goini"
 )
 
 type Configuration struct {
@@ -23,8 +22,7 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 		Groups:       make(map[string]util.Patterns),
 		GroupsSorted: make([]string, 0, 10),
 	}
-	ini := goini.New()
-	err := ini.ParseFile(configPath)
+	ini, err := util.NewIni(configPath)
 	if err != nil {
 		err := WriteDefaultConfigFile(configPath)
 		if err != nil {
@@ -32,31 +30,27 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 			return configuration, err
 		}
 		// Read again now that we have written the default file
-		err = ini.ParseFile(configPath)
+		ini, err = util.NewIni(configPath)
 		if err != nil {
 			util.Printlnf("Parsing of %s failed [%s]", configPath, err.Error())
 			return configuration, err
 		}
 	}
-	configuration.Quiet, _ = ini.SectionGetBool("settings", "quiet")
-	configuration.SortKeys, _ = ini.SectionGetBool("settings", "sort_keys")
-	configuration.PathTilde, _ = ini.SectionGetBool("settings", "path_tilde")
+	configuration.Quiet = ini.GetBool("settings", "quiet", false)
+	configuration.SortKeys = ini.GetBool("settings", "sort_keys", true)
+	configuration.PathTilde = ini.GetBool("settings", "path_tilde", true)
 
 	// Groups
-	groups, ok := ini.GetKvmap("groups")
-	if ok {
-		for k, v := range groups {
-			configuration.Groups[k] = *util.ParsePatterns(v)
-		}
+	groups:= ini.GetAllVariables("groups")
+	for _, k := range groups {
+		configuration.Groups[k] = *util.ParsePatterns(ini.GetString("groups", k, ""))
 	}
-	custom, ok := ini.GetKvmap("custom")
-	if ok {
-		for k, v := range custom {
-			configuration.Groups[k] = *util.ParsePatterns(v)
-		}
+	custom := ini.GetAllVariables("custom")
+	for _, k := range custom {
+		configuration.Groups[k] = *util.ParsePatterns(ini.GetString("custom", k, ""))
 	}
 	// Create sorted list of groups
-	for k, _ := range configuration.Groups {
+	for k := range configuration.Groups {
 		configuration.GroupsSorted = append(configuration.GroupsSorted, k)
 	}
 	sort.Strings(configuration.GroupsSorted)
