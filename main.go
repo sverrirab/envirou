@@ -13,19 +13,25 @@ import (
 var verbose bool
 var debug bool
 var group string
+var listGroups bool
 
 func init() {
 	const (
-		verboseDefault     = false
-		verboseDescription = "Increase output verbosity"
-		debugDefault       = false
-		debugDescription   = "Output debug information"
+		listGroupsDefault     = false
+		listGroupsDescription = "List group names"
+		verboseDefault        = false
+		verboseDescription    = "Increase output verbosity"
+		debugDefault          = false
+		debugDescription      = "Output debug information"
 	)
-	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
+	flag.BoolVar(&listGroups, "l", listGroupsDefault, listGroupsDescription)
+	flag.BoolVar(&listGroups, "list", listGroupsDefault, listGroupsDescription)
 	flag.BoolVar(&verbose, "v", verboseDefault, verboseDescription)
+	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
 	flag.BoolVar(&debug, "debug", debugDefault, debugDescription)
 
 	flag.StringVar(&group, "group", "", "groups!!")
+	// --dry-run for shell code?
 }
 
 func main() {
@@ -39,7 +45,6 @@ func main() {
 		util.Printlnf("tail: %v", flag.Args())
 	}
 
-	env := state.NewEnvirou(os.Environ())
 	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
 	if err != nil {
 		util.Printlnf("Failed to read config file: %v", err)
@@ -51,29 +56,39 @@ func main() {
 		util.Printlnf("path_tilde: %v", cfg.PathTilde)
 	}
 
+	env := state.NewEnvirou(os.Environ())
+
+	//displayGroups := 
+	magenta := color.New(color.FgHiMagenta).SprintfFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
-	for _, key := range env.SortedKeys {
-		if len(flag.Args()) == 1 {
-			pattern := flag.Args()[0]
-			if util.Match(key, util.Pattern(pattern)) {
-				util.Printlnf("Matched %s vs %s", pattern, key)
-			} else {
-				util.Printlnf("No match %s vs %s", pattern, key)
-			}
-		} else {
-			util.Printf("%s -> %s\t", yellow(key), red(env.Env[key]))
-			matchAny := false
-			for group, patterns := range cfg.Groups {
-				if util.MatchAny(key, &patterns) {
-					util.Printf("%s,\t", yellow(group))
-					matchAny = true
+	if listGroups {
+		for _, group := range cfg.GroupsSorted {
+			util.Printlnf(magenta("# %s", group))
+		}
+	} else {
+		for _, key := range env.SortedKeys {
+			if len(flag.Args()) == 1 {
+				pattern := flag.Args()[0]
+				if util.Match(key, util.Pattern(pattern)) {
+					util.Printlnf("Matched %s vs %s", pattern, key)
+				} else {
+					util.Printlnf("No match %s vs %s", pattern, key)
 				}
+			} else {
+				util.Printf("%s -> %s\t", yellow(key), red(env.Env[key]))
+				matchAny := false
+				for group, patterns := range cfg.Groups {
+					if util.MatchAny(key, &patterns) {
+						util.Printf("%s,\t", yellow(group))
+						matchAny = true
+					}
+				}
+				if !matchAny {
+					util.Printf(" - NO MATCH - ")
+				}
+				util.Printlnf("")
 			}
-			if !matchAny {
-				util.Printf(" - NO MATCH - ")
-			}
-			util.Printlnf("")
 		}
 	}
 }

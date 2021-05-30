@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/sverrirab/envirou/pkg/util"
 )
 
 const testConfig = `
@@ -22,6 +24,12 @@ two= FIRST, SECOND,
 tree= UNO, *DOS*, TRES
 
 [profile:foo]
+ONE=one
+TWO=first second
+THREE=
+FOUR
+FIVE= magic 
+
 `
 
 func TestReadConfig(t *testing.T) {
@@ -37,6 +45,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	config, err := ReadConfiguration(file.Name())
+	util.Printlnf("%v", config)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}

@@ -98,3 +98,6 @@ tmp
 # golang version
 /envirou
 /c.out
+
+# visual studio code
+.vscode
