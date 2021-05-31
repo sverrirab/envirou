@@ -27,7 +27,7 @@ func MatchAny(s string, patterns *Patterns) bool {
 	return false
 }
 
-// Match Simple glob macher where pattern can be *PATTERN, *PATTERN* or PATTERN*
+// Match Simple glob macher where pattern can be PATTERN, *PATTERN, *PATTERN* or PATTERN*
 func Match(s string, p Pattern) bool {
 	pattern := string(p)
 	if pattern == "" {

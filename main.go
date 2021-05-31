@@ -13,19 +13,22 @@ var verbose bool
 var debug bool
 var group string
 var listGroups bool
-// var listProfiles bool
+var listProfiles bool
 
 func init() {
 	const (
-		listGroupsDefault     = false
-		listGroupsDescription = "List group names"
-		verboseDefault        = false
-		verboseDescription    = "Increase output verbosity"
-		debugDefault          = false
-		debugDescription      = "Output debug information"
+		listGroupsDefault       = false
+		listGroupsDescription   = "List group names"
+		listProfilesDefault     = false
+		listProfilesDescription = "List profile names"
+		verboseDefault          = false
+		verboseDescription      = "Increase output verbosity"
+		debugDefault            = false
+		debugDescription        = "Output debug information"
 	)
 	flag.BoolVar(&listGroups, "l", listGroupsDefault, listGroupsDescription)
 	flag.BoolVar(&listGroups, "list", listGroupsDefault, listGroupsDescription)
+	flag.BoolVar(&listProfiles, "profiles", listProfilesDefault, listProfilesDescription)
 	flag.BoolVar(&verbose, "v", verboseDefault, verboseDescription)
 	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
 	flag.BoolVar(&debug, "debug", debugDefault, debugDescription)
@@ -60,41 +63,50 @@ func main() {
 	baseEnv := util.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
 
-	magenta := color.New(color.FgHiMagenta).SprintfFunc()
+	magenta := color.New(color.FgMagenta).SprintfFunc()
 	yellow := color.New(color.FgYellow).SprintfFunc()
-	red := color.New(color.FgRed).SprintfFunc()
+	// red := color.New(color.FgRed).SprintfFunc()
+	//red := color.New(color.FgBlue).SprintfFunc()
+	hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
 	green := color.New(color.FgGreen).SprintfFunc()
-	util.Printf("GROUPS: %v\n", cfg.Groups)
 	if listGroups {
 		for _, group := range cfg.GroupsSorted {
 			util.Printf(magenta("# %s\n", group))
 		}
+	} else if listProfiles {
 		for profileName, profile := range cfg.Profiles {
 			util.Printf(green("# %s [%v]\n", profileName, profile))
 		}
 	} else {
-		for _, key := range baseEnv.SortedNames(false) {
-			if len(flag.Args()) == 1 {
-				pattern := flag.Args()[0]
-				if util.Match(key, util.Pattern(pattern)) {
-					util.Printf("Matched %s vs %s\n", pattern, key)
-				} else {
-					util.Printf("No match %s vs %s\n", pattern, key)
-				}
-			} else {
-				value, _ := baseEnv.Get(key)
-				util.Printf("%s -> %s\t", yellow(key), red(value))
-				matchAny := false
-				for group, patterns := range cfg.Groups {
-					if util.MatchAny(key, &patterns) {
-						util.Printf("%s,\t", yellow(group))
-						matchAny = true
+		sortedEnv := baseEnv.SortedNames(false)
+		matched := make(map[string]string, len(sortedEnv))
+		for _, group := range cfg.GroupsSorted {
+			if group[0] != '.' {
+				headerDisplayed := false
+				patterns := cfg.Groups[group]
+				for _, env := range sortedEnv {
+					if util.MatchAny(env, &patterns) {
+						if !headerDisplayed {
+							util.Printf(magenta("# %s\n", group))
+							headerDisplayed = true
+						}
+						value, _ := baseEnv.Get(env)
+						util.Printf("  %s=%s\n", green(env), yellow(value))
+						matched[env] = value
 					}
 				}
-				if !matchAny {
-					util.Printf(" - NO MATCH - ")
+			}
+		}
+		headerDisplayed := false
+		for _, env := range sortedEnv {
+			_, found := matched[env]
+			if ! found {
+				if !headerDisplayed {
+					util.Printf(hiMagenta("# %s\n", "not matched"))
+					headerDisplayed = true
 				}
-				util.Printf("\n")
+				value, _ := baseEnv.Get(env)
+				util.Printf("  %s=%s\n", green(env), yellow(value))
 			}
 		}
 	}

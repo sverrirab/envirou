@@ -12,7 +12,7 @@ type Configuration struct {
 	Quiet        bool
 	SortKeys     bool
 	PathTilde    bool
-	Groups       map[string]util.Patterns
+	Groups       util.Groups
 	GroupsSorted []string
 	Profiles     map[string]util.Profile
 }
