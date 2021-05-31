@@ -70,7 +70,7 @@ func main() {
 	hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
 	green := color.New(color.FgGreen).SprintfFunc()
 	if listGroups {
-		for _, group := range cfg.GroupsSorted {
+		for _, group := range cfg.Groups.GetAllNames() {
 			util.Printf(magenta("# %s\n", group))
 		}
 	} else if listProfiles {
@@ -80,12 +80,15 @@ func main() {
 	} else {
 		sortedEnv := baseEnv.SortedNames(false)
 		matched := make(map[string]string, len(sortedEnv))
-		for _, group := range cfg.GroupsSorted {
+		for _, group := range cfg.Groups.GetAllNames() {
 			if group[0] != '.' {
 				headerDisplayed := false
-				patterns := cfg.Groups[group]
+				patterns, found := cfg.Groups.GetPatterns(group)
+				if !found {
+					continue
+				}
 				for _, env := range sortedEnv {
-					if util.MatchAny(env, &patterns) {
+					if util.MatchAny(env, patterns) {
 						if !headerDisplayed {
 							util.Printf(magenta("# %s\n", group))
 							headerDisplayed = true
@@ -100,7 +103,7 @@ func main() {
 		headerDisplayed := false
 		for _, env := range sortedEnv {
 			_, found := matched[env]
-			if ! found {
+			if !found {
 				if !headerDisplayed {
 					util.Printf(hiMagenta("# %s\n", "not matched"))
 					headerDisplayed = true

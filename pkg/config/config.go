@@ -1,7 +1,6 @@
 package config
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/ini"
@@ -13,7 +12,6 @@ type Configuration struct {
 	SortKeys     bool
 	PathTilde    bool
 	Groups       util.Groups
-	GroupsSorted []string
 	Profiles     map[string]util.Profile
 }
 
@@ -22,8 +20,7 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 		Quiet:        false,
 		SortKeys:     false,
 		PathTilde:    false,
-		Groups:       make(map[string]util.Patterns),
-		GroupsSorted: make([]string, 0, 10),
+		Groups:       make(util.Groups),
 		Profiles:     make(map[string]util.Profile),
 	}
 	config, err := ini.NewIni(configPath)
@@ -45,17 +42,12 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 	// Groups
 	groups := config.GetAllVariables("groups")
 	for _, k := range groups {
-		configuration.Groups[k] = *util.ParsePatterns(config.GetString("groups", k, ""))
+		configuration.Groups.ParseAndAdd(k, config.GetString("groups", k, ""))
 	}
 	custom := config.GetAllVariables("custom")
 	for _, k := range custom {
-		configuration.Groups[k] = *util.ParsePatterns(config.GetString("custom", k, ""))
+		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""))
 	}
-	// Create sorted list of groups
-	for k := range configuration.Groups {
-		configuration.GroupsSorted = append(configuration.GroupsSorted, k)
-	}
-	sort.Strings(configuration.GroupsSorted)
 
 	sections := config.GetAllSections()
 	for _, section := range sections {
