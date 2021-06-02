@@ -1,8 +1,10 @@
 package util
 
-import "sort"
-
-// import "strings"
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
 
 type Groups map[string]Patterns
 
@@ -31,4 +33,13 @@ func (groups *Groups) GetAllNames() []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func (groups Groups) String() string {
+	names := groups.GetAllNames()
+	result := make([]string, 0, len(names))
+	for _, name := range names {
+		result = append(result, fmt.Sprintf("%s=%s", name, groups[name]))
+	}
+	return strings.Join(result, " | ")
 }

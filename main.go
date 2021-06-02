@@ -54,9 +54,11 @@ func main() {
 		os.Exit(3)
 	}
 	if debug {
-		util.Printf("quiet: %v\n", cfg.Quiet)
-		util.Printf("sort_keys: %v\n", cfg.SortKeys)
-		util.Printf("path_tilde: %v\n", cfg.PathTilde)
+		util.Printf("quiet: %t\n", cfg.Quiet)
+		util.Printf("sort_keys: %t\n", cfg.SortKeys)
+		util.Printf("path_tilde: %t\n", cfg.PathTilde)
+		util.Printf("groups: %s\n", cfg.Groups)
+		util.Printf("profiles: %s\n", cfg.Profiles)
 	}
 
 	baseEnv := util.NewProfile()

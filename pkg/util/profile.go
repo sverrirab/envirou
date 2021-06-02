@@ -38,6 +38,7 @@ func (profile *Profile) GetNil(name string) bool {
 	return ok
 }
 
+// SortedNames gets names in sorted order
 func (profile *Profile) SortedNames(includeNil bool) []string {
 	keys := make([]string, 0, len(profile.env) + len(profile.isNil))
 	for k := range profile.env {
@@ -84,4 +85,8 @@ func (profile *Profile) MergeStrings(envList []string) {
 			profile.SetNil(pair[0])
 		}
 	}
+}
+
+func (profile Profile) String() string {
+	return strings.Join(profile.SortedNames(true), ",")
 }
