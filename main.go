@@ -11,30 +11,30 @@ import (
 
 var verbose bool
 var debug bool
-var group string
 var listGroups bool
 var listProfiles bool
+var showAllGroups bool
+var showGroup string
+
+func addBoolFlag(p *bool, names []string, value bool, usage string) {
+	for _, name := range names {
+		flag.BoolVar(p, name, value, usage)
+	}
+}
+
+func addStrFlag(p *string, names []string, value string, usage string) {
+	for _, name := range names {
+		flag.StringVar(p, name, value, usage)
+	}
+}
 
 func init() {
-	const (
-		listGroupsDefault       = false
-		listGroupsDescription   = "List group names"
-		listProfilesDefault     = false
-		listProfilesDescription = "List profile names"
-		verboseDefault          = false
-		verboseDescription      = "Increase output verbosity"
-		debugDefault            = false
-		debugDescription        = "Output debug information"
-	)
-	flag.BoolVar(&listGroups, "l", listGroupsDefault, listGroupsDescription)
-	flag.BoolVar(&listGroups, "list", listGroupsDefault, listGroupsDescription)
-	flag.BoolVar(&listProfiles, "profiles", listProfilesDefault, listProfilesDescription)
-	flag.BoolVar(&verbose, "v", verboseDefault, verboseDescription)
-	flag.BoolVar(&verbose, "verbose", verboseDefault, verboseDescription)
-	flag.BoolVar(&debug, "debug", debugDefault, debugDescription)
-
-	flag.StringVar(&group, "groups", "", "groups!!")
-	// flag.StringVar(&listProfiles, "profiles", "", "groups!!")
+	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
+	addBoolFlag(&listProfiles, []string{"p", "profiles"}, false, "List profile names")
+	addBoolFlag(&listGroups, []string{"l", "list"}, false, "List group names")
+	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
+	addBoolFlag(&debug, []string{"debug"}, false, "Output debug information")
+	addStrFlag(&showGroup, []string{"g", "group"}, "", "Show a specific group only")
 	// --dry-run for shell code?
 }
 
@@ -45,7 +45,6 @@ func main() {
 	if debug {
 		util.Printf("verbose: %v\n", verbose)
 		util.Printf("debug: %v\n", verbose)
-		util.Printf("group: %v\n", group)
 		util.Printf("tail: %v\n", flag.Args())
 	}
 
@@ -79,24 +78,28 @@ func main() {
 		}
 	} else {
 		sortedEnv := baseEnv.SortedNames(false)
-		matched := make(map[string]string, len(sortedEnv))
+		matched := make(map[string]bool, len(sortedEnv))
 		for _, group := range cfg.Groups.GetAllNames() {
-			if group[0] != '.' {
-				headerDisplayed := false
-				patterns, found := cfg.Groups.GetPatterns(group)
-				if !found {
-					continue
-				}
-				for _, env := range sortedEnv {
-					if util.MatchAny(env, patterns) {
-						if !headerDisplayed {
-							util.Printf(magenta("# %s\n", group))
-							headerDisplayed = true
-						}
-						value, _ := baseEnv.Get(env)
-						util.Printf("  %s=%s\n", green(env), yellow(value))
-						matched[env] = value
+			headerDisplayed := false
+			patterns, found := cfg.Groups.GetPatterns(group)
+			if !found {
+				continue
+			}
+			for _, env := range sortedEnv {
+				if util.MatchAny(env, patterns) {
+					matched[env] = true
+					if !showAllGroups && group[0] == '.' {
+						continue // Skip display of hidden groups.
 					}
+					if showGroup != "" && showGroup != group {
+						continue
+					}
+					if !headerDisplayed {
+						util.Printf(magenta("# %s\n", group))
+						headerDisplayed = true
+					}
+					value, _ := baseEnv.Get(env)
+					util.Printf("  %s=%s\n", green(env), yellow(value))
 				}
 			}
 		}
@@ -105,7 +108,7 @@ func main() {
 			_, found := matched[env]
 			if !found {
 				if !headerDisplayed {
-					util.Printf(hiMagenta("# %s\n", "not matched"))
+					util.Printf(hiMagenta("# %s\n", "(no matching group)"))
 					headerDisplayed = true
 				}
 				value, _ := baseEnv.Get(env)
