@@ -39,7 +39,6 @@ func init() {
 }
 
 func main() {
-
 	flag.Parse()
 
 	if debug {
@@ -67,8 +66,7 @@ func main() {
 	magenta := color.New(color.FgMagenta).SprintfFunc()
 	yellow := color.New(color.FgYellow).SprintfFunc()
 	// red := color.New(color.FgRed).SprintfFunc()
-	//red := color.New(color.FgBlue).SprintfFunc()
-	hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
+	// hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
 	green := color.New(color.FgGreen).SprintfFunc()
 	if listGroups {
 		for _, group := range cfg.Groups.GetAllNames() {
@@ -79,43 +77,20 @@ func main() {
 			util.Printf(green("# %s [%v]\n", profileName, profile))
 		}
 	} else {
-		sortedEnv := baseEnv.SortedNames(false)
-		matched := make(map[string]bool, len(sortedEnv))
-		for _, group := range cfg.Groups.GetAllNames() {
-			headerDisplayed := false
-			patterns, found := cfg.Groups.GetPatterns(group)
-			if !found {
-				continue
-			}
-			for _, env := range sortedEnv {
-				if util.MatchAny(env, patterns) {
-					matched[env] = true
-					if !showAllGroups && group[0] == '.' {
-						continue // Skip display of hidden groups.
-					}
-					if showGroup != "" && showGroup != group {
-						continue
-					}
-					if !headerDisplayed {
-						util.Printf(magenta("# %s\n", group))
-						headerDisplayed = true
-					}
+		displayGroup := func (name string, envs util.Envs, baseEnv *util.Profile) {
+			if len(envs) > 0 {
+				util.Printf(magenta("# %s\n", name))
+				for _, env := range envs {
 					value, _ := baseEnv.Get(env)
 					util.Printf("  %s=%s\n", green(env), yellow(value))
 				}
 			}
 		}
-		headerDisplayed := false
-		for _, env := range sortedEnv {
-			_, found := matched[env]
-			if !found {
-				if !headerDisplayed {
-					util.Printf(hiMagenta("# %s\n", "(no matching group)"))
-					headerDisplayed = true
-				}
-				value, _ := baseEnv.Get(env)
-				util.Printf("  %s=%s\n", green(env), yellow(value))
-			}
+		sortedEnv := baseEnv.SortedNames(false)
+		matches, remaining := cfg.Groups.MatchAll(sortedEnv)
+		for group, envs := range matches {
+			displayGroup(group, envs, baseEnv)
 		}
+		displayGroup("(no group)", remaining, baseEnv)
 	}
 }

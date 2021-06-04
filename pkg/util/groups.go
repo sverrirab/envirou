@@ -7,6 +7,8 @@ import (
 )
 
 type Groups map[string]Patterns
+type Envs []string
+type GroupNameToEnvs map[string]Envs
 
 func NewGroups() *Groups {
 	g := make(map[string]Patterns)
@@ -42,4 +44,31 @@ func (groups Groups) String() string {
 		result = append(result, fmt.Sprintf("%s=%s", name, groups[name]))
 	}
 	return strings.Join(result, " | ")
+}
+
+// MatchAll returns a map of group names to all env variables as well as a list of unmatched ones
+func (groups *Groups) MatchAll(envs Envs) (GroupNameToEnvs, Envs) {
+	result := make(GroupNameToEnvs, len(*groups))
+	matched := make(map[string]bool, len(*groups))
+	unmatched := make(Envs, 0)
+
+	for _, group := range groups.GetAllNames() {
+		patterns, found := groups.GetPatterns(group)
+		if !found {
+			continue
+		}
+		for _, env := range envs {
+			if MatchAny(env, patterns) {
+				matched[env] = true
+				result[group] = append(result[group], env)
+			}
+		}
+	}
+	for _, env := range envs {
+		_, found := matched[env]
+		if !found {
+			unmatched = append(unmatched, env)
+		}
+	}
+	return result, unmatched
 }
