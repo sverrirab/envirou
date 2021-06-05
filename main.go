@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/config"
@@ -83,7 +82,7 @@ func main() {
 						output.Printf("%s\n", add)
 					}
 					for _, remove := range removed {
-						output.Printf("%s\n", remove)
+						output.Printf("REMOVE: %s\n", remove)
 					}
 				}
 			}
@@ -92,10 +91,10 @@ func main() {
 		displayGroup := func(name string, envs data.Envs, baseEnv *data.Profile) {
 			if len(envs) > 0 {
 				if showAllGroups || (len(showGroup) > 0 && name == showGroup) || !strings.HasPrefix(name, ".") {
-					output.Printf(output.GroupSprintf("# %s\n", name))
+					output.Group(name)
 					for _, env := range envs {
 						value, _ := baseEnv.Get(env)
-						output.Printf("  %s=%s\n", output.EnvNameSprintf("%s", env), value)
+						output.Env(env, value)
 					}
 				}
 			}
@@ -106,15 +105,14 @@ func main() {
 		}
 		displayGroup("(no group)", remaining, baseEnv)
 
-		profiles := make([]string, 0, len(cfg.Profiles))
-		for profile := range cfg.Profiles {
-			profiles = append(profiles, profile)
+		profileNames := make([]string, 0, len(cfg.Profiles))
+		mergedNames := make([]string, 0, len(cfg.Profiles))
+		for name, profile := range cfg.Profiles {
+			profileNames = append(profileNames, name)
+			if baseEnv.IsMerged(&profile) {
+				mergedNames = append(mergedNames, name)
+			}
 		}
-		sort.Strings(profiles)
-		output.Printf(output.ProfileSprintf("# Profiles: %s\n", strings.Join(profiles, ", ")))
-		//for _, profile := range profiles {
-
-		//}
-
+		output.ProfileList(profileNames, mergedNames)
 	}
 }

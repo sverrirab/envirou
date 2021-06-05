@@ -75,6 +75,23 @@ func (profile *Profile) Merge(p *Profile) {
 	}
 }
 
+// IsMerged checkes if profile has already been merged
+func (profile *Profile) IsMerged(p *Profile) bool {
+	for k, v := range p.env {
+		value, exists := profile.Get(k)
+		if !exists || value != v {
+			return false
+		}
+	}
+	for k := range p.isNil {
+		_, exists := profile.Get(k)
+		if exists {
+			return false
+		}
+	}
+	return true
+}
+
 // Diff returns two lists, changed and removed in profile
 func (profile *Profile) Diff(p *Profile) ([]string, []string) {
 	changed := make([]string, 0)

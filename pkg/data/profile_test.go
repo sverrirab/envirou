@@ -34,7 +34,13 @@ func TestProfile(t *testing.T) {
 	p2.Set("one", "1")
 
 	p3 := p1.Clone()
+	if p3.IsMerged(p2) {
+		t.Error("Unexpected merge!")
+	}
 	p3.Merge(p2)
+	if ! p3.IsMerged(p2) {
+		t.Error("Should be merged!")
+	}
 	verifyValue(t, p3, "hello", "world")
 	verifyValue(t, p3, "world", "oyster")
 	verifyValue(t, p3, "one", "1")
