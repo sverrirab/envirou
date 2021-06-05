@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"os"
+	"sort"
+	"strings"
 
-	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
-	"github.com/sverrirab/envirou/pkg/util"
 )
 
 var verbose bool
@@ -61,21 +62,16 @@ func main() {
 		output.Printf("profiles: %s\n", cfg.Profiles)
 	}
 
-	baseEnv := util.NewProfile()
+	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
 
-	magenta := color.New(color.FgMagenta).SprintfFunc()
-	yellow := color.New(color.FgYellow).SprintfFunc()
-	red := color.New(color.FgRed).SprintfFunc()
-	// hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
-	green := color.New(color.FgGreen).SprintfFunc()
 	if listGroups {
 		for _, group := range cfg.Groups.GetAllNames() {
-			output.Printf(magenta("# %s\n", group))
+			output.Printf(output.GroupSprintf("# %s\n", group))
 		}
 	} else if listProfiles {
 		for profileName, profile := range cfg.Profiles {
-			output.Printf(green("# %s [%v]\n", profileName, profile))
+			output.Printf(output.ProfileSprintf("# %s [%v]\n", profileName, profile))
 		}
 	} else if flag.NArg() > 0 {
 		for _, f := range flag.Args() {
@@ -84,29 +80,41 @@ func main() {
 					output.Printf("profile match: %s\n", f)
 					added, removed := baseEnv.Diff(&profile)
 					for _, add := range added {
-						output.Printf(green("%s\n", add))
+						output.Printf("%s\n", add)
 					}
 					for _, remove := range removed {
-						output.Printf(red("%s\n", remove))
+						output.Printf("%s\n", remove)
 					}
 				}
 			}
 		}
 	} else {
-		displayGroup := func(name string, envs util.Envs, baseEnv *util.Profile) {
+		displayGroup := func(name string, envs data.Envs, baseEnv *data.Profile) {
 			if len(envs) > 0 {
-				output.Printf(magenta("# %s\n", name))
-				for _, env := range envs {
-					value, _ := baseEnv.Get(env)
-					output.Printf("  %s=%s\n", green(env), yellow(value))
+				if showAllGroups || (len(showGroup) > 0 && name == showGroup) || !strings.HasPrefix(name, ".") {
+					output.Printf(output.GroupSprintf("# %s\n", name))
+					for _, env := range envs {
+						value, _ := baseEnv.Get(env)
+						output.Printf("  %s=%s\n", output.EnvNameSprintf("%s", env), value)
+					}
 				}
 			}
 		}
-		sortedEnv := baseEnv.SortedNames(false)
-		matches, remaining := cfg.Groups.MatchAll(sortedEnv)
+		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
 		for group, envs := range matches {
 			displayGroup(group, envs, baseEnv)
 		}
 		displayGroup("(no group)", remaining, baseEnv)
+
+		profiles := make([]string, 0, len(cfg.Profiles))
+		for profile := range cfg.Profiles {
+			profiles = append(profiles, profile)
+		}
+		sort.Strings(profiles)
+		output.Printf(output.ProfileSprintf("# Profiles: %s\n", strings.Join(profiles, ", ")))
+		//for _, profile := range profiles {
+
+		//}
+
 	}
 }
