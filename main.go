@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/output"
 	"github.com/sverrirab/envirou/pkg/util"
 )
 
@@ -42,22 +43,22 @@ func main() {
 	flag.Parse()
 
 	if debug {
-		util.Printf("verbose: %v\n", verbose)
-		util.Printf("debug: %v\n", verbose)
-		util.Printf("tail: %v\n", flag.Args())
+		output.Printf("verbose: %v\n", verbose)
+		output.Printf("debug: %v\n", verbose)
+		output.Printf("tail: %v\n", flag.Args())
 	}
 
 	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
 	if err != nil {
-		util.Printf("Failed to read config file: %v\n", err)
+		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
 	}
 	if debug {
-		util.Printf("quiet: %t\n", cfg.Quiet)
-		util.Printf("sort_keys: %t\n", cfg.SortKeys)
-		util.Printf("path_tilde: %t\n", cfg.PathTilde)
-		util.Printf("groups: %s\n", cfg.Groups)
-		util.Printf("profiles: %s\n", cfg.Profiles)
+		output.Printf("quiet: %t\n", cfg.Quiet)
+		output.Printf("sort_keys: %t\n", cfg.SortKeys)
+		output.Printf("path_tilde: %t\n", cfg.PathTilde)
+		output.Printf("groups: %s\n", cfg.Groups)
+		output.Printf("profiles: %s\n", cfg.Profiles)
 	}
 
 	baseEnv := util.NewProfile()
@@ -70,34 +71,34 @@ func main() {
 	green := color.New(color.FgGreen).SprintfFunc()
 	if listGroups {
 		for _, group := range cfg.Groups.GetAllNames() {
-			util.Printf(magenta("# %s\n", group))
+			output.Printf(magenta("# %s\n", group))
 		}
 	} else if listProfiles {
 		for profileName, profile := range cfg.Profiles {
-			util.Printf(green("# %s [%v]\n", profileName, profile))
+			output.Printf(green("# %s [%v]\n", profileName, profile))
 		}
 	} else if flag.NArg() > 0 {
 		for _, f := range flag.Args() {
 			for name, profile := range cfg.Profiles {
 				if f == name {
-					util.Printf("profile match: %s\n", f)
+					output.Printf("profile match: %s\n", f)
 					added, removed := baseEnv.Diff(&profile)
 					for _, add := range added {
-						util.Printf(green("%s\n", add))
+						output.Printf(green("%s\n", add))
 					}
 					for _, remove := range removed {
-						util.Printf(red("%s\n", remove))
+						output.Printf(red("%s\n", remove))
 					}
 				}
 			}
 		}
 	} else {
-		displayGroup := func (name string, envs util.Envs, baseEnv *util.Profile) {
+		displayGroup := func(name string, envs util.Envs, baseEnv *util.Profile) {
 			if len(envs) > 0 {
-				util.Printf(magenta("# %s\n", name))
+				output.Printf(magenta("# %s\n", name))
 				for _, env := range envs {
 					value, _ := baseEnv.Get(env)
-					util.Printf("  %s=%s\n", green(env), yellow(value))
+					output.Printf("  %s=%s\n", green(env), yellow(value))
 				}
 			}
 		}

@@ -52,12 +52,12 @@ func (groups *Groups) MatchAll(envs Envs) (GroupNameToEnvs, Envs) {
 	matched := make(map[string]bool, len(*groups))
 	unmatched := make(Envs, 0)
 
-	for _, group := range groups.GetAllNames() {
-		patterns, found := groups.GetPatterns(group)
-		if !found {
-			continue
-		}
-		for _, env := range envs {
+	for _, env := range envs {
+		for _, group := range groups.GetAllNames() {
+			patterns, found := groups.GetPatterns(group)
+			if !found {
+				continue
+			}
 			if MatchAny(env, patterns) {
 				matched[env] = true
 				result[group] = append(result[group], env)
