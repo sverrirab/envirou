@@ -28,6 +28,11 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
+// NoColor forces colored output
+func NoColor(noColor bool) {
+	color.NoColor = noColor
+}
+
 func mapColor(value string) (color.Attribute, bool) {
 	switch value {
 	case "green":

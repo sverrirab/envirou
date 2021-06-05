@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/data"
 )
 
@@ -22,7 +21,7 @@ func validateSame(t *testing.T, before, after string) {
 }
 
 func TestColorChange(t *testing.T) {
-	color.NoColor = false // Need to force color output for tests.
+	NoColor(false) // Test need to force color.
 
 	const pathListSeperator = string(os.PathListSeparator)
 	twoPath := strings.Join([]string{"FOO", "BAR"}, pathListSeperator)
