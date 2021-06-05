@@ -3,25 +3,40 @@ package config
 import (
 	"strings"
 
-	"github.com/sverrirab/envirou/pkg/ini"
 	"github.com/sverrirab/envirou/pkg/data"
+	"github.com/sverrirab/envirou/pkg/ini"
+	"github.com/sverrirab/envirou/pkg/output"
 )
 
 type Configuration struct {
-	Quiet        bool
-	SortKeys     bool
-	PathTilde    bool
-	Groups       data.Groups
-	Profiles     map[string]data.Profile
+	SettingsQuiet     bool
+	SettingsSortKeys  bool
+	SettingsPathTilde bool
+
+	FormatGroup       string
+	FormatProfile     string
+	FormatEnvName     string
+
+	Groups            data.Groups
+	Profiles          map[string]data.Profile
+}
+
+func readFormat(config *ini.IniFile, name, defaultValue string) string {
+	value := config.GetString("format", name, defaultValue)
+	if output.IsValidColor(value) {
+		return value
+	} else {
+		return defaultValue
+	}
 }
 
 func ReadConfiguration(configPath string) (*Configuration, error) {
 	configuration := &Configuration{
-		Quiet:        false,
-		SortKeys:     false,
-		PathTilde:    false,
-		Groups:       make(data.Groups),
-		Profiles:     make(map[string]data.Profile),
+		SettingsQuiet:     false,
+		SettingsSortKeys:  false,
+		SettingsPathTilde: false,
+		Groups:            make(data.Groups),
+		Profiles:          make(map[string]data.Profile),
 	}
 	config, err := ini.NewIni(configPath)
 	if err != nil {
@@ -35,10 +50,14 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 			return configuration, err
 		}
 	}
-	configuration.Quiet = config.GetBool("settings", "quiet", false)
-	configuration.SortKeys = config.GetBool("settings", "sort_keys", true)
-	configuration.PathTilde = config.GetBool("settings", "path_tilde", true)
+	configuration.SettingsQuiet = config.GetBool("settings", "quiet", false)
+	configuration.SettingsSortKeys = config.GetBool("settings", "sort_keys", true)
+	configuration.SettingsPathTilde = config.GetBool("settings", "path_tilde", true)
 
+	configuration.FormatGroup = readFormat(config, "group", "magenta")
+	configuration.FormatProfile = readFormat(config, "profile", "green")
+	configuration.FormatEnvName = readFormat(config, "env_name", "cyan")
+	
 	// Groups
 	groups := config.GetAllVariables("groups")
 	for _, k := range groups {

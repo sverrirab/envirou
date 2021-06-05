@@ -13,6 +13,10 @@ const testConfig = `
 quiet=1
 sort_keys=0
 
+[format]
+group=SMURF
+env_name=underline
+
 [groups]
 one=ONE
 two= FIRST, SECOND, 
@@ -49,15 +53,24 @@ func readTestConfig(t *testing.T, stringConfig string) *Configuration {
 
 func TestReadConfig(t *testing.T) {
 	config := readTestConfig(t, testConfig)
-	if config.Quiet != true {
+	if config.SettingsQuiet != true {
 		t.Error("Quiet should be true")
 	}
-	if config.SortKeys != false {
+	if config.SettingsSortKeys != false {
 		t.Error("SortKeys should be false")
 	}
-	if config.PathTilde != true {
+	if config.SettingsPathTilde != true {
 		t.Error("PathTilde should be false")
 	}
+	if config.FormatGroup != "magenta" {
+		t.Errorf("expected magenta")
+	}	
+	if config.FormatProfile != "green" {
+		t.Errorf("expected green")
+	}	
+	if config.FormatEnvName != "underline" {
+		t.Errorf("expected underline")
+	}	
 	if len(config.Groups) != 3 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
@@ -75,15 +88,24 @@ func TestReadDefault(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
-	if config.Quiet != false {
+	if config.SettingsQuiet != false {
 		t.Error("Quiet should be false")
 	}
-	if config.SortKeys != true {
+	if config.SettingsSortKeys != true {
 		t.Error("SortKeys should be true")
 	}
-	if config.PathTilde != true {
+	if config.SettingsPathTilde != true {
 		t.Error("PathTilde should be false")
 	}
+	if config.FormatGroup != "magenta" {
+		t.Errorf("expected magenta")
+	}	
+	if config.FormatProfile != "green" {
+		t.Errorf("expected green")
+	}	
+	if config.FormatEnvName != "cyan" {
+		t.Errorf("expected cyan")
+	}	
 	if len(config.Groups) != 10 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}

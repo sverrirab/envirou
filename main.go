@@ -11,7 +11,6 @@ import (
 )
 
 var verbose bool
-var debug bool
 var listGroups bool
 var listProfiles bool
 var showAllGroups bool
@@ -34,32 +33,21 @@ func init() {
 	addBoolFlag(&listProfiles, []string{"p", "profiles"}, false, "List profile names")
 	addBoolFlag(&listGroups, []string{"l", "list"}, false, "List group names")
 	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
-	addBoolFlag(&debug, []string{"debug"}, false, "Output debug information")
 	addStrFlag(&showGroup, []string{"g", "group"}, "", "Show a specific group only")
-	// --dry-run for shell code?
 }
 
 func main() {
 	flag.Parse()
-
-	if debug {
-		output.Printf("verbose: %v\n", verbose)
-		output.Printf("debug: %v\n", verbose)
-		output.Printf("tail: %v\n", flag.Args())
-	}
 
 	cfg, err := config.ReadConfiguration(config.GetDefaultConfigFilePath())
 	if err != nil {
 		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
 	}
-	if debug {
-		output.Printf("quiet: %t\n", cfg.Quiet)
-		output.Printf("sort_keys: %t\n", cfg.SortKeys)
-		output.Printf("path_tilde: %t\n", cfg.PathTilde)
-		output.Printf("groups: %s\n", cfg.Groups)
-		output.Printf("profiles: %s\n", cfg.Profiles)
-	}
+
+	output.SetGroupColor(cfg.FormatGroup)
+	output.SetProfileColor(cfg.FormatProfile)
+	output.SetEnvNameColor(cfg.FormatEnvName)
 
 	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
@@ -91,10 +79,10 @@ func main() {
 		displayGroup := func(name string, envs data.Envs, baseEnv *data.Profile) {
 			if len(envs) > 0 {
 				if showAllGroups || (len(showGroup) > 0 && name == showGroup) || !strings.HasPrefix(name, ".") {
-					output.Group(name)
+					output.PrintGroup(name)
 					for _, env := range envs {
 						value, _ := baseEnv.Get(env)
-						output.Env(env, value)
+						output.PrintEnv(env, value)
 					}
 				}
 			}
@@ -113,6 +101,6 @@ func main() {
 				mergedNames = append(mergedNames, name)
 			}
 		}
-		output.ProfileList(profileNames, mergedNames)
+		output.PrintProfileList(profileNames, mergedNames)
 	}
 }

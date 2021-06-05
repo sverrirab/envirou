@@ -14,6 +14,14 @@ const default_ini = `
 quiet=0
 sort_keys=1
 path_tilde=1
+password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
+
+[format]
+; <color> can be one of: green, magenta, red, yellow, blue, bold, underline, none
+group=magenta
+profile=green
+env_name=cyan
 
 [groups]
 path=PATH, PWD, TMP, TMPDIR, HOME, EDITOR, GOROOT, GOPATH, JAVA_HOME, VIRTUAL_ENV
@@ -37,25 +45,13 @@ golang=GOROOT, GOPATH
 .winbasic=TEMP, USERNAME, USERPROFILE, USERDOMAIN*, LOGONSERVER, COMPUTERNAME, HOMEDRIVE, HOMEPATH, PUBLIC, APPDATA, LOCALAPPDATA 
 .windows=HOSTTYPE, WSLENV, WSL_DISTRO_NAME, MOTD_SHOWNOS, COMSPEC, PROGRAMDATA, PROGRAMFILES, PROGRAMFILES(X86), PROGRAMW6432, COMMONPROGRAMFILES, COMMONPROGRAMFILES(X86), COMMONPROGRAMW6432, DRIVERDATA, SYSTEMDRIVE, SYSTEMROOT, WINDIR, NUMBER_OF_PROCESSORS, PROCESSOR_*, ALLUSERSPROFILE, PSMODULEPATH, FP_NO_HOST_CHECK, PATHEXT
 
-[highlight]
-; Formatting configuration
-; <color>=<what>
-; <color> can be one of: green, magenta, red, yellow, blue, bold, underline
-; <what> can be an env variable or predefined: groups, profiles, differences
-green=AWS_URL, EC2_URL, S3_URL
-magenta=groups
-green=profiles
-red=differences
-password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
-path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
-
 ; Add your customizations below this point.
 
 [custom]
 ; Add custom groups here.
 ; example=EXAMPLE_*
 
-; Add your own profiles (or use --set-default and --new-profile)
+; Add your own profiles here...
 ; [profile:example]
 ; EXAMPLE_OCCUPATION=elevator operator
 ; EXAMPLE_EMPTY_VARIABLE=
@@ -63,7 +59,7 @@ path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
 `
 
-const configFileNmae = "config-5.ini" // TODO: Rename to config.ini
+const configFileNmae = "config-v2.ini"
 
 // GetDefaultConfigFilePath Returns full path to the config file
 func GetDefaultConfigFilePath() string {
