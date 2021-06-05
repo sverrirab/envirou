@@ -12,6 +12,7 @@ const testConfig = `
 [settings]
 quiet=1
 sort_keys=0
+password=FOO*, BAR, *MATCH
 
 [format]
 group=SMURF
@@ -70,7 +71,13 @@ func TestReadConfig(t *testing.T) {
 	}	
 	if config.FormatEnvName != "underline" {
 		t.Errorf("expected underline")
-	}	
+	}
+	if len(config.SettingsPassword) != 3 {
+		t.Errorf("Unexpected password: %s", config.SettingsPassword)
+	}
+	if len(config.SettingsPath) != 0 {
+		t.Errorf("Unexpected path: %s", config.SettingsPath)
+	}
 	if len(config.Groups) != 3 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
@@ -98,14 +105,20 @@ func TestReadDefault(t *testing.T) {
 		t.Error("PathTilde should be false")
 	}
 	if config.FormatGroup != "magenta" {
-		t.Errorf("expected magenta")
+		t.Error("expected magenta")
 	}	
 	if config.FormatProfile != "green" {
-		t.Errorf("expected green")
+		t.Error("expected green")
 	}	
 	if config.FormatEnvName != "cyan" {
-		t.Errorf("expected cyan")
+		t.Error("expected cyan")
 	}	
+	if len(config.SettingsPassword) != 2 {
+		t.Errorf("Unexpected password: %s", config.SettingsPassword)
+	}
+	if len(config.SettingsPath) != 6 {
+		t.Errorf("Unexpected path: %s", config.SettingsPath)
+	}
 	if len(config.Groups) != 10 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}

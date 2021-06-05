@@ -7,11 +7,17 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/sverrirab/envirou/pkg/data"
+)
+
+const (
+	pathListSeperator = string(os.PathListSeparator)
 )
 
 var GroupSprintf = color.New(color.FgMagenta).SprintfFunc()
 var ProfileSprintf = color.New(color.FgGreen).SprintfFunc()
 var EnvNameSprintf = color.New(color.FgHiCyan).SprintfFunc()
+var PathSprintf = color.New(color.Underline).SprintfFunc()
 var DiffSprintf = color.New(color.FgRed).SprintfFunc()
 
 // Printf output shown to end user - all output goes to stderr
@@ -22,58 +28,86 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
-func mapColor(value string) color.Attribute {
-	// ; <color> can be one of: green, magenta, red, yellow, cyan, blue, bold, underline
-	// case "green", "magenta", "red", "yellow", "blue", "bold", "underline":
+func mapColor(value string) (color.Attribute, bool) {
 	switch value {
 	case "green":
-		return color.FgGreen
+		return color.FgGreen, true
 	case "magenta":
-		return color.FgMagenta
+		return color.FgMagenta, true
 	case "red":
-		return color.FgRed
+		return color.FgRed, true
 	case "yellow":
-		return color.FgYellow
+		return color.FgYellow, true
 	case "blue":
-		return color.FgBlue
+		return color.FgBlue, true
 	case "cyan":
-		return color.FgHiCyan
+		return color.FgHiCyan, true
+	case "white":
+		return color.FgWhite, true
+	case "black":
+		return color.FgBlack, true
 	case "bold":
-		return color.Bold
+		return color.Bold, true
 	case "underline":
-		return color.FgRed
+		return color.Underline, true
 	case "deleted":
-		return color.CrossedOut
+		return color.CrossedOut, true
 	case "none":
-		return color.Reset
+		return color.CrossedOut, true
 	default:
-		return color.FgHiRed
+		return color.Reset, false
 	}
+}
+
+func mapColorDefault(value string) color.Attribute {
+	color, _ := mapColor(value)
+	return color
 }
 
 func IsValidColor(value string) bool {
-	switch value {
-	case "green", "magenta", "red", "yellow", "cyan", "blue", "bold", "underline", "deleted", "none":
-		return true
-	default:
-		return false
-	}
+	_, found := mapColor(value)
+	return found
 }
 
 func SetGroupColor(value string) {
-	GroupSprintf = color.New(mapColor(value)).SprintfFunc()
+	GroupSprintf = color.New(mapColorDefault(value)).SprintfFunc()
 }
 
 func SetProfileColor(value string) {
-	ProfileSprintf = color.New(mapColor(value)).SprintfFunc()
+	ProfileSprintf = color.New(mapColorDefault(value)).SprintfFunc()
 }
 
 func SetEnvNameColor(value string) {
-	EnvNameSprintf = color.New(mapColor(value)).SprintfFunc()
+	EnvNameSprintf = color.New(mapColorDefault(value)).SprintfFunc()
 }
 
-func PrintEnv(name, value string) {
-	Printf("%s=%s\n", EnvNameSprintf("%s", name), value)
+func SetPathColor(value string) {
+	PathSprintf = color.New(mapColorDefault(value)).SprintfFunc()
+}
+
+func SprintEnv(name, value string, paths, passwords data.Patterns, displayRaw bool) string {
+	outputName := name
+	outputValue := value
+	if !displayRaw {
+		outputName = EnvNameSprintf("%s", name)
+		if data.MatchAny(name, &passwords) {
+			outputValue = "****--->hidden<---****"
+		} else if data.MatchAny(name, &paths) {
+			sections := strings.Split(value, pathListSeperator)
+			for i, section := range sections {
+				if i % 2 == 1 {
+					// Color every other path
+					sections[i] = PathSprintf(section)
+				}
+			}
+			outputValue = strings.Join(sections, pathListSeperator)
+		}
+	}
+	return fmt.Sprintf("%s=%s\n", outputName, outputValue)
+}
+
+func PrintEnv(name, value string, paths, passwords data.Patterns, displayRaw bool) {
+	Printf(SprintEnv(name, value, paths, passwords, displayRaw))
 }
 
 func PrintGroup(name string) {
@@ -81,7 +115,7 @@ func PrintGroup(name string) {
 }
 
 func PrintProfileList(profileNames, mergedNames []string) {
-	if len(profileNames)  ==  0 {
+	if len(profileNames) == 0 {
 		return
 	}
 	sort.Strings(profileNames)

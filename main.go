@@ -11,6 +11,7 @@ import (
 )
 
 var verbose bool
+var displayRaw bool
 var listGroups bool
 var listProfiles bool
 var showAllGroups bool
@@ -32,6 +33,7 @@ func init() {
 	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
 	addBoolFlag(&listProfiles, []string{"p", "profiles"}, false, "List profile names")
 	addBoolFlag(&listGroups, []string{"l", "list"}, false, "List group names")
+	addBoolFlag(&displayRaw, []string{"w", "raw"}, false, "Display unformatted env variables")
 	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
 	addStrFlag(&showGroup, []string{"g", "group"}, "", "Show a specific group only")
 }
@@ -48,6 +50,7 @@ func main() {
 	output.SetGroupColor(cfg.FormatGroup)
 	output.SetProfileColor(cfg.FormatProfile)
 	output.SetEnvNameColor(cfg.FormatEnvName)
+	output.SetPathColor(cfg.FormatPath)
 
 	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
@@ -82,7 +85,7 @@ func main() {
 					output.PrintGroup(name)
 					for _, env := range envs {
 						value, _ := baseEnv.Get(env)
-						output.PrintEnv(env, value)
+						output.PrintEnv(env, value, cfg.SettingsPath, cfg.SettingsPassword, displayRaw)
 					}
 				}
 			}

@@ -23,6 +23,13 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestEmptyParse(t *testing.T) {
+	p := ParsePatterns("")
+	if len(*p) != 0 {
+		t.Error("Empty length not zero")
+	}
+}
+
 func TestMatchSimpleMatch(t *testing.T) {
 	if !Match("A", "A") {
 		t.Error("These should match")

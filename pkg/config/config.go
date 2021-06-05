@@ -12,13 +12,16 @@ type Configuration struct {
 	SettingsQuiet     bool
 	SettingsSortKeys  bool
 	SettingsPathTilde bool
+	SettingsPassword  data.Patterns
+	SettingsPath      data.Patterns
 
-	FormatGroup       string
-	FormatProfile     string
-	FormatEnvName     string
+	FormatGroup   string
+	FormatProfile string
+	FormatEnvName string
+	FormatPath    string
 
-	Groups            data.Groups
-	Profiles          map[string]data.Profile
+	Groups   data.Groups
+	Profiles map[string]data.Profile
 }
 
 func readFormat(config *ini.IniFile, name, defaultValue string) string {
@@ -53,11 +56,14 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 	configuration.SettingsQuiet = config.GetBool("settings", "quiet", false)
 	configuration.SettingsSortKeys = config.GetBool("settings", "sort_keys", true)
 	configuration.SettingsPathTilde = config.GetBool("settings", "path_tilde", true)
+	configuration.SettingsPassword = *data.ParsePatterns(config.GetString("settings", "password", ""))
+	configuration.SettingsPath = *data.ParsePatterns(config.GetString("settings", "path", ""))
 
 	configuration.FormatGroup = readFormat(config, "group", "magenta")
 	configuration.FormatProfile = readFormat(config, "profile", "green")
 	configuration.FormatEnvName = readFormat(config, "env_name", "cyan")
-	
+	configuration.FormatPath = readFormat(config, "path", "underline")
+
 	// Groups
 	groups := config.GetAllVariables("groups")
 	for _, k := range groups {

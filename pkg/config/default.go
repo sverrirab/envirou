@@ -18,10 +18,11 @@ password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
 [format]
-; <color> can be one of: green, magenta, red, yellow, blue, bold, underline, none
+; <color> can be one of: green, magenta, red, yellow, blue, bold, cyan, white, black, underline, deleted, none
 group=magenta
 profile=green
 env_name=cyan
+path=underline
 
 [groups]
 path=PATH, PWD, TMP, TMPDIR, HOME, EDITOR, GOROOT, GOPATH, JAVA_HOME, VIRTUAL_ENV
