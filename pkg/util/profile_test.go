@@ -51,3 +51,35 @@ func TestMergeStrings(t *testing.T) {
 	verifyValue(t, p, "SMURF", "")
 	verifyNil(t, p, "REMOVE", true)
 }
+
+func checkInList(t *testing.T, theList []string, value string) {
+	for _, item := range theList {
+		if value == item {
+			return
+		}
+	}
+	t.Errorf("Did not find %s in %s", value, theList)
+}
+
+func matchList(t *testing.T, expected []string, actual []string) {
+	if len(expected) != len(actual) {
+		t.Errorf("Mismatching length %s does not have same items as %s", expected, actual)
+	}
+	for _, s := range expected {
+		checkInList(t, actual, s)
+	}
+}
+
+func TestDiff(t *testing.T) {
+	p1 := NewProfile()
+	p1.MergeStrings([]string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "BAD=true", "REMOVE"})
+	p2 := NewProfile()
+	p2.MergeStrings([]string{"FOO=3", "BAR=FOO=FOOBAR", "BLURB=yes", "ALSO_REMOVE", "BAD"})
+	changed, removed := p1.Diff(p2)
+	matchList(t, []string{"FOO", "BLURB"}, changed)
+	matchList(t, []string{"BAD"}, removed)
+
+	changed, removed = p2.Diff(p1)
+	matchList(t, []string{"FOO", "SMURF", "BAD"}, changed)
+	matchList(t, []string{}, removed)
+}

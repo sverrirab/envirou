@@ -40,7 +40,7 @@ func (profile *Profile) GetNil(name string) bool {
 
 // SortedNames gets names in sorted order
 func (profile *Profile) SortedNames(includeNil bool) []string {
-	keys := make([]string, 0, len(profile.env) + len(profile.isNil))
+	keys := make([]string, 0, len(profile.env)+len(profile.isNil))
 	for k := range profile.env {
 		keys = append(keys, k)
 	}
@@ -73,6 +73,25 @@ func (profile *Profile) Merge(p *Profile) {
 	for k := range p.isNil {
 		profile.SetNil(k)
 	}
+}
+
+// Diff returns two lists, changed and removed in profile
+func (profile *Profile) Diff(p *Profile) ([]string, []string) {
+	changed := make([]string, 0)
+	removed := make([]string, 0)
+	for k, v := range p.env {
+		value, exists := profile.Get(k)
+		if !exists || value != v {
+			changed = append(changed, k)
+		}
+	}
+	for k := range p.isNil {
+		_, exists := profile.Get(k)
+		if exists {
+			removed = append(removed, k)
+		}
+	}
+	return changed, removed
 }
 
 // MergeStrings parses a list of NAME=value text entries and adds to profile.

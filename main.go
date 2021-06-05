@@ -65,7 +65,7 @@ func main() {
 
 	magenta := color.New(color.FgMagenta).SprintfFunc()
 	yellow := color.New(color.FgYellow).SprintfFunc()
-	// red := color.New(color.FgRed).SprintfFunc()
+	red := color.New(color.FgRed).SprintfFunc()
 	// hiMagenta := color.New(color.FgHiMagenta).SprintfFunc()
 	green := color.New(color.FgGreen).SprintfFunc()
 	if listGroups {
@@ -75,6 +75,21 @@ func main() {
 	} else if listProfiles {
 		for profileName, profile := range cfg.Profiles {
 			util.Printf(green("# %s [%v]\n", profileName, profile))
+		}
+	} else if flag.NArg() > 0 {
+		for _, f := range flag.Args() {
+			for name, profile := range cfg.Profiles {
+				if f == name {
+					util.Printf("profile match: %s\n", f)
+					added, removed := baseEnv.Diff(&profile)
+					for _, add := range added {
+						util.Printf(green("%s\n", add))
+					}
+					for _, remove := range removed {
+						util.Printf(red("%s\n", remove))
+					}
+				}
+			}
 		}
 	} else {
 		displayGroup := func (name string, envs util.Envs, baseEnv *util.Profile) {
