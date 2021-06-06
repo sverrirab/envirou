@@ -3,14 +3,65 @@ package shell
 import (
 	"fmt"
 	"strings"
+
+	"github.com/sverrirab/envirou/pkg/data"
 )
 
-// TODO: remove quotes if not needed.
-// TODO: escape quotes and other shell special characters such as ;
 // TODO: Shell and os specific code.
 
+func needsEscape(value string) bool {
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch {
+		case 'a' <= c && c <= 'z':
+			continue
+		case 'A' <= c && c <= 'Z':
+			continue
+		case '0' <= c && c <= '9':
+			continue
+		case c == '/':
+			continue
+		case c == ':':
+			continue
+		case c == ';':
+			continue
+		case c == '_':
+			continue
+		case c == '-':
+			continue
+		case c == '+':
+			continue
+		case c == '.':
+			continue
+		case c == '?':
+			continue
+		case c == ',':
+			continue
+		case c == '!':
+			continue
+		case c == '#':
+			continue
+		case c == '=':
+			continue
+		case c == '*':
+			continue
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+func escape(value string) string {
+	if needsEscape(value) {
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "'\\''"))
+	} else {
+		return value
+	}
+}
+
 func ExportVar(name, value string) string {
-	return fmt.Sprintf("export %s=\"%s\"", name, value)
+	return fmt.Sprintf("export %s=%s", name, escape(value))
 }
 
 func UnsetVar(name string) string {
@@ -18,10 +69,22 @@ func UnsetVar(name string) string {
 }
 
 func RunCommands(commands []string) string {
-	if len(commands) > 0 {
-		commands := append(commands, "")
-		return strings.Join(commands, ";")
+	if len(commands) == 0 {
+		return ""
 	} else {
-		return ":"
+		commands = append(commands, "") // Needs to end with semicolon.
+		return fmt.Sprintf("%s\n", strings.Join(commands, ";"))
 	}
+}
+
+func GetCommands(old, new *data.Profile) (commands []string) {
+	added, removed := old.Diff(new)
+	for _, add := range added {
+		value, _ := new.Get(add)
+		commands = append(commands, ExportVar(add, value))
+	}
+	for _, remove := range removed {
+		commands = append(commands, UnsetVar(remove))
+	}
+	return
 }

@@ -1,0 +1,5 @@
+#!/bin/bash
+set -eou pipefail
+
+# zsh: gr() { eval $(go run . "$@") }
+# gr() { eval $(envirou "$@") }
