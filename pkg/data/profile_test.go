@@ -49,9 +49,9 @@ func TestProfile(t *testing.T) {
 }
 
 func TestMergeStrings(t *testing.T) {
-	e := [...]string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
+	e := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
 	p := NewProfile()
-	p.MergeStrings(e[:])
+	p.MergeStrings(e)
 	verifyValue(t, p, "FOO", "2")
 	verifyValue(t, p, "BAR", "FOO=FOOBAR")
 	verifyValue(t, p, "SMURF", "")

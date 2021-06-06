@@ -50,4 +50,13 @@ func TestColorChange(t *testing.T) {
 	afterGroup := GroupSprintf("HELLO")
 	validateDifferent(t, beforeGroup, afterGroup)
 	validateSame(t, afterGroup, beforeProfile)
+
+	profileNames := []string{"p1", "p2", "p3"}
+	activeNames := []string{"p3"}
+
+	profileOutputBefore := SPrintProfileList(profileNames, activeNames)
+	SetProfileColor("underline")
+	profileOutputAfter := SPrintProfileList(profileNames, activeNames)
+	validateDifferent(t, profileOutputBefore, profileOutputAfter)
 }
+

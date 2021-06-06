@@ -3,7 +3,6 @@ package output
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/fatih/color"
@@ -120,10 +119,13 @@ func PrintGroup(name string) {
 }
 
 func PrintProfileList(profileNames, mergedNames []string) {
+	Printf(SPrintProfileList(profileNames, mergedNames))
+}
+
+func SPrintProfileList(profileNames, mergedNames []string) string {
 	if len(profileNames) == 0 {
-		return
+		return ""
 	}
-	sort.Strings(profileNames)
 	output := make([]string, 0, len(profileNames))
 	for _, name := range profileNames {
 		isMerged := false
@@ -138,5 +140,5 @@ func PrintProfileList(profileNames, mergedNames []string) {
 		}
 		output = append(output, s)
 	}
-	Printf("%s: %s\n", ProfileSprintf("# Profiles"), strings.Join(output, ", "))
+	return fmt.Sprintf("%s: %s\n", ProfileSprintf("# Profiles"), strings.Join(output, ", "))
 }
