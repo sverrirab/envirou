@@ -34,9 +34,8 @@ func TestColorChange(t *testing.T) {
 	beforeGroup := GroupSprintf("HELLO")
 	beforeProfile := ProfileSprintf("HELLO")
 	beforeDiff := DiffSprintf("FOOBAR")
-	beforeEnvOne := SprintEnv("foo", "/path", *data.ParsePatterns("foo"), *data.ParsePatterns(""), false)
-	beforeEnvTwo := SprintEnv("foo", twoPath, *data.ParsePatterns("foo"), *data.ParsePatterns(""), false)
-
+	beforeEnvOne := SprintEnv("foo", "/path", *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false)
+	beforeEnvTwo := SprintEnv("foo", twoPath, *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false)
 	validateDifferent(t, beforeGroup, beforeProfile)
 	validateDifferent(t, beforeGroup, beforeDiff)
 
@@ -45,6 +44,11 @@ func TestColorChange(t *testing.T) {
 	afterEnvTwo := SprintEnv("foo", twoPath, *data.ParsePatterns("foo"), *data.ParsePatterns(""), false)
 	validateSame(t, beforeEnvOne, afterEnvOne)
 	validateDifferent(t, beforeEnvTwo, afterEnvTwo)
+
+	// Test password hiding
+	beforeEnvThree := SprintEnv("foo", "smurf", *data.ParsePatterns(""), *data.ParsePatterns(""), false)
+	afterEnvThree := SprintEnv("foo", "smurf", *data.ParsePatterns(""), *data.ParsePatterns("foo"), false)
+	validateDifferent(t, beforeEnvThree, afterEnvThree)
 
 	SetGroupColor("blue")
 	afterGroup := GroupSprintf("HELLO")
