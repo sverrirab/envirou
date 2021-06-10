@@ -52,7 +52,7 @@ func needsEscape(value string) bool {
 	return false
 }
 
-func escape(value string) string {
+func Escape(value string) string {
 	if needsEscape(value) {
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "'\\''"))
 	} else {
@@ -61,7 +61,7 @@ func escape(value string) string {
 }
 
 func ExportVar(name, value string) string {
-	return fmt.Sprintf("export %s=%s", name, escape(value))
+	return fmt.Sprintf("export %s=%s", name, Escape(value))
 }
 
 func UnsetVar(name string) string {

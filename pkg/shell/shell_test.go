@@ -7,20 +7,20 @@ import (
 )
 
 func validateEscaped(t *testing.T, s string) {
-	if s == escape(s) {
-		t.Errorf("Should be escaped %s == %s", s, escape(s))
+	if s == Escape(s) {
+		t.Errorf("Should be escaped %s == %s", s, Escape(s))
 	}
 }
 
 func validateExact(t *testing.T, original, expected string) {
-	if expected != escape(original) {
-		t.Errorf("Incorrect escape of %s:\n  EXPECT: %s.\n  ACTUAL: %s.\n", original, expected, escape(original))
+	if expected != Escape(original) {
+		t.Errorf("Incorrect escape of %s:\n  EXPECT: %s.\n  ACTUAL: %s.\n", original, expected, Escape(original))
 	}
 }
 
 func validateUnEscaped(t *testing.T, s string) {
-	if s != escape(s) {
-		t.Errorf("Should not be escaped  %s == %s", s, escape(s))
+	if s != Escape(s) {
+		t.Errorf("Should not be escaped  %s == %s", s, Escape(s))
 	}
 }
 

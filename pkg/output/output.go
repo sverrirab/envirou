@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sverrirab/envirou/pkg/data"
+	"github.com/sverrirab/envirou/pkg/shell"
 )
 
 const (
@@ -125,7 +126,9 @@ func (out *Output) DiffSprintf(format string, a ...interface{}) string {
 func (out *Output) SprintEnv(name, value string) string {
 	outputName := name
 	outputValue := value
-	if !out.displayRaw {
+	if out.displayRaw {
+		outputValue = shell.Escape(value)
+	} else {
 		outputName = out.EnvNameSprintf("%s", name)
 		if data.MatchAny(name, &out.passwords) {
 			outputValue = "****--->hidden<---****"

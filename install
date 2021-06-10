@@ -1,5 +1,15 @@
 #!/bin/bash
 set -eou pipefail
 
-# zsh: gr() { eval $(go run . "$@") }
-# gr() { eval $(envirou "$@") }
+# zsh/bash
+#
+# ev() { eval "$(envirou "$@")"; }
+# declare -f ev
+
+# zsh
+# unset -f ev
+# 
+
+# bash
+#
+# unset ev
