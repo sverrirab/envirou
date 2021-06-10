@@ -18,6 +18,7 @@ var actionShowGroup string
 var actionListGroups bool
 var actionListProfiles bool
 var actionActiveProfilesColored bool
+var actionEditConfig bool
 
 // Display modifiers
 var showAllGroups bool
@@ -42,6 +43,7 @@ func init() {
 	addBoolFlag(&actionListProfiles, []string{"p", "profiles"}, false, "List profile names")
 	addBoolFlag(&actionListGroups, []string{"l", "list"}, false, "List group names")
 	addBoolFlag(&actionActiveProfilesColored, []string{"active-profiles-colored"}, false, "List active profiles only")
+	addBoolFlag(&actionEditConfig, []string{"edit"}, false, "Edit configuration")
 
 	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
 	addBoolFlag(&displayRaw, []string{"w", "raw"}, false, "Display unformatted env variables")
@@ -79,7 +81,6 @@ func main() {
 
 	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
-	newEnv := baseEnv.Clone()
 
 	// Figure out what profiles are active. 
 	profileNames := make([]string, 0, len(cfg.Profiles))
@@ -92,6 +93,7 @@ func main() {
 	}
 	sort.Strings(profileNames)
 	sort.Strings(mergedNames)
+	shellCommands := make([]string, 0)
 
 	switch {
 	case actionListGroups:
@@ -106,7 +108,15 @@ func main() {
 		for _, profileName := range mergedNames {
 			output.Printf(out.ProfileSprintf("%s ", profileName))
 		}
+	case actionEditConfig:
+		editor, found := baseEnv.Get("EDITOR")
+		if !found {
+			output.Printf("You need to set the EDITOR environment to point to your editor first\n")
+			os.Exit(3)
+		}
+		shellCommands = append(shellCommands, fmt.Sprintf("%s \"%s\"", editor, config.GetDefaultConfigFilePath()))
 	case flag.NArg() > 0:
+		newEnv := baseEnv.Clone()
 		for _, activateName := range flag.Args() {
 			profile, found := cfg.Profiles.FindProfile(activateName)
 			if !found {
@@ -116,6 +126,7 @@ func main() {
 				output.Printf("Profile %s enabled\n", out.ProfileSprintf(activateName))
 			}
 		}
+		shellCommands = append(shellCommands, shell.GetCommands(baseEnv, newEnv)...)
 	default:
 		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
 		for group, envs := range matches {
@@ -127,8 +138,8 @@ func main() {
 		
 		out.PrintProfileList(profileNames, mergedNames)
 	}
-	commands := shell.RunCommands(shell.GetCommands(baseEnv, newEnv))
-	if len(commands) > 0 {
+	if len(shellCommands) > 0 {
+		commands := shell.RunCommands(shellCommands)
 		if verbose {
 			output.Printf("Shell commands to execute: %s\n", commands)
 		}
