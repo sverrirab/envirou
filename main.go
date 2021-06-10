@@ -23,7 +23,6 @@ var actionActiveProfilesColored bool
 var showAllGroups bool
 var displayRaw bool
 var verbose bool
-var displayShellCommands bool
 var noColor bool
 
 func addBoolFlag(p *bool, names []string, value bool, usage string) {
@@ -47,17 +46,16 @@ func init() {
 	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
 	addBoolFlag(&displayRaw, []string{"w", "raw"}, false, "Display unformatted env variables")
 	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
-	addBoolFlag(&displayShellCommands, []string{"display-shell"}, false, "Display shell commands")
 	addBoolFlag(&noColor, []string{"no-color"}, false, "Disable colored output")
 }
 
-func displayGroup (cfg *config.Configuration, name string, envs data.Envs, baseEnv *data.Profile) {
+func displayGroup (out *output.Output, name string, envs data.Envs, profile *data.Profile) {
 	if len(envs) > 0 {
 		if showAllGroups || (len(actionShowGroup) > 0 && name == actionShowGroup) || !strings.HasPrefix(name, ".") {
-			output.PrintGroup(name)
+			out.PrintGroup(name)
 			for _, env := range envs {
-				value, _ := baseEnv.Get(env)
-				output.PrintEnv(env, value, cfg.SettingsPath, cfg.SettingsPassword, displayRaw)
+				value, _ := profile.Get(env)
+				out.PrintEnv(env, value)
 			}
 		}
 	}
@@ -73,11 +71,11 @@ func main() {
 	}
 
 	output.NoColor(noColor)
-
-	output.SetGroupColor(cfg.FormatGroup)
-	output.SetProfileColor(cfg.FormatProfile)
-	output.SetEnvNameColor(cfg.FormatEnvName)
-	output.SetPathColor(cfg.FormatPath)
+	replacePathTilde := ""
+	if cfg.SettingsPathTilde {
+		replacePathTilde = os.Getenv("HOME")
+	}
+	out := output.NewOutput(replacePathTilde, cfg.SettingsPath, cfg.SettingsPassword, displayRaw, cfg.FormatGroup, cfg.FormatProfile, cfg.FormatEnvName, cfg.FormatPath, cfg.FormatDiff)
 
 	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
@@ -95,49 +93,45 @@ func main() {
 	sort.Strings(profileNames)
 	sort.Strings(mergedNames)
 
-	if actionListGroups {
+	switch {
+	case actionListGroups:
 		for _, group := range cfg.Groups.GetAllNames() {
-			output.Printf(output.GroupSprintf("# %s\n", group))
+			output.Printf(out.GroupSprintf("# %s\n", group))
 		}
-	} else if actionListProfiles {
+	case actionListProfiles:
 		for _, profileName := range profileNames {
-			output.Printf(output.ProfileSprintf("# %s\n", profileName))
+			output.Printf(out.ProfileSprintf("# %s\n", profileName))
 		}
-	} else if actionActiveProfilesColored {
+	case actionActiveProfilesColored:
 		for _, profileName := range mergedNames {
-			output.Printf(output.ProfileSprintf("%s ", profileName))
+			output.Printf(out.ProfileSprintf("%s ", profileName))
 		}
-	} else if flag.NArg() > 0 {
+	case flag.NArg() > 0:
 		for _, activateName := range flag.Args() {
-			var foundProfile *data.Profile = nil
-			for _, name := range profileNames {
-				if activateName == name {
-					profile := cfg.Profiles[name]
-					foundProfile = &profile
-					break
-				}
-			}
-			if foundProfile == nil {
-				output.Printf("Profile %s not found\n", output.DiffSprintf(activateName))
+			profile, found := cfg.Profiles.FindProfile(activateName)
+			if !found {
+				output.Printf("Profile %s not found\n", out.DiffSprintf(activateName))
 			} else {
-				newEnv.Merge(foundProfile)
-				output.Printf("Profile %s enabled\n", output.ProfileSprintf(activateName))
+				newEnv.Merge(profile)
+				output.Printf("Profile %s enabled\n", out.ProfileSprintf(activateName))
 			}
 		}
-	} else {
+	default:
 		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
 		for group, envs := range matches {
-			displayGroup(cfg, group, envs, baseEnv)
+			displayGroup(out, group, envs, baseEnv)
 		}
-		displayGroup(cfg, "(no group)", remaining, baseEnv)
+		displayGroup(out, "(no group)", remaining, baseEnv)
 
-		output.PrintProfileList(profileNames, mergedNames)
+		// TODO: If verbose list hidden groups
+		
+		out.PrintProfileList(profileNames, mergedNames)
 	}
-	commands := shell.GetCommands(baseEnv, newEnv)
+	commands := shell.RunCommands(shell.GetCommands(baseEnv, newEnv))
 	if len(commands) > 0 {
-		if displayShellCommands {
-			output.Printf("Shell commands to execute: %s\n", shell.RunCommands(commands))
+		if verbose {
+			output.Printf("Shell commands to execute: %s\n", commands)
 		}
-		fmt.Print(shell.RunCommands(commands))	
+		fmt.Print(commands)
 	}
 }

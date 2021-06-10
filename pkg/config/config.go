@@ -19,9 +19,10 @@ type Configuration struct {
 	FormatProfile string
 	FormatEnvName string
 	FormatPath    string
+	FormatDiff    string
 
 	Groups   data.Groups
-	Profiles map[string]data.Profile
+	Profiles data.Profiles
 }
 
 func readFormat(config *ini.IniFile, name, defaultValue string) string {
@@ -39,7 +40,7 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 		SettingsSortKeys:  false,
 		SettingsPathTilde: false,
 		Groups:            make(data.Groups),
-		Profiles:          make(map[string]data.Profile),
+		Profiles:          make(data.Profiles),
 	}
 	config, err := ini.NewIni(configPath)
 	if err != nil {
@@ -62,7 +63,8 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 	configuration.FormatGroup = readFormat(config, "group", "magenta")
 	configuration.FormatProfile = readFormat(config, "profile", "green")
 	configuration.FormatEnvName = readFormat(config, "env_name", "cyan")
-	configuration.FormatPath = readFormat(config, "path", "underline")
+	configuration.FormatPath = readFormat(config, "path", "reverse")
+	configuration.FormatDiff = readFormat(config, "diff", "red")
 
 	// Groups
 	groups := config.GetAllVariables("groups")

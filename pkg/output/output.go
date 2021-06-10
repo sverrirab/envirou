@@ -13,11 +13,35 @@ const (
 	pathListSeperator = string(os.PathListSeparator)
 )
 
-var GroupSprintf = color.New(color.FgMagenta).SprintfFunc()
-var ProfileSprintf = color.New(color.FgGreen).SprintfFunc()
-var EnvNameSprintf = color.New(color.FgHiCyan).SprintfFunc()
-var PathSprintf = color.New(color.Underline).SprintfFunc()
-var DiffSprintf = color.New(color.FgRed).SprintfFunc()
+type ColorPrintFunc func(format string, a ...interface{}) string
+
+type Output struct {
+	replacePathTilde string
+	paths            data.Patterns
+	passwords        data.Patterns
+	displayRaw       bool
+
+	groupSprintf   ColorPrintFunc
+	profileSprintf ColorPrintFunc
+	envNameSprintf ColorPrintFunc
+	pathSprintf    ColorPrintFunc
+	diffSprintf    ColorPrintFunc
+}
+
+func NewOutput(replacePathTilde string, paths, passwords data.Patterns, displayRaw bool,
+	groupColor, profileColor, envNameColor, pathColor, diffColor string) *Output {
+	return &Output{
+		replacePathTilde: replacePathTilde,
+		paths:            paths,
+		passwords:        passwords,
+		displayRaw:       displayRaw,
+		groupSprintf:     color.New(mapColorDefault(groupColor, "magenta")).SprintfFunc(),
+		profileSprintf:   color.New(mapColorDefault(profileColor, "green")).SprintfFunc(),
+		envNameSprintf:   color.New(mapColorDefault(envNameColor, "cyan")).SprintfFunc(),
+		pathSprintf:      color.New(mapColorDefault(pathColor, "underline")).SprintfFunc(),
+		diffSprintf:      color.New(mapColorDefault(diffColor, "red")).SprintfFunc(),
+	}
+}
 
 // Printf output shown to end user - all output goes to stderr
 func Printf(format string, a ...interface{}) {
@@ -54,17 +78,22 @@ func mapColor(value string) (color.Attribute, bool) {
 		return color.Bold, true
 	case "underline":
 		return color.Underline, true
+	case "reverse":
+		return color.ReverseVideo, true
 	case "deleted":
 		return color.CrossedOut, true
 	case "none":
-		return color.CrossedOut, true
+		return color.Reset, true
 	default:
 		return color.Reset, false
 	}
 }
 
-func mapColorDefault(value string) color.Attribute {
-	color, _ := mapColor(value)
+func mapColorDefault(value, defaultColor string) color.Attribute {
+	color, found := mapColor(value)
+	if !found {
+		color, _ = mapColor(defaultColor)
+	}
 	return color
 }
 
@@ -73,35 +102,44 @@ func IsValidColor(value string) bool {
 	return found
 }
 
-func SetGroupColor(value string) {
-	GroupSprintf = color.New(mapColorDefault(value)).SprintfFunc()
+func (out *Output) GroupSprintf(format string, a ...interface{}) string {
+	return out.groupSprintf(format, a...)
 }
 
-func SetProfileColor(value string) {
-	ProfileSprintf = color.New(mapColorDefault(value)).SprintfFunc()
+func (out *Output) ProfileSprintf(format string, a ...interface{}) string {
+	return out.profileSprintf(format, a...)
 }
 
-func SetEnvNameColor(value string) {
-	EnvNameSprintf = color.New(mapColorDefault(value)).SprintfFunc()
+func (out *Output) EnvNameSprintf(format string, a ...interface{}) string {
+	return out.envNameSprintf(format, a...)
 }
 
-func SetPathColor(value string) {
-	PathSprintf = color.New(mapColorDefault(value)).SprintfFunc()
+func (out *Output) PathSprintf(format string, a ...interface{}) string {
+	return out.pathSprintf(format, a...)
 }
 
-func SprintEnv(name, value string, paths, passwords data.Patterns, displayRaw bool) string {
+func (out *Output) DiffSprintf(format string, a ...interface{}) string {
+	return out.diffSprintf(format, a...)
+}
+
+func (out *Output) SprintEnv(name, value string) string {
 	outputName := name
 	outputValue := value
-	if !displayRaw {
-		outputName = EnvNameSprintf("%s", name)
-		if data.MatchAny(name, &passwords) {
+	if !out.displayRaw {
+		outputName = out.EnvNameSprintf("%s", name)
+		if data.MatchAny(name, &out.passwords) {
 			outputValue = "****--->hidden<---****"
-		} else if data.MatchAny(name, &paths) {
+		} else if data.MatchAny(name, &out.paths) {
 			sections := strings.Split(value, pathListSeperator)
-			for i, section := range sections {
-				if i % 2 == 1 {
+			for i := range sections {
+				if len(out.replacePathTilde) > 0 {
+					if strings.HasPrefix(sections[i], out.replacePathTilde) {
+						sections[i] = strings.Replace(sections[i], out.replacePathTilde, "~", 1)
+					}
+				}
+				if i%2 == 1 {
 					// Color every other path
-					sections[i] = PathSprintf(section)
+					sections[i] = out.PathSprintf(sections[i])
 				}
 			}
 			outputValue = strings.Join(sections, pathListSeperator)
@@ -110,19 +148,19 @@ func SprintEnv(name, value string, paths, passwords data.Patterns, displayRaw bo
 	return fmt.Sprintf("%s=%s\n", outputName, outputValue)
 }
 
-func PrintEnv(name, value string, paths, passwords data.Patterns, displayRaw bool) {
-	Printf(SprintEnv(name, value, paths, passwords, displayRaw))
+func (out *Output) PrintEnv(name, value string) {
+	Printf(out.SprintEnv(name, value))
 }
 
-func PrintGroup(name string) {
-	Printf(GroupSprintf("# %s\n", name))
+func (out *Output) PrintGroup(name string) {
+	Printf(out.GroupSprintf("# %s\n", name))
 }
 
-func PrintProfileList(profileNames, mergedNames []string) {
-	Printf(SPrintProfileList(profileNames, mergedNames))
+func (out *Output) PrintProfileList(profileNames, mergedNames []string) {
+	Printf(out.SPrintProfileList(profileNames, mergedNames))
 }
 
-func SPrintProfileList(profileNames, mergedNames []string) string {
+func (out *Output) SPrintProfileList(profileNames, mergedNames []string) string {
 	if len(profileNames) == 0 {
 		return ""
 	}
@@ -136,9 +174,9 @@ func SPrintProfileList(profileNames, mergedNames []string) string {
 		}
 		s := name
 		if isMerged {
-			s = ProfileSprintf(name)
+			s = out.ProfileSprintf(name)
 		}
 		output = append(output, s)
 	}
-	return fmt.Sprintf("%s: %s\n", ProfileSprintf("# Profiles"), strings.Join(output, ", "))
+	return fmt.Sprintf("%s: %s\n", out.ProfileSprintf("# Profiles"), strings.Join(output, ", "))
 }

@@ -9,6 +9,7 @@ type Profile struct {
 	env   map[string]string
 	isNil map[string]bool
 }
+type Profiles map[string]Profile
 
 func NewProfile() *Profile {
 	return &Profile{env: make(map[string]string), isNil: make(map[string]bool)}
@@ -125,4 +126,15 @@ func (profile *Profile) MergeStrings(envList []string) {
 
 func (profile Profile) String() string {
 	return strings.Join(profile.SortedNames(true), ",")
+}
+
+func (profiles *Profiles) FindProfile(name string) (profile *Profile, found bool) {
+	var result *Profile
+	for profileName, profile := range *profiles {
+		if profileName == name {
+			result = &profile
+			break
+		}
+	}
+	return result, result != nil
 }

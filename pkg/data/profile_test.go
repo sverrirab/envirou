@@ -24,7 +24,7 @@ func TestProfile(t *testing.T) {
 
 	p1.SetNil("one")
 	verifyNil(t, p1, "one", true)
-	
+
 	verifyNil(t, p1, "two", false)
 	p1.SetNil("two")
 	verifyNil(t, p1, "two", true)
@@ -38,7 +38,7 @@ func TestProfile(t *testing.T) {
 		t.Error("Unexpected merge!")
 	}
 	p3.Merge(p2)
-	if ! p3.IsMerged(p2) {
+	if !p3.IsMerged(p2) {
 		t.Error("Should be merged!")
 	}
 	verifyValue(t, p3, "hello", "world")
@@ -88,4 +88,20 @@ func TestDiff(t *testing.T) {
 	changed, removed = p2.Diff(p1)
 	matchList(t, []string{"FOO", "SMURF", "BAD"}, changed)
 	matchList(t, []string{}, removed)
+
+	matchList(t, []string{"BAD", "BAR", "FOO", "SMURF"}, p1.SortedNames(false))
+	matchList(t, []string{"ALSO_REMOVE", "BAD", "BAR", "BLURB", "FOO"}, p2.SortedNames(true))
+}
+
+func TestFind(t *testing.T) {
+	profiles := make(Profiles)
+	profiles["foo"] = *NewProfile()
+	_, found := profiles.FindProfile("foo")
+	if !found {
+		t.Error("Failed to find profile")
+	}
+	_, found = profiles.FindProfile("bar")
+	if found {
+		t.Error("Should not find profile")
+	}
 }

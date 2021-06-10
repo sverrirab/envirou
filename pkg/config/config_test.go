@@ -125,6 +125,12 @@ func TestReadDefault(t *testing.T) {
 	os.Remove(file.Name())
 }
 
+func TestReadDefaultPath(t *testing.T) {
+	if len(GetDefaultConfigFilePath()) == 0 {
+		t.Error("Failed to read default config path")
+	}
+}
+
 func validateProfileValue(t *testing.T, config *Configuration, profile string, entry string, expectedValue string) {
 	p := config.Profiles[profile]
 	value, ok := p.Get(entry)

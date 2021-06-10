@@ -36,6 +36,7 @@ func TestEscape(t *testing.T) {
 	validateUnEscaped(t, "hello")
 	validateUnEscaped(t, "He.l0981o-World!")
 	validateUnEscaped(t, "How*Tri+cks?")
+	validateUnEscaped(t, "/:;_,-!#=*")
 }
 
 func TestCommands(t *testing.T) {
@@ -50,5 +51,16 @@ func TestCommands(t *testing.T) {
 	expected := "foobar"
 	if len(commands) != 2 || commands[0] != "export SMURF='yes yes'" || commands[1] != "unset FOO" {
 		t.Errorf("Invalid commands:\n  EXPECT: %s.\n  ACTUAL: %s\n", expected, commands)
+	}
+}
+
+func TestRunCommands(t *testing.T) {
+	cmd1 := RunCommands([]string{})
+	if cmd1 != "" {
+		t.Errorf("Did not expect no command to be: %s.", cmd1)
+	}
+	cmd2 := RunCommands([]string{"echo hi", "ls -al"})
+	if cmd2 != "echo hi;ls -al;\n" {
+		t.Errorf("Did not expect commands to be: %s.", cmd2)
 	}
 }

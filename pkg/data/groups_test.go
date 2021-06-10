@@ -51,3 +51,11 @@ func TestMatchAll(t *testing.T) {
 		t.Error("Where is bob?")
 	}
 }
+
+func TestStringer(t *testing.T) {
+	g := NewGroups()
+	g.ParseAndAdd("a", "YES")
+	if g.String() != "a=[YES]" {
+		t.Errorf("Stringer interface changed: \"%s\"", g)
+	}
+}
