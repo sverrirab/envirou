@@ -25,19 +25,20 @@ env_name=cyan
 path=reverse
 
 [groups]
-path=PATH, PWD, TMP, TMPDIR, HOME, EDITOR, GOROOT, GOPATH, JAVA_HOME, VIRTUAL_ENV
-
 ; Use * at the end to match multiple:
+basic=PATH
 aws=AWS_*, EC2_*
 golang=GOROOT, GOPATH
+java=JAVA_HOME
+python=VIRTUAL_ENV
 
 ; Names starting with . are hidden by default.
-.basic=LOGNAME, NAME, USER, TMP, TMPDIR, HOME, EDITOR, MAIL
-.term=ZSH, SHELL, COLORTERM, LSCOLORS, LS_COLORS, LESS, LESSCLOSE, LESSOPEN, PAGER, TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, LC_*, LANG, LANGUAGE
+.basic=LOGNAME, NAME, PROMPT, PS1, USER, TMP, TMPDIR, HOME, EDITOR, MAIL
+.term=ZSH, SHELL, COLORFGBG, COLORTERM, COLORTERM, LSCOLORS, LS_COLORS, LESS, LESSCLOSE, LESSOPEN, PAGER, TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, LC_*, LANG, LANGUAGE
 .system=SSH_*, XDG_*, XPC_*, SUDO_*, COMMAND_MODE, SECURITYSESSIONID
 
 ; Names starting with .. are hidden and not used in diff/reset to default.
-..ignore=_, PWD, OLDPWD, SHLVL, PS1, PROMPT, SESSIONNAME, TERM_SESSION_ID, ITERM_*, COLORFGBG, COLORTERM
+..ignore=_, PWD, OLDPWD, SHLVL, SESSIONNAME, TERM_SESSION_ID, ITERM_*,
 
 ; Apple specific 
 .apple=Apple_PubSub_Socket_Render, __CF_USER_TEXT_ENCODING, LaunchInstanceID, __CFBundleIdentifier

@@ -112,6 +112,7 @@ func main() {
 		editor, found := baseEnv.Get("EDITOR")
 		if !found {
 			output.Printf("You need to set the EDITOR environment to point to your editor first\n")
+			output.Printf("Configuration file location: %s\n", config.GetDefaultConfigFilePath())
 			os.Exit(3)
 		}
 		shellCommands = append(shellCommands, fmt.Sprintf("%s \"%s\"", editor, config.GetDefaultConfigFilePath()))
