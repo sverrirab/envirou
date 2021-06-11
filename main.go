@@ -22,7 +22,7 @@ var actionEditConfig bool
 
 // Display modifiers
 var showAllGroups bool
-var displayRaw bool
+var displayUnformatted bool
 var verbose bool
 var noColor bool
 
@@ -46,12 +46,12 @@ func init() {
 	addBoolFlag(&actionEditConfig, []string{"edit"}, false, "Edit configuration")
 
 	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
-	addBoolFlag(&displayRaw, []string{"w", "raw"}, false, "Display unformatted env variables")
+	addBoolFlag(&displayUnformatted, []string{"u", "unformatted"}, false, "Display unformatted env variables")
 	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
 	addBoolFlag(&noColor, []string{"no-color"}, false, "Disable colored output")
 }
 
-func displayGroup (out *output.Output, name string, envs data.Envs, profile *data.Profile) {
+func displayGroup(out *output.Output, name string, envs data.Envs, profile *data.Profile) bool {
 	if len(envs) > 0 {
 		if showAllGroups || (len(actionShowGroup) > 0 && name == actionShowGroup) || !strings.HasPrefix(name, ".") {
 			out.PrintGroup(name)
@@ -59,8 +59,10 @@ func displayGroup (out *output.Output, name string, envs data.Envs, profile *dat
 				value, _ := profile.Get(env)
 				out.PrintEnv(env, value)
 			}
+			return true
 		}
 	}
+	return false
 }
 
 func main() {
@@ -77,12 +79,12 @@ func main() {
 	if cfg.SettingsPathTilde {
 		replacePathTilde = os.Getenv("HOME")
 	}
-	out := output.NewOutput(replacePathTilde, cfg.SettingsPath, cfg.SettingsPassword, displayRaw, cfg.FormatGroup, cfg.FormatProfile, cfg.FormatEnvName, cfg.FormatPath, cfg.FormatDiff)
+	out := output.NewOutput(replacePathTilde, cfg.SettingsPath, cfg.SettingsPassword, displayUnformatted, cfg.FormatGroup, cfg.FormatProfile, cfg.FormatEnvName, cfg.FormatPath, cfg.FormatDiff)
 
 	baseEnv := data.NewProfile()
 	baseEnv.MergeStrings(os.Environ())
 
-	// Figure out what profiles are active. 
+	// Figure out what profiles are active.
 	profileNames := make([]string, 0, len(cfg.Profiles))
 	mergedNames := make([]string, 0, len(cfg.Profiles))
 	for name, profile := range cfg.Profiles {
@@ -130,13 +132,19 @@ func main() {
 		shellCommands = append(shellCommands, shell.GetCommands(baseEnv, newEnv)...)
 	default:
 		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
+		notDisplayed := make([]string, 0)
 		for group, envs := range matches {
-			displayGroup(out, group, envs, baseEnv)
+			if !displayGroup(out, group, envs, baseEnv) {
+				notDisplayed = append(notDisplayed, group)
+			}
 		}
 		displayGroup(out, "(no group)", remaining, baseEnv)
 
-		// TODO: If verbose list hidden groups
-		
+		if len(notDisplayed) > 0 && !cfg.SettingsQuiet {
+			sort.Strings(notDisplayed)
+			output.Printf(out.GroupSprintf("# Groups not displayed: %s (use -a to show)\n", strings.Join(notDisplayed, " ")))
+		}
+
 		out.PrintProfileList(profileNames, mergedNames)
 	}
 	if len(shellCommands) > 0 {
