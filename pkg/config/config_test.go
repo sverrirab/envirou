@@ -119,7 +119,7 @@ func TestReadDefault(t *testing.T) {
 	if len(config.SettingsPath) != 6 {
 		t.Errorf("Unexpected path: %s", config.SettingsPath)
 	}
-	if len(config.Groups) != 13 {
+	if len(config.Groups) != 12 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
 	os.Remove(file.Name())

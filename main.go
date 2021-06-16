@@ -15,6 +15,7 @@ import (
 
 // Actions:
 var actionShowGroup string
+var actionDiffProfile string
 var actionListGroups bool
 var actionListProfiles bool
 var actionActiveProfilesColored bool
@@ -40,6 +41,7 @@ func addStrFlag(p *string, names []string, value string, usage string) {
 
 func init() {
 	addStrFlag(&actionShowGroup, []string{"g", "group"}, "", "Show a specific group only")
+	addStrFlag(&actionDiffProfile, []string{"d", "diff"}, "", "Show changes in current env from specfic profile")
 	addBoolFlag(&actionListProfiles, []string{"p", "profiles"}, false, "List profile names")
 	addBoolFlag(&actionListGroups, []string{"l", "list"}, false, "List group names")
 	addBoolFlag(&actionActiveProfilesColored, []string{"active-profiles-colored"}, false, "List active profiles only")
@@ -63,6 +65,14 @@ func displayGroup(out *output.Output, name string, envs data.Envs, profile *data
 		}
 	}
 	return false
+}
+
+func findProfile(out *output.Output, cfg *config.Configuration, name string) (*data.Profile, bool) {
+	profile, found := cfg.Profiles.FindProfile(name)
+	if !found {
+		output.Printf("Profile %s not found\n", out.DiffSprintf(name))
+	}
+	return profile, found
 }
 
 func main() {
@@ -118,13 +128,21 @@ func main() {
 			os.Exit(3)
 		}
 		shellCommands = append(shellCommands, fmt.Sprintf("%s \"%s\"", editor, config.GetDefaultConfigFilePath()))
+	case len(actionDiffProfile) > 0:
+		profile, found := findProfile(out, cfg, actionDiffProfile)
+		if found {
+			//diffEnv := baseEnv.Clone()
+			//diffEnv.Merge(profile)
+			changed, removed := profile.Diff(baseEnv)
+			displayGroup(out, "Changed", changed, baseEnv)
+			displayGroup(out, "Removed", removed, baseEnv)
+			//output.Printf("Profile %s enabled\n", out.ProfileSprintf(activateName))
+		}
 	case flag.NArg() > 0:
 		newEnv := baseEnv.Clone()
 		for _, activateName := range flag.Args() {
-			profile, found := cfg.Profiles.FindProfile(activateName)
-			if !found {
-				output.Printf("Profile %s not found\n", out.DiffSprintf(activateName))
-			} else {
+			profile, found := findProfile(out, cfg, activateName)
+			if found {
 				newEnv.Merge(profile)
 				output.Printf("Profile %s enabled\n", out.ProfileSprintf(activateName))
 			}
