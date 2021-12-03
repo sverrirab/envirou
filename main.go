@@ -18,7 +18,9 @@ var actionShowGroup string
 var actionDiffProfile string
 var actionListGroups bool
 var actionListProfiles bool
-var actionActiveProfilesColored bool
+var actionListProfilesActive bool
+var actionListProfilesActiveColored bool
+var actionListProfilesInactive bool
 var actionEditConfig bool
 
 // Display modifiers
@@ -44,7 +46,9 @@ func init() {
 	addStrFlag(&actionDiffProfile, []string{"d", "diff"}, "", "Show changes in current env from specfic profile")
 	addBoolFlag(&actionListProfiles, []string{"p", "profiles"}, false, "List profile names")
 	addBoolFlag(&actionListGroups, []string{"l", "list"}, false, "List group names")
-	addBoolFlag(&actionActiveProfilesColored, []string{"active-profiles-colored"}, false, "List active profiles only")
+	addBoolFlag(&actionListProfilesActive, []string{"active-profiles"}, false, "List active profiles only")
+	addBoolFlag(&actionListProfilesActiveColored, []string{"active-profiles-colored"}, false, "List active profiles only (w/color)")
+	addBoolFlag(&actionListProfilesInactive, []string{"inactive-profiles"}, false, "List inactive profiles only")
 	addBoolFlag(&actionEditConfig, []string{"edit"}, false, "Edit configuration")
 
 	addBoolFlag(&showAllGroups, []string{"a", "all"}, false, "Show all (including .hidden) groups")
@@ -96,15 +100,19 @@ func main() {
 
 	// Figure out what profiles are active.
 	profileNames := make([]string, 0, len(cfg.Profiles))
-	mergedNames := make([]string, 0, len(cfg.Profiles))
+	activeProfileNames := make([]string, 0, len(cfg.Profiles))
+	inactiveProfileNames := make([]string, 0, len(cfg.Profiles))
 	for name, profile := range cfg.Profiles {
 		profileNames = append(profileNames, name)
 		if baseEnv.IsMerged(&profile) {
-			mergedNames = append(mergedNames, name)
+			activeProfileNames = append(activeProfileNames, name)
+		} else {
+			inactiveProfileNames = append(inactiveProfileNames, name)
 		}
 	}
 	sort.Strings(profileNames)
-	sort.Strings(mergedNames)
+	sort.Strings(activeProfileNames)
+	sort.Strings(inactiveProfileNames)
 	shellCommands := make([]string, 0)
 
 	switch {
@@ -116,10 +124,20 @@ func main() {
 		for _, profileName := range profileNames {
 			output.Printf(out.ProfileSprintf("# %s\n", profileName))
 		}
-	case actionActiveProfilesColored:
-		for _, profileName := range mergedNames {
+	case actionListProfilesActive:
+		for _, profileName := range activeProfileNames {
+			output.Printf("%s ", profileName)
+		}
+		output.Printf("\n")
+	case actionListProfilesActiveColored:
+		for _, profileName := range activeProfileNames {
 			output.Printf(out.ProfileSprintf("%s ", profileName))
 		}
+	case actionListProfilesInactive:
+		for _, profileName := range inactiveProfileNames {
+			output.Printf("%s ", profileName)
+		}
+		output.Printf("\n")
 	case actionEditConfig:
 		editor, found := baseEnv.Get("EDITOR")
 		if !found {
@@ -163,7 +181,7 @@ func main() {
 			output.Printf(out.GroupSprintf("# Groups not displayed: %s (use -a to show)\n", strings.Join(notDisplayed, " ")))
 		}
 
-		out.PrintProfileList(profileNames, mergedNames)
+		out.PrintProfileList(profileNames, activeProfileNames)
 	}
 	if len(shellCommands) > 0 {
 		commands := shell.RunCommands(shellCommands)
