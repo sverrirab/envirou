@@ -15,7 +15,7 @@ Envirou (`ev`) helps you to quickly view and configure your shell
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
 * Fully customizable.
 * Works on Mac + Linux (bash + zsh) and Windows.  
-* Fully standalone with no dependencies except any python 2.7 or 3.4+ you have installed.
+* Fully standalone go binary
 * Command completion support (bash + zsh).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme.
 
@@ -25,27 +25,23 @@ Everyone that works with complex infrastructure or multiple development environm
 are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments
 etc etc.
 
-Most tools have some way of switching between environments but that has two problems - you have to learn the idiosyncrasies of each one and often it is very opaque what configuration is currently in effect.
-Most tools are configurable using environment variables and Envirou allows you to quickly switch and display what configuration is currently effect.
-
 
 ## Quickstart
+1. You will need to have [go installed](https://go.dev/)
+2. Install with `go install https://github.com/sverrirab/envirou`
+3. Run `envirou` to view your current environment or `envirou --help` for more information
 
-### Using Mac OS X or Linux
+## Full power of envirou
+For the full power of envirou you will need to allow it to modify your environment (switch profiles).  This will require it to run in the context of the current shell.
+The simplest way to that is to add this to your zsh configuration file `.zshrc` (or `.bashrc` if you are using bash):
 
 ```bash
-$ curl -o- https://raw.githubusercontent.com/sverrirab/envirou/master/curl_install.sh | bash
+# bash or zsh
+ev() { eval "$(envirou "$@")"; }
 ```
 
-### Using Windows
+After you start a new shell you should be able to run `ev`.  Possibly start with `ev --edit` to modify your configuration? 
 
-1) Make sure you have python installed (`py` should work, 3.7+ recommended).
-1) Download the [zip file](https://github.com/sverrirab/envirou/archive/master.zip) (or do git checkout).
-3) Extract the zip file and open a shell in that folder.
-
-```cmd
-> echo @%CD%\envirou.bat %* > <tools-folder-on-path>\ev.bat 
-```
 
 ## Example use cases
 ### AWS configuration
@@ -60,15 +56,12 @@ profile for each that sets the `KUBECONFIG` pointing to each file.
 Make sure you set the default context in each file to be the correct one.  This way you
 can create different profiles that for example have a different default namespace.
 
-## Advanced configuration
+## Uninstalling envirou
+1. Remove the shell function from your `.zshrc` / `.bashrc`
+2. Uninstall by running `go install https://github.com/sverrirab/envirou@none`
+3. If you don't want to restart your current shell run `unset -f ev` (zsh) or `unset ev` (bash)
 
-Edit the ini file:
-
-```bash
-$ ev --edit     # Customize settings.
-```
-
-Example from `envirou.ini`:
+## Example configuration
 
 ```inifile
 [profile:basic]
@@ -96,6 +89,10 @@ AWS_PROFILE=dev
 The name Envirou is inspired by Spirou the comic book character.  
 The alias `ev` is both short for *Envirou* and `env`. 
 
+
+## But where is the python code?
+
+The last version using python was [versions v4.4](https://github.com/sverrirab/envirou/releases/tag/v4.4)
 
 ## License
 
