@@ -1,6 +1,6 @@
 # envirou - View and manage your shell environment
 
-![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
+[![build](https://github.com/sverrirab/envirou/actions/workflows/build.yml/badge.svg)](https://github.com/sverrirab/envirou/actions/workflows/build.yml)
 
 Envirou (`ev`) helps you to quickly view and configure your shell 
  environment. Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment or guessing which one is active!
@@ -28,7 +28,7 @@ etc etc.
 
 ## Quickstart
 1. You will need to have [go installed](https://go.dev/)
-2. Install with `go install https://github.com/sverrirab/envirou`
+2. Install with `go install github.com/sverrirab/envirou@latest`
 3. Run `envirou` to view your current environment or `envirou --help` for more information
 
 ## Full power of envirou
@@ -58,7 +58,7 @@ can create different profiles that for example have a different default namespac
 
 ## Uninstalling envirou
 1. Remove the shell function from your `.zshrc` / `.bashrc`
-2. Uninstall by running `go install https://github.com/sverrirab/envirou@none`
+2. Remove the binary `rm $(which envirou)`
 3. If you don't want to restart your current shell run `unset -f ev` (zsh) or `unset ev` (bash)
 
 ## Example configuration
