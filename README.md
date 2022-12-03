@@ -1,6 +1,6 @@
 # envirou - View and manage your shell environment
 
-![Build Status](https://travis-ci.org/sverrirab/envirou.svg?branch=master)
+[![build](https://github.com/sverrirab/envirou/actions/workflows/build.yml/badge.svg)](https://github.com/sverrirab/envirou/actions/workflows/build.yml)
 
 Envirou (`ev`) helps you to quickly view and configure your shell 
  environment. Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment or guessing which one is active!
