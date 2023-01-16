@@ -170,9 +170,9 @@ func main() {
 	default:
 		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
 		notDisplayed := make([]string, 0)
-		for group, envs := range matches {
-			if !displayGroup(out, group, envs, baseEnv) {
-				notDisplayed = append(notDisplayed, group)
+		for _, groupName := range matches.GetAllNames() {
+			if !displayGroup(out, groupName, matches[groupName], baseEnv) {
+				notDisplayed = append(notDisplayed, groupName)
 			}
 		}
 		displayGroup(out, "(no group)", remaining, baseEnv)
