@@ -72,3 +72,13 @@ func (groups *Groups) MatchAll(envs Envs) (GroupNameToEnvs, Envs) {
 	}
 	return result, unmatched
 }
+
+// GetAllNames returns all names sorted.
+func (groups *GroupNameToEnvs) GetAllNames() []string {
+	keys := make([]string, 0, len(*groups))
+	for key := range *groups {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
