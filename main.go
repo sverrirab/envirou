@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -90,7 +91,7 @@ func main() {
 
 	output.NoColor(noColor)
 	replacePathTilde := ""
-	if cfg.SettingsPathTilde {
+	if runtime.GOOS != "windows" && cfg.SettingsPathTilde {
 		replacePathTilde = os.Getenv("HOME")
 	}
 	out := output.NewOutput(replacePathTilde, cfg.SettingsPath, cfg.SettingsPassword, displayUnformatted, cfg.FormatGroup, cfg.FormatProfile, cfg.FormatEnvName, cfg.FormatPath, cfg.FormatDiff)

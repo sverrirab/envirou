@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -164,4 +165,10 @@ func TestProfile(t *testing.T) {
 	validateProfileValue(t, config, "foo", "TWO", "first second")
 	validateProfileNil(t, config, "foo", "THREE", true)
 	validateProfileNil(t, config, "foo", "NOT-THREE", false)
+
+	if runtime.GOOS == "windows" {
+		// Test case insensitivity
+		validateProfileValue(t, config, "foo", "One", "one")
+		validateProfileNil(t, config, "foo", "Three", true)
+	}
 }
