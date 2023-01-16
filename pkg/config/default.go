@@ -2,8 +2,10 @@ package config
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
-	"path"
+	"os/user"
+	"path/filepath"
 )
 
 const default_ini = `
@@ -61,18 +63,21 @@ python=VIRTUAL_ENV
 
 `
 
-const configFileNmae = "config-v2.ini"
+const configFileName = "config-v2.ini"
 
 // GetDefaultConfigFilePath Returns full path to the config file
 func GetDefaultConfigFilePath() string {
-	full_path := path.Join(GetDefaultConfigFileFolder(), configFileNmae)
+	full_path := filepath.Join(GetDefaultConfigFileFolder(), configFileName)
 	return full_path
 }
 
 // GetDefaultConfigFileFolder Figures out where the config file should be
 func GetDefaultConfigFileFolder() string {
-	home := os.Getenv("HOME")
-	return path.Join(home, ".config", "envirou")
+	current_user, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Join(current_user.HomeDir, ".config", "envirou")
 }
 
 // WriteDefaultConfigFile write the default config file if no file exists already

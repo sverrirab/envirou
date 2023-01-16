@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/data"
@@ -61,19 +62,33 @@ func Escape(value string) string {
 }
 
 func ExportVar(name, value string) string {
-	return fmt.Sprintf("export %s=%s", name, Escape(value))
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("set %s=%s", name, Escape(value))
+	} else {
+		return fmt.Sprintf("export %s=%s", name, Escape(value))
+	}
 }
 
 func UnsetVar(name string) string {
-	return fmt.Sprintf("unset %s", name)
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("set %s=", name)
+	} else {
+		return fmt.Sprintf("unset %s", name)
+	}
 }
 
 func RunCommands(commands []string) string {
 	if len(commands) == 0 {
 		return ""
 	} else {
-		commands = append(commands, "") // Needs to end with semicolon.
-		return fmt.Sprintf("%s\n", strings.Join(commands, ";"))
+		if runtime.GOOS == "windows" {
+			// Windows uses & as seperator
+			return fmt.Sprintf("%s\n", strings.Join(commands, " & "))
+		} else {
+			// Unixes require ; termination
+			commands = append(commands, "")
+			return fmt.Sprintf("%s\n", strings.Join(commands, ";"))
+		}
 	}
 }
 

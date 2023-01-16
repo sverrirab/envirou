@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/sverrirab/envirou/pkg/data"
@@ -49,9 +50,16 @@ func TestCommands(t *testing.T) {
 
 	commands := GetCommands(before, after)
 	expected := "foobar"
-	if len(commands) != 2 || commands[0] != "export SMURF='yes yes'" || commands[1] != "unset FOO" {
-		t.Errorf("Invalid commands:\n  EXPECT: %s.\n  ACTUAL: %s\n", expected, commands)
+	if runtime.GOOS == "windows" {
+		if len(commands) != 2 || commands[0] != "set SMURF='yes yes'" || commands[1] != "set FOO=" {
+			t.Errorf("Invalid commands:\n  EXPECT: %s.\n  ACTUAL: %s\n", expected, commands)
+		}
+	} else {
+		if len(commands) != 2 || commands[0] != "export SMURF='yes yes'" || commands[1] != "unset FOO" {
+			t.Errorf("Invalid commands:\n  EXPECT: %s.\n  ACTUAL: %s\n", expected, commands)
+		}
 	}
+
 }
 
 func TestRunCommands(t *testing.T) {
@@ -60,7 +68,13 @@ func TestRunCommands(t *testing.T) {
 		t.Errorf("Did not expect no command to be: %s.", cmd1)
 	}
 	cmd2 := RunCommands([]string{"echo hi", "ls -al"})
-	if cmd2 != "echo hi;ls -al;\n" {
-		t.Errorf("Did not expect commands to be: %s.", cmd2)
+	if runtime.GOOS == "windows" {
+		if cmd2 != "echo hi & ls -al\n" {
+			t.Errorf("Did not expect commands to be: %s.", cmd2)
+		}
+	} else {
+		if cmd2 != "echo hi;ls -al;\n" {
+			t.Errorf("Did not expect commands to be: %s.", cmd2)
+		}
 	}
 }

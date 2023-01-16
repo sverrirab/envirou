@@ -49,7 +49,7 @@ func readTestConfig(t *testing.T, stringConfig string) *Configuration {
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
-	return config 
+	return config
 }
 
 func TestReadConfig(t *testing.T) {
@@ -65,10 +65,10 @@ func TestReadConfig(t *testing.T) {
 	}
 	if config.FormatGroup != "magenta" {
 		t.Errorf("expected magenta")
-	}	
+	}
 	if config.FormatProfile != "green" {
 		t.Errorf("expected green")
-	}	
+	}
 	if config.FormatEnvName != "underline" {
 		t.Errorf("expected underline")
 	}
@@ -88,7 +88,14 @@ func TestReadDefault(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Remove(file.Name())
+	err = file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.Remove(file.Name())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Deleted temp file so it does not exist - this should create the file:
 	config, err := ReadConfiguration(file.Name())
@@ -106,13 +113,13 @@ func TestReadDefault(t *testing.T) {
 	}
 	if config.FormatGroup != "magenta" {
 		t.Error("expected magenta")
-	}	
+	}
 	if config.FormatProfile != "green" {
 		t.Error("expected green")
-	}	
+	}
 	if config.FormatEnvName != "cyan" {
 		t.Error("expected cyan")
-	}	
+	}
 	if len(config.SettingsPassword) != 2 {
 		t.Errorf("Unexpected password: %s", config.SettingsPassword)
 	}
@@ -134,7 +141,7 @@ func TestReadDefaultPath(t *testing.T) {
 func validateProfileValue(t *testing.T, config *Configuration, profile string, entry string, expectedValue string) {
 	p := config.Profiles[profile]
 	value, ok := p.Get(entry)
-	if ! ok {
+	if !ok {
 		t.Errorf("Missing entry %s in profile %s", entry, profile)
 	}
 	if value != expectedValue {
