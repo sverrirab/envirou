@@ -123,11 +123,11 @@ func (out *Output) DiffSprintf(format string, a ...interface{}) string {
 	return out.diffSprintf(format, a...)
 }
 
-func (out *Output) SprintEnv(name, value string) string {
+func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 	outputName := name
 	outputValue := value
 	if out.displayRaw {
-		outputValue = shell.Escape(value)
+		outputValue = sh.Escape(value)
 	} else {
 		outputName = out.EnvNameSprintf("%s", name)
 		if data.MatchAny(name, &out.passwords) {
@@ -151,8 +151,8 @@ func (out *Output) SprintEnv(name, value string) string {
 	return fmt.Sprintf("%s=%s\n", outputName, outputValue)
 }
 
-func (out *Output) PrintEnv(name, value string) {
-	Printf(out.SprintEnv(name, value))
+func (out *Output) PrintEnv(sh *shell.Shell, name, value string) {
+	Printf(out.SprintEnv(sh, name, value))
 }
 
 func (out *Output) PrintGroup(name string) {

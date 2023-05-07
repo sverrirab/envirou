@@ -1,6 +1,7 @@
 package output
 
 import (
+	"github.com/sverrirab/envirou/pkg/shell"
 	"os"
 	"strings"
 	"testing"
@@ -22,7 +23,7 @@ func validateSame(t *testing.T, before, after string) {
 
 func TestColorChange(t *testing.T) {
 	NoColor(false) // Test need to force color.
-
+	sh := shell.NewShell(false, false)
 	const pathListSeperator = string(os.PathListSeparator)
 	profileNames := []string{"p1", "p2", "p3"}
 	activeNames := []string{"p3"}
@@ -37,26 +38,26 @@ func TestColorChange(t *testing.T) {
 	beforeProfile := out1.ProfileSprintf("HELLO")
 	beforeProfileList := out1.SPrintProfileList(profileNames, activeNames)
 	beforeDiff := out1.DiffSprintf("FOOBAR")
-	beforeEnvOne := out1.SprintEnv("foo", "/path")
-	beforeEnvTwo := out1.SprintEnv("foo", twoPath)
+	beforeEnvOne := out1.SprintEnv(sh, "foo", "/path")
+	beforeEnvTwo := out1.SprintEnv(sh, "foo", twoPath)
 
 	validateDifferent(t, beforeGroup, beforeProfile)
 	validateDifferent(t, beforeGroup, beforeDiff)
 
-	afterEnvOne := out2.SprintEnv("foo", "/path")
-	afterEnvTwo := out2.SprintEnv("foo", twoPath)
-	
+	afterEnvOne := out2.SprintEnv(sh, "foo", "/path")
+	afterEnvTwo := out2.SprintEnv(sh, "foo", twoPath)
+
 	validateSame(t, beforeEnvOne, afterEnvOne)
 	validateDifferent(t, beforeEnvTwo, afterEnvTwo)
 
-	// Test password hiding 
-	beforeEnvThree := out3.SprintEnv("bar", "smurfy")
-	afterEnvThree := out1.SprintEnv("bar", "smurfy")
+	// Test password hiding
+	beforeEnvThree := out3.SprintEnv(sh, "bar", "smurfy")
+	afterEnvThree := out1.SprintEnv(sh, "bar", "smurfy")
 	validateDifferent(t, beforeEnvThree, afterEnvThree)
 
 	// Test tilde replacement
-	tildeEnv := out3.SprintEnv("foo", "/X/Y")
-	if ! strings.Contains(tildeEnv, "~/Y") {
+	tildeEnv := out3.SprintEnv(sh, "foo", "/X/Y")
+	if !strings.Contains(tildeEnv, "~/Y") {
 		t.Errorf("Did not find path replacement: %s", tildeEnv)
 	}
 
