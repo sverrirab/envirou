@@ -60,14 +60,12 @@ func init() {
 
 func displayGroup(out *output.Output, name string, envs data.Envs, profile *data.Profile) bool {
 	if len(envs) > 0 {
-		if showAllGroups || (len(actionShowGroup) > 0 && name == actionShowGroup) || !strings.HasPrefix(name, ".") {
-			out.PrintGroup(name)
-			for _, env := range envs {
-				value, _ := profile.Get(env)
-				out.PrintEnv(env, value)
-			}
-			return true
+		out.PrintGroup(name)
+		for _, env := range envs {
+			value, _ := profile.Get(env)
+			out.PrintEnv(env, value)
 		}
+		return true
 	}
 	return false
 }
@@ -169,17 +167,23 @@ func main() {
 		shellCommands = append(shellCommands, shell.GetCommands(baseEnv, newEnv)...)
 	default:
 		matches, remaining := cfg.Groups.MatchAll(baseEnv.SortedNames(false))
-		notDisplayed := make([]string, 0)
-		for _, groupName := range matches.GetAllNames() {
-			if !displayGroup(out, groupName, matches[groupName], baseEnv) {
-				notDisplayed = append(notDisplayed, groupName)
+		if !showAllGroups && len(actionShowGroup) > 0 {
+			if !displayGroup(out, actionShowGroup, matches[actionShowGroup], baseEnv) {
+				output.Printf(out.GroupSprintf("# %s (group empty, use -a to show all)\n", actionShowGroup))
 			}
-		}
-		displayGroup(out, "(no group)", remaining, baseEnv)
-
-		if len(notDisplayed) > 0 && !cfg.SettingsQuiet {
-			sort.Strings(notDisplayed)
-			output.Printf(out.GroupSprintf("# Groups not displayed: %s (use -a to show)\n", strings.Join(notDisplayed, " ")))
+		} else {
+			notDisplayed := make([]string, 0)
+			for _, groupName := range matches.GetAllNames() {
+				hideGroup := !showAllGroups && strings.HasPrefix(groupName, ".")
+				if hideGroup || !displayGroup(out, groupName, matches[groupName], baseEnv) {
+					notDisplayed = append(notDisplayed, groupName)
+				}
+			}
+			displayGroup(out, "(no group)", remaining, baseEnv)
+			if len(notDisplayed) > 0 && !cfg.SettingsQuiet {
+				sort.Strings(notDisplayed)
+				output.Printf(out.GroupSprintf("# Groups not displayed: %s (use -a to show all)\n", strings.Join(notDisplayed, " ")))
+			}
 		}
 
 		out.PrintProfileList(profileNames, activeProfileNames)
