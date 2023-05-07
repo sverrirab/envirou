@@ -1,41 +1,63 @@
 package data
 
 import (
+	"runtime"
 	"sort"
 	"strings"
 )
 
 type Profile struct {
-	env   map[string]string
-	isNil map[string]bool
+	env       map[string]string // The actual key value pair
+	rightCase map[string]string // UPPER -> Upper (maps to actual case, used for case insensitive comparison on Windows)
+	isNil     map[string]bool   // True if item is to be removed (uses UPPER case name)
 }
 type Profiles map[string]Profile
 
 func NewProfile() *Profile {
-	return &Profile{env: make(map[string]string), isNil: make(map[string]bool)}
+	return &Profile{env: make(map[string]string), rightCase: make(map[string]string), isNil: make(map[string]bool)}
+}
+
+func (profile *Profile) GetCorrectCase(name string, create bool) (string, bool) {
+	if runtime.GOOS == "windows" {
+		upper := strings.ToUpper(name)
+		existingCase, exists := profile.rightCase[upper]
+		if exists {
+			return existingCase, exists
+		} else if create {
+			profile.rightCase[upper] = name
+		}
+	}
+	return name, false
 }
 
 // Set will set an entry
 func (profile *Profile) Set(name string, value string) {
-	profile.env[name] = value
-	delete(profile.isNil, name)
+	correctCase, _ := profile.GetCorrectCase(name, true)
+	profile.env[correctCase] = value
+	delete(profile.isNil, correctCase)
 }
 
 // SetNil will mark entry as nil
 func (profile *Profile) SetNil(name string) {
-	delete(profile.env, name)
-	profile.isNil[name] = true
+	correctCase, exists := profile.GetCorrectCase(name, true)
+	if exists {
+		delete(profile.env, correctCase)
+		delete(profile.rightCase, strings.ToUpper(name))
+	}
+	profile.isNil[correctCase] = true
 }
 
 // Get retrieve value
 func (profile *Profile) Get(name string) (string, bool) {
-	value, ok := profile.env[name]
+	correctCase, _ := profile.GetCorrectCase(name, false)
+	value, ok := profile.env[correctCase]
 	return value, ok
 }
 
 // GetNil returns true if the value has been explitly set to nil.
 func (profile *Profile) GetNil(name string) bool {
-	_, ok := profile.isNil[name]
+	correctCase, _ := profile.GetCorrectCase(name, false)
+	_, ok := profile.isNil[correctCase]
 	return ok
 }
 
@@ -59,6 +81,9 @@ func (profile *Profile) Clone() *Profile {
 	p := NewProfile()
 	for k, v := range profile.env {
 		p.env[k] = v
+	}
+	for k, v := range profile.rightCase {
+		p.rightCase[k] = v
 	}
 	for k, v := range profile.isNil {
 		p.isNil[k] = v
@@ -116,10 +141,13 @@ func (profile *Profile) Diff(p *Profile) ([]string, []string) {
 func (profile *Profile) MergeStrings(envList []string) {
 	for _, kv := range envList {
 		pair := strings.SplitN(kv, "=", 2)
-		if len(pair) == 2 {
-			profile.Set(pair[0], pair[1])
-		} else {
-			profile.SetNil(pair[0])
+		if pair[0] != "" {
+			// Ignoring extra environ variables with no names (Windows)
+			if len(pair) == 2 {
+				profile.Set(pair[0], pair[1])
+			} else {
+				profile.SetNil(pair[0])
+			}
 		}
 	}
 }
