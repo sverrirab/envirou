@@ -94,10 +94,11 @@ func main() {
 
 	output.NoColor(noColor)
 	replacePathTilde := ""
-	if runtime.GOOS != "windows" && cfg.SettingsPathTilde {
+	runningOnWindows := runtime.GOOS != "windows"
+	if runningOnWindows && cfg.SettingsPathTilde {
 		replacePathTilde = os.Getenv("HOME")
 	}
-	sh := shell.NewShell(outputPowerShell, runtime.GOOS == "windows")
+	sh := shell.NewShell(outputPowerShell, runningOnWindows && !outputPowerShell)
 	out := output.NewOutput(replacePathTilde, cfg.SettingsPath, cfg.SettingsPassword, displayUnformatted, cfg.FormatGroup, cfg.FormatProfile, cfg.FormatEnvName, cfg.FormatPath, cfg.FormatDiff)
 
 	baseEnv := data.NewProfile()
