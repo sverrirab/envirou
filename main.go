@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"os"
@@ -30,8 +31,20 @@ var displayUnformatted bool
 var verbose bool
 var noColor bool
 
+// Bootstrap shell
+var bootstrapPowerShell bool
+var bootstrapBash bool
+
 // Shell overrides
 var outputPowerShell bool
+
+// These variables contain embedded scripts
+//
+//go:embed powershell/ev.ps1
+var embeddedBootstrapPowerShell string
+
+//go:embed bash/ev.sh
+var embeddedBootstrapBash string
 
 func addBoolFlag(p *bool, names []string, value bool, usage string) {
 	for _, name := range names {
@@ -59,6 +72,9 @@ func init() {
 	addBoolFlag(&displayUnformatted, []string{"u", "unformatted"}, false, "Display unformatted env variables")
 	addBoolFlag(&verbose, []string{"v", "verbose"}, false, "Increase output verbosity")
 	addBoolFlag(&noColor, []string{"no-color"}, false, "Disable colored output")
+
+	addBoolFlag(&bootstrapPowerShell, []string{"bootstrap-powershell"}, false, "Enable PowerShell support (ev function)")
+	addBoolFlag(&bootstrapBash, []string{"bootstrap-bash"}, false, "Enable Bash support (ev function)")
 
 	addBoolFlag(&outputPowerShell, []string{"ps1", "output-powershell"}, false, "Enable PowerShell output")
 }
@@ -122,6 +138,11 @@ func main() {
 	shellCommands := make([]string, 0)
 
 	switch {
+	// For shell bootstrap we are outputting to stdout to simplify calling
+	case bootstrapPowerShell:
+		fmt.Print(embeddedBootstrapPowerShell)
+	case bootstrapBash:
+		fmt.Print(embeddedBootstrapBash)
 	case actionListGroups:
 		for _, group := range cfg.Groups.GetAllNames() {
 			output.Printf(out.GroupSprintf("# %s\n", group))
