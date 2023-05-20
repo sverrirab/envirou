@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
 ev() {
-  eval "$(envirou "$@")";
+  local output
+  output="$(envirou "$@")"
+  if [ -n "${output}" ]; then
+    eval "${output}";
+  fi
 }

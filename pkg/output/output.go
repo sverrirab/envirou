@@ -45,6 +45,7 @@ func NewOutput(replacePathTilde string, paths, passwords data.Patterns, displayR
 }
 
 // Printf output shown to end user - all output goes to stderr
+// This function must not use any state since it might be called early
 func Printf(format string, a ...interface{}) {
 	_, err := fmt.Fprintf(os.Stderr, format, a...)
 	if err != nil {

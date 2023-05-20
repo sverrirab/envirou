@@ -1,6 +1,7 @@
 package config
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/data"
@@ -23,6 +24,15 @@ type Configuration struct {
 
 	Groups   data.Groups
 	Profiles data.Profiles
+}
+
+func (cfg *Configuration) GetAllProfileNames() []string {
+	profileNames := make([]string, 0, len(cfg.Profiles))
+	for name, _ := range cfg.Profiles {
+		profileNames = append(profileNames, name)
+	}
+	sort.Strings(profileNames)
+	return profileNames
 }
 
 func readFormat(config *ini.IniFile, name, defaultValue string) string {
