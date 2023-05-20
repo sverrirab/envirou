@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sverrirab/envirou/pkg/cli"
 	"github.com/sverrirab/envirou/pkg/config"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
@@ -107,6 +108,7 @@ func main() {
 		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
 	}
+	cli.ParseCommandLine()
 
 	output.NoColor(noColor)
 	replacePathTilde := ""
