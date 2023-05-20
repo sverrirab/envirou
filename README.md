@@ -14,10 +14,10 @@ Envirou (`ev`) helps you to quickly view and configure your shell
 * Compact output (replaces $HOME with `~` and _underscores_ paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
 * Fully customizable.
-* Works on Mac + Linux (bash + zsh) and Windows.  
-* Fully standalone go binary
+* Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).  
+* Fully standalone go binary.
 * Command completion support (bash + zsh).
-* Includes [oh-my-zsh](https://ohmyz.sh/) theme.
+* Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
 ## Why?
@@ -27,21 +27,25 @@ etc etc.
 
 
 ## Quickstart
-1. You will need to have [go installed](https://go.dev/)
+1. You will need to have [go installed](https://go.dev/) (go1.16 or newer) 
 2. Install with `go install github.com/sverrirab/envirou@latest`
 3. Run `envirou` to view your current environment or `envirou --help` for more information
 
 ## Full power of envirou
-For the full power of envirou you will need to allow it to modify your environment (switch profiles).  This will require it to run in the context of the current shell.
-The simplest way to that is to add this to your zsh configuration file `.zshrc` (or `.bashrc` if you are using bash):
+For the full power of envirou you will need to allow it to modify your environment (switch profiles).  
+This will require it to run in the context of the current shell.
+Please check out these documents for your shell:
 
-```bash
-# bash or zsh
-ev() { eval "$(envirou "$@")"; }
-```
+* [Bash (and zsh) instructions](./bash/README.md)
+* [PowerShell instructions](./powershell/README.md)
 
-After you start a new shell you should be able to run `ev`.  Possibly start with `ev --edit` to modify your configuration? 
+## First time use
 
+Out of the box `ev` is useful but for 
+After you start a new shell you should be able to run `ev -a` to list all env variables and 
+`ev -help` will provide details of other commands.
+
+Next step is check out `ev -edit` and start modifying the configuration. Create your own groupings and profiles!
 
 ## Example use cases
 ### AWS configuration
@@ -55,11 +59,6 @@ profile for each that sets the `KUBECONFIG` pointing to each file.
 
 Make sure you set the default context in each file to be the correct one.  This way you
 can create different profiles that for example have a different default namespace.
-
-## Uninstalling envirou
-1. Remove the shell function from your `.zshrc` / `.bashrc`
-2. Remove the binary `rm $(which envirou)`
-3. If you don't want to restart your current shell run `unset -f ev` (zsh) or `unset ev` (bash)
 
 ## Example configuration
 
