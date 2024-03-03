@@ -27,7 +27,7 @@ etc etc.
 
 
 ## Quickstart
-1. You will need to have [go installed](https://go.dev/) (go1.16 or newer) 
+1. You will need to have [go installed](https://go.dev/) (go1.22 or newer) 
 2. Install with `go install github.com/sverrirab/envirou@latest`
 3. Run `envirou` to view your current environment or `envirou --help` for more information
 
@@ -43,9 +43,9 @@ Please check out these documents for your shell:
 
 Out of the box `ev` is useful but for 
 After you start a new shell you should be able to run `ev -a` to list all env variables and 
-`ev -help` will provide details of other commands.
+`ev help` will provide details of other commands.
 
-Next step is check out `ev -edit` and start modifying the configuration. Create your own groupings and profiles!
+Next step is check out `ev config` and start modifying the configuration. Create your own groupings and profiles!
 
 ## Example use cases
 ### AWS configuration
@@ -82,6 +82,8 @@ AWS_PROFILE=prod
 [profile:awsdev]
 AWS_PROFILE=dev
 ```
+
+Now you can switch profiles by running `ev set py3 awsprod`
 
 
 ## Where does the name come from? 

@@ -1,3 +1,3 @@
 function prompt {
-    "$(envirou -active-profiles-colored 2>&1)PS ${pwd}> "
+    "$(envirou profiles --active 2>&1)PS ${pwd}> "
 }

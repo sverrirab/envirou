@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/sverrirab/envirou/pkg/output"
+	"strings"
 )
 
 // setCmd represents the set command
@@ -12,11 +12,12 @@ var bootstrapCmd = &cobra.Command{
 	Long:  `Run this in your shell initialization script`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if useBash {
-			output.Printf(bashBootstrap)
+			// Removing the she-bang line from the script
+			shellCommands = append(shellCommands, removeFirstLine(bashBootstrap))
 		} else if usePowershell {
-			output.Printf(powershellBootstrap)
+			shellCommands = append(shellCommands, powershellBootstrap)
 		} else {
-			output.Printf(batBootstrap)
+			shellCommands = append(shellCommands, batBootstrap)
 		}
 	},
 }
@@ -34,4 +35,12 @@ func init() {
 	bootstrapCmd.Flags().BoolVar(&usePowershell, "powershell", usePowershell, "Use Powershell script")
 	bootstrapCmd.Flags().BoolVar(&useWindowsBat, "bat", useWindowsBat, "Use Windows .bat script")
 	bootstrapCmd.MarkFlagsOneRequired("bash", "powershell", "bat")
+}
+
+func removeFirstLine(s string) string {
+	lines := strings.SplitN(s, "\n", 2)
+	if len(lines) > 1 {
+		return lines[1]
+	}
+	return s
 }
