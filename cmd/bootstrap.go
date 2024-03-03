@@ -9,7 +9,7 @@ import (
 var bootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
 	Short: "Bootstrap current shell",
-	Long:  `Run this in your shell initalization script`,
+	Long:  `Run this in your shell initialization script`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if useBash {
 			output.Printf(bashBootstrap)

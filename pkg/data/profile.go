@@ -1,7 +1,6 @@
 package data
 
 import (
-	"runtime"
 	"sort"
 	"strings"
 )
@@ -18,7 +17,7 @@ func NewProfile() *Profile {
 }
 
 func (profile *Profile) GetCorrectCase(name string, create bool) string {
-	if runtime.GOOS == "windows" {
+	if caseInsensitive {
 		upper := strings.ToUpper(name)
 		existingCase, exists := profile.rightCase[upper]
 		if exists {

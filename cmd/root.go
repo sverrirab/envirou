@@ -166,13 +166,16 @@ func initConfig() {
 	output.NoColor(noColor)
 	replacePathTilde := ""
 	//goland:noinspection ALL
-	runningOnWindows := runtime.GOOS == "windows"
-	//goland:noinspection ALL
-	if runningOnWindows && configuration.SettingsPathTilde {
-		replacePathTilde = os.Getenv("HOME")
+	if runtime.GOOS == "windows" {
+		data.SetCaseInsensitive()
+		if configuration.SettingsPathTilde {
+			replacePathTilde = os.Getenv("HOME")
+		}
+		sh = shell.NewShell(outputPowerShell, !outputPowerShell)
+	} else {
+		sh = shell.NewShell(false, false)
 	}
-	//goland:noinspection ALL
-	sh = shell.NewShell(outputPowerShell, runningOnWindows && !outputPowerShell)
+
 	out = output.NewOutput(replacePathTilde, configuration.SettingsPath, configuration.SettingsPassword, displayUnformatted, configuration.FormatGroup, configuration.FormatProfile, configuration.FormatEnvName, configuration.FormatPath, configuration.FormatDiff)
 
 	baseEnv = data.NewProfile()
