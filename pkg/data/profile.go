@@ -152,7 +152,7 @@ func (profile *Profile) MergeStrings(envList []string) {
 	}
 }
 
-func (profile Profile) String() string {
+func (profile *Profile) String() string {
 	return strings.Join(profile.SortedNames(true), ",")
 }
 
