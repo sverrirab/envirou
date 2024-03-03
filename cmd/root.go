@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/sverrirab/envirou/pkg/config"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
@@ -23,14 +24,6 @@ func displayGroup(out *output.Output, name string, envs data.Envs, profile *data
 		return true
 	}
 	return false
-}
-
-func findProfile(out *output.Output, cfg *config.Configuration, name string) (*data.Profile, bool) {
-	profile, found := cfg.Profiles.FindProfile(name)
-	if !found {
-		output.Printf("Profile %s not found\n", out.DiffSprintf(name))
-	}
-	return profile, found
 }
 
 var rootCmd = &cobra.Command{
@@ -66,18 +59,33 @@ shell function to be installed)`,
 		}
 		out.PrintProfileList(profileNames, activeProfileNames)
 	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		if len(shellCommands) > 0 {
+			commands := sh.RunCommands(shellCommands)
+			if verbose || dryRun {
+				output.Printf("Shell commands to execute:\n>\n> %s>\n", commands)
+			}
+			if !dryRun {
+				fmt.Print(commands)
+			}
+		}
+	},
 }
 
 var (
 	// Initial configuration
-	cfgFile       string
-	configuration *config.Configuration
+	cfgFile             string
+	configuration       *config.Configuration
+	bashBootstrap       string
+	powershellBootstrap string
+	batBootstrap        string
 
 	// Global flags
 	verbose            bool = false
 	noColor            bool = false
 	displayUnformatted bool = false
 	outputPowerShell   bool = false
+	dryRun             bool = false
 
 	// These are initialized using the current configuration
 	sh  *shell.Shell
@@ -91,6 +99,9 @@ var (
 	inactiveProfileNames []string
 	isActiveProfile      map[string]bool
 
+	// Here is what will be executed
+	shellCommands []string
+
 	// Used by root command
 	showAllGroups    bool = false
 	actionShowGroups []string
@@ -98,15 +109,27 @@ var (
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(bash, powershell, bat string) {
+	bashBootstrap = bash
+	powershellBootstrap = powershell
+	batBootstrap = bat
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
 }
 
+func addCommand(command *cobra.Command) {
+	// We need to redirect all output to stderr for all commands so this does not conflict with
+	// the outputting of shell execution of stderr
+	command.SetOut(os.Stderr)
+	rootCmd.AddCommand(command)
+}
+
 func init() {
 	cobra.OnInitialize(initConfig)
+	rootCmd.SetOut(os.Stderr)
 
 	// Flags for root command
 	rootCmd.Flags().BoolVarP(&showAllGroups, "all", "a", showAllGroups, "List all groups")
@@ -118,6 +141,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", verbose, "Increase output verbosity")
 	rootCmd.PersistentFlags().BoolVarP(&displayUnformatted, "unformatted", "u", displayUnformatted, "Display unformatted env variables")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", noColor, "Disable colored output")
+	rootCmd.PersistentFlags().BoolVar(&outputPowerShell, "output-powershell", outputPowerShell, "Enable PowerShell output")
+	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "n", dryRun, "Only display what would be changed")
 
 	rootCmd.AddGroup(&cobra.Group{ID: "profiles", Title: "Profile commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "groups", Title: "Group commands"})
@@ -133,15 +158,20 @@ func initConfig() {
 		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
 	}
-	output.Printf("Read config file: %s\n", cfgFile)
+	if verbose {
+		output.Printf("Read config file: %s\n", cfgFile)
+	}
 
 	// Display modifiers
 	output.NoColor(noColor)
 	replacePathTilde := ""
-	runningOnWindows := runtime.GOOS != "windows"
+	//goland:noinspection ALL
+	runningOnWindows := runtime.GOOS == "windows"
+	//goland:noinspection ALL
 	if runningOnWindows && configuration.SettingsPathTilde {
 		replacePathTilde = os.Getenv("HOME")
 	}
+	//goland:noinspection ALL
 	sh = shell.NewShell(outputPowerShell, runningOnWindows && !outputPowerShell)
 	out = output.NewOutput(replacePathTilde, configuration.SettingsPath, configuration.SettingsPassword, displayUnformatted, configuration.FormatGroup, configuration.FormatProfile, configuration.FormatEnvName, configuration.FormatPath, configuration.FormatDiff)
 
@@ -167,7 +197,6 @@ func initConfig() {
 	sort.Strings(profileNames)
 	sort.Strings(activeProfileNames)
 	sort.Strings(inactiveProfileNames)
-	// output.Printf("profileNames: %s\n", profileNames)
-	// output.Printf("activeProfileNames: %s\n", activeProfileNames)
-	// output.Printf("inactiveProfileNames: %s\n", inactiveProfileNames)
+
+	shellCommands = make([]string, 0)
 }

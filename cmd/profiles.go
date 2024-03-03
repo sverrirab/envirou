@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(profilesCmd)
+	addCommand(profilesCmd)
 
 	profilesCmd.Flags().BoolVarP(&showActiveProfilesOnly, "active", "a", showActiveProfilesOnly, "Show active profiles only")
 	profilesCmd.Flags().BoolVarP(&showInactiveProfilesOnly, "inactive", "i", showInactiveProfilesOnly, "Show inactive profiles only")

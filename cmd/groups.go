@@ -20,5 +20,5 @@ var groupsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(groupsCmd)
+	addCommand(groupsCmd)
 }
