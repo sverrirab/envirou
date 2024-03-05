@@ -1,6 +1,6 @@
 module github.com/sverrirab/envirou
 
-go 1.22.0
+go 1.18
 
 require (
 	github.com/fatih/color v1.15.0
