@@ -3,9 +3,9 @@
 ## Install
 The simplest way to that is to add this to your bash configuration file `.bashrc` (or `.zshrc` if you are using zsh):
 ```bash
-eval "$(envirou -bootstrap-bash)"
+eval $(envirou bootstrap --bash)
 ```
-and restart your shell
+and restart your shell (or run this in your local shell)
 
 ## Oh-My-Zsh
 Link the theme folder in this repository into your local theme folder and add `ZSH_THEME="envirou"` to your startup.

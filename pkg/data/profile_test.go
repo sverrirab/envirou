@@ -48,6 +48,19 @@ func TestProfile(t *testing.T) {
 	verifyNil(t, p3, "two", true)
 }
 
+func TestProfileSetUnset(t *testing.T) {
+	p1 := NewProfile()
+
+	p1.Set("hello", "world")
+	verifyValue(t, p1, "hello", "world")
+
+	p2 := NewProfile()
+	p2.SetNil("hello")
+
+	p1.Merge(p2)
+	verifyNil(t, p1, "hello", true)
+}
+
 func TestMergeStrings(t *testing.T) {
 	e := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
 	p := NewProfile()

@@ -1,7 +1,6 @@
 package data
 
 import (
-	"runtime"
 	"strings"
 )
 
@@ -14,7 +13,7 @@ func ParsePatterns(s string) *Patterns {
 	for _, p := range strings.Split(s, ",") {
 		trimmed := strings.TrimSpace(p)
 		if len(trimmed) > 0 {
-			if runtime.GOOS == "windows" {
+			if caseInsensitive {
 				trimmed = strings.ToUpper(trimmed)
 			}
 			patterns = append(patterns, Pattern(trimmed))
@@ -36,7 +35,7 @@ func MatchAny(s string, patterns *Patterns) bool {
 // Match Simple glob macher where pattern can be PATTERN, *PATTERN, *PATTERN* or PATTERN*
 func Match(s string, p Pattern) bool {
 	pattern := string(p)
-	if runtime.GOOS == "windows" {
+	if caseInsensitive {
 		s = strings.ToUpper(s)
 	}
 	if pattern == "" {

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
-ev() {
-  eval "$(envirou "$@")";
+function ev() {
+  eval "$(envirou "$@")"
 }

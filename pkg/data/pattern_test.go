@@ -1,7 +1,6 @@
 package data
 
 import (
-	"runtime"
 	"testing"
 )
 
@@ -38,7 +37,7 @@ func TestMatchSimpleMatch(t *testing.T) {
 }
 
 func TestMatchSimpleNoMatch(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if !caseInsensitive {
 		if Match("a", "A") {
 			t.Error("These should not match")
 		}
@@ -67,7 +66,7 @@ func TestMatchGlobMatch(t *testing.T) {
 }
 
 func TestMatchGlobNoMatch(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if !caseInsensitive {
 		if Match("path", "*PATH*") {
 			t.Error("These should not match")
 		}

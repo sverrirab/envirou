@@ -63,7 +63,7 @@ python=VIRTUAL_ENV
 
 `
 
-const configFileName = "config-v2.ini"
+const configFileName = "config.ini"
 
 // GetDefaultConfigFilePath Returns full path to the config file
 func GetDefaultConfigFilePath() string {
