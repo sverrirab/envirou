@@ -146,6 +146,7 @@ func init() {
 
 	rootCmd.AddGroup(&cobra.Group{ID: "profiles", Title: "Profile commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "groups", Title: "Group commands"})
+	rootCmd.AddGroup(&cobra.Group{ID: "configuration", Title: "Configuration commands"})
 }
 
 func initConfig() {

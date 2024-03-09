@@ -9,8 +9,9 @@ import (
 
 // setCmd represents the set command
 var dotenvCmd = &cobra.Command{
-	Use:   ".env",
-	Short: "Read .env file from current directory",
+	Use:     ".env",
+	Short:   "Read .env file from current directory",
+	GroupID: "profiles",
 	Run: func(cmd *cobra.Command, args []string) {
 		newEnv := baseEnv.Clone()
 		file, err := os.Open(dotenvFile)
@@ -48,7 +49,7 @@ func closeFile(file *os.File) {
 
 func init() {
 	addCommand(dotenvCmd)
-	rootCmd.PersistentFlags().StringVarP(
+	dotenvCmd.Flags().StringVarP(
 		&dotenvFile, "file", "f", dotenvFile,
 		"file name to read (default .env)")
 }

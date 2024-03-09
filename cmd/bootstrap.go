@@ -1,42 +1,45 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"strings"
 )
 
 // setCmd represents the set command
 var bootstrapCmd = &cobra.Command{
-	Use:   "bootstrap",
-	Short: "Bootstrap current shell",
-	Long:  `Run this in your shell initialization script`,
+	Use:       "bootstrap [bash|zsh|powershell|bat]",
+	Short:     "Bootstrap current shell",
+	Long:      `Run this in your shell initialization script`,
+	GroupID:   "configuration",
+	ValidArgs: []string{"bash", "zsh", "powershell", "bat"},
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("only provide one argument: type of shell to bootstrap")
+		}
+
+		for _, arg := range args {
+			if !contains(cmd.ValidArgs, arg) {
+				validArgs := strings.Join(cmd.ValidArgs, ",")
+				return fmt.Errorf("invalid argument \"%s\", must be one of %s", arg, validArgs)
+			}
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if useBash || useZsh {
+		if args[0] == "powershell" {
+			shellCommands = append(shellCommands, powershellBootstrap)
+		} else if args[0] == "bat" {
+			shellCommands = append(shellCommands, batBootstrap)
+		} else { // bash + zsh
 			// Removing the she-bang line from the script
 			shellCommands = append(shellCommands, removeFirstLine(bashBootstrap))
-		} else if usePowershell {
-			shellCommands = append(shellCommands, powershellBootstrap)
-		} else {
-			shellCommands = append(shellCommands, batBootstrap)
 		}
 	},
 }
 
-var (
-	useBash       bool = false
-	useZsh        bool = false
-	usePowershell bool = false
-	useWindowsBat bool = false
-)
-
 func init() {
 	addCommand(bootstrapCmd)
-
-	bootstrapCmd.Flags().BoolVar(&useBash, "bash", useBash, "Use bash script")
-	bootstrapCmd.Flags().BoolVar(&useBash, "zsh", useBash, "Use zsh script")
-	bootstrapCmd.Flags().BoolVar(&usePowershell, "powershell", usePowershell, "Use Powershell script")
-	bootstrapCmd.Flags().BoolVar(&useWindowsBat, "bat", useWindowsBat, "Use Windows .bat script")
-	bootstrapCmd.MarkFlagsOneRequired("bash", "zsh", "powershell", "bat")
 }
 
 func removeFirstLine(s string) string {
@@ -45,4 +48,13 @@ func removeFirstLine(s string) string {
 		return lines[1]
 	}
 	return s
+}
+
+func contains(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
 }

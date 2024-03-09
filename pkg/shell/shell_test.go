@@ -82,7 +82,7 @@ func TestRunCommandsBash(t *testing.T) {
 		t.Errorf("Did not expect no command to be: %s.", cmd1)
 	}
 	cmd2 := sh.RunCommands([]string{"echo hi", "ls -al"})
-	if cmd2 != "echo hi;ls -al;\n" {
+	if cmd2 != "echo hi;ls -al\n" {
 		t.Errorf("Did not expect commands to be: %s.", cmd2)
 	}
 }

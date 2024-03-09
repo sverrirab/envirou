@@ -105,7 +105,7 @@ func (shell *Shell) RunCommands(commands []string) string {
 			return fmt.Sprintf("%s\n", strings.Join(commands, " & "))
 		} else {
 			// Unixes require ; termination (as well as PowerShell)
-			commands = append(commands, "")
+			// commands = append(commands, "")  // Bash does not like this
 			return fmt.Sprintf("%s\n", strings.Join(commands, ";"))
 		}
 	}

@@ -11,9 +11,10 @@ import (
 
 // setCmd represents the set command
 var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Configure settings",
-	Long:  `By default this will run an editor with the current config file`,
+	Use:     "config",
+	Short:   "Configure settings",
+	Long:    `By default this will run an editor with the current config file`,
+	GroupID: "configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		editor, found := baseEnv.Get("EDITOR")
 		if !found {
