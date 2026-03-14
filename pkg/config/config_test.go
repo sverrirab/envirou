@@ -45,13 +45,18 @@ func readTestConfig(t *testing.T, stringConfig string) *Configuration {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer removeFile(file.Name())
+	name := file.Name()
+	defer removeFile(name)
 	_, err = file.WriteString(stringConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	config, err := ReadConfiguration(file.Name(), false)
+	config, err := ReadConfiguration(name, false)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
