@@ -5,7 +5,7 @@
 Envirou (`ev`) helps you to quickly view and configure your shell
 environment. Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment or guessing which one is active!
 
-![Simple View](./screenshots/header.png)
+![Simple View](./screenshots/envirou_5.jpg)
 
 
 # Key highlights
