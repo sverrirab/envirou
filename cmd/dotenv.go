@@ -2,41 +2,60 @@ package cmd
 
 import (
 	"bufio"
-	"github.com/spf13/cobra"
-	"github.com/sverrirab/envirou/pkg/output"
+	"fmt"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/sverrirab/envirou/pkg/data"
+	"github.com/sverrirab/envirou/pkg/output"
 )
 
 var dotenvCmd = &cobra.Command{
-	Use:     ".env",
-	Short:   "Read .env file from current directory",
+	Use:     "dotenv [files...]",
+	Aliases: []string{".env"},
+	Short:   "Load environment from .env files",
+	Long: `Read one or more .env files and apply the variables to the current environment.
+If no files are specified, reads .env from the current directory.
+When multiple files are given, they are loaded in order and later values override earlier ones.`,
 	GroupID: "profiles",
 	Run: func(cmd *cobra.Command, args []string) {
-		newEnv := app.baseEnv.Clone()
-		file, err := os.Open(dotenvFile)
-		if err != nil {
-			output.Printf("Local .env file not found\n")
-			os.Exit(1)
+		files := args
+		if len(files) == 0 {
+			files = []string{".env"}
 		}
-		defer closeFile(file)
 
-		var lines []string
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := parseDotenvLine(scanner.Text())
-			if line != "" {
-				lines = append(lines, line)
+		newEnv := app.baseEnv.Clone()
+		for _, filename := range files {
+			if err := loadDotenvFile(filename, newEnv); err != nil {
+				output.Printf("%s: %s\n", filename, err.Error())
+				os.Exit(1)
 			}
 		}
-
-		if err := scanner.Err(); err != nil {
-			output.Printf("Failed reading from .env file (%s)\n", err.Error())
-			os.Exit(1)
-		}
-		newEnv.MergeStrings(lines)
 		app.shellCommands = append(app.shellCommands, app.sh.GetCommands(app.baseEnv, newEnv)...)
 	},
+}
+
+func loadDotenvFile(filename string, env *data.Profile) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("file not found")
+	}
+	defer closeFile(file)
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := parseDotenvLine(scanner.Text())
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("failed reading file (%s)", err.Error())
+	}
+	env.MergeStrings(lines)
+	return nil
 }
 
 // parseDotenvLine parses a single .env line, returning a clean KEY=value string.
@@ -71,8 +90,6 @@ func parseDotenvLine(line string) string {
 	return key + "=" + value
 }
 
-var dotenvFile = ".env"
-
 func closeFile(file *os.File) {
 	err := file.Close()
 	if err != nil {
@@ -82,7 +99,4 @@ func closeFile(file *os.File) {
 
 func init() {
 	addCommand(dotenvCmd)
-	dotenvCmd.Flags().StringVarP(
-		&dotenvFile, "file", "f", dotenvFile,
-		"file name to read (default .env)")
 }

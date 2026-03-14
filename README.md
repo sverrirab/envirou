@@ -68,7 +68,7 @@ For more details:
 |---------|-------------|
 | `ev` | Display current environment (grouped and formatted) |
 | `ev set PROFILE [...]` | Activate one or more profiles |
-| `ev .env` | Load variables from a local `.env` file |
+| `ev dotenv [files...]` | Load variables from `.env` files |
 | `ev profiles` | List all profiles (active ones highlighted) |
 | `ev groups` | List all configured groups |
 | `ev config` | Open config file in `$EDITOR` |
@@ -101,8 +101,9 @@ can create different profiles that for example have a different default namespac
 ### Loading .env files
 If your project uses `.env` files you can load them into your current shell:
 ```bash
-ev .env
-ev .env --file .env.local
+ev dotenv                          # loads .env
+ev dotenv .env.local               # loads a specific file
+ev dotenv .env .env.local          # layers multiple files (last wins)
 ```
 
 ## Example configuration

@@ -260,19 +260,22 @@ func TestRootCommandDryRun(t *testing.T) {
 
 // --- Dotenv tests ---
 
-func TestDotenvCommand(t *testing.T) {
-	// Create a temp .env file
+func writeTempEnvFile(t *testing.T, content string) string {
+	t.Helper()
 	envFile, err := os.CreateTemp("", "dotenv")
 	if err != nil {
 		t.Fatal(err)
 	}
-	envName := envFile.Name()
-	t.Cleanup(func() { os.Remove(envName) })
-
-	envFile.WriteString("MY_VAR=hello\nMY_OTHER=world\n# comment\n")
+	name := envFile.Name()
+	t.Cleanup(func() { os.Remove(name) })
+	envFile.WriteString(content)
 	envFile.Close()
+	return name
+}
 
-	out := executeCommand(t, ".env", "--file", envName)
+func TestDotenvCommand(t *testing.T) {
+	name := writeTempEnvFile(t, "MY_VAR=hello\nMY_OTHER=world\n# comment\n")
+	out := executeCommand(t, "dotenv", name)
 	if !strings.Contains(out, "MY_VAR") || !strings.Contains(out, "hello") {
 		t.Errorf("Expected MY_VAR=hello in output, got: %s", out)
 	}
@@ -281,37 +284,45 @@ func TestDotenvCommand(t *testing.T) {
 	}
 }
 
-func TestDotenvQuotedValues(t *testing.T) {
-	envFile, err := os.CreateTemp("", "dotenv")
-	if err != nil {
-		t.Fatal(err)
+func TestDotenvAlias(t *testing.T) {
+	name := writeTempEnvFile(t, "ALIAS_VAR=works\n")
+	out := executeCommand(t, ".env", name)
+	if !strings.Contains(out, "ALIAS_VAR") || !strings.Contains(out, "works") {
+		t.Errorf("Expected .env alias to work, got: %s", out)
 	}
-	envName := envFile.Name()
-	t.Cleanup(func() { os.Remove(envName) })
+}
 
-	envFile.WriteString(`QUOTED="hello world"` + "\n")
-	envFile.Close()
-
-	out := executeCommand(t, ".env", "--file", envName)
+func TestDotenvQuotedValues(t *testing.T) {
+	name := writeTempEnvFile(t, `QUOTED="hello world"`+"\n")
+	out := executeCommand(t, "dotenv", name)
 	if !strings.Contains(out, "hello world") {
 		t.Errorf("Expected unquoted value 'hello world' in output, got: %s", out)
 	}
 }
 
 func TestDotenvExportPrefix(t *testing.T) {
-	envFile, err := os.CreateTemp("", "dotenv")
-	if err != nil {
-		t.Fatal(err)
-	}
-	envName := envFile.Name()
-	t.Cleanup(func() { os.Remove(envName) })
-
-	envFile.WriteString("export EXPORTED_VAR=value\n")
-	envFile.Close()
-
-	out := executeCommand(t, ".env", "--file", envName)
+	name := writeTempEnvFile(t, "export EXPORTED_VAR=value\n")
+	out := executeCommand(t, "dotenv", name)
 	if !strings.Contains(out, "EXPORTED_VAR") || !strings.Contains(out, "value") {
 		t.Errorf("Expected EXPORTED_VAR=value in output, got: %s", out)
+	}
+}
+
+func TestDotenvMultipleFiles(t *testing.T) {
+	base := writeTempEnvFile(t, "FOO=base\nBAR=only_in_base\n")
+	override := writeTempEnvFile(t, "FOO=override\nBAZ=only_in_override\n")
+	out := executeCommand(t, "dotenv", base, override)
+	// FOO should be "override" (last file wins)
+	if !strings.Contains(out, "override") {
+		t.Errorf("Expected FOO=override (last file wins), got: %s", out)
+	}
+	// BAR from base should be present
+	if !strings.Contains(out, "BAR") || !strings.Contains(out, "only_in_base") {
+		t.Errorf("Expected BAR=only_in_base from base file, got: %s", out)
+	}
+	// BAZ from override should be present
+	if !strings.Contains(out, "BAZ") || !strings.Contains(out, "only_in_override") {
+		t.Errorf("Expected BAZ=only_in_override from override file, got: %s", out)
 	}
 }
 
