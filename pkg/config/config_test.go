@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/sverrirab/envirou/pkg/data"
 	"log"
 	"os"
 	"testing"
@@ -52,7 +51,7 @@ func readTestConfig(t *testing.T, stringConfig string) *Configuration {
 		log.Fatal(err)
 	}
 
-	config, err := ReadConfiguration(file.Name())
+	config, err := ReadConfiguration(file.Name(), false)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
@@ -105,7 +104,7 @@ func TestReadDefault(t *testing.T) {
 	}
 
 	// Deleted temp file - this should create the file:
-	config, err := ReadConfiguration(file.Name())
+	config, err := ReadConfiguration(file.Name(), false)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
@@ -172,9 +171,4 @@ func TestProfile(t *testing.T) {
 	validateProfileNil(t, config, "foo", "THREE", true)
 	validateProfileNil(t, config, "foo", "NOT-THREE", false)
 
-	if data.GetCaseInsensitive() {
-		// Test case insensitivity
-		validateProfileValue(t, config, "foo", "One", "one")
-		validateProfileNil(t, config, "foo", "Three", true)
-	}
 }

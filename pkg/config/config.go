@@ -34,7 +34,7 @@ func readFormat(config *ini.IniFile, name, defaultValue string) string {
 	}
 }
 
-func ReadConfiguration(configPath string) (*Configuration, error) {
+func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration, error) {
 	configuration := &Configuration{
 		SettingsQuiet:     false,
 		SettingsSortKeys:  false,
@@ -57,8 +57,8 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 	configuration.SettingsQuiet = config.GetBool("settings", "quiet", false)
 	configuration.SettingsSortKeys = config.GetBool("settings", "sort_keys", true)
 	configuration.SettingsPathTilde = config.GetBool("settings", "path_tilde", true)
-	configuration.SettingsPassword = *data.ParsePatterns(config.GetString("settings", "password", ""))
-	configuration.SettingsPath = *data.ParsePatterns(config.GetString("settings", "path", ""))
+	configuration.SettingsPassword = *data.ParsePatterns(config.GetString("settings", "password", ""), caseInsensitive)
+	configuration.SettingsPath = *data.ParsePatterns(config.GetString("settings", "path", ""), caseInsensitive)
 
 	configuration.FormatGroup = readFormat(config, "group", "magenta")
 	configuration.FormatProfile = readFormat(config, "profile", "green")
@@ -69,11 +69,11 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 	// Groups
 	groups := config.GetAllVariables("groups")
 	for _, k := range groups {
-		configuration.Groups.ParseAndAdd(k, config.GetString("groups", k, ""))
+		configuration.Groups.ParseAndAdd(k, config.GetString("groups", k, ""), caseInsensitive)
 	}
 	custom := config.GetAllVariables("custom")
 	for _, k := range custom {
-		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""))
+		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""), caseInsensitive)
 	}
 
 	sections := config.GetAllSections()
@@ -81,7 +81,7 @@ func ReadConfiguration(configPath string) (*Configuration, error) {
 		split := strings.SplitN(section, ":", 2)
 		if len(split) == 2 && strings.TrimSpace(strings.ToLower(split[0])) == "profile" {
 			profileName := strings.TrimSpace(split[1])
-			profile := data.NewProfile()
+			profile := data.NewProfile(caseInsensitive)
 			for _, entry := range config.GetAllVariables(section) {
 				if config.IsNil(section, entry) {
 					profile.SetNil(entry)

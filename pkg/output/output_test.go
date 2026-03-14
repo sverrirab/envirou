@@ -30,9 +30,9 @@ func TestColorChange(t *testing.T) {
 
 	twoPath := strings.Join([]string{"FOO", "BAR"}, pathListSeperator)
 
-	out1 := NewOutput("", *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false, "red", "blue", "cyan", "green", "white")
-	out2 := NewOutput("", *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false, "magenta", "yellow", "cyan", "black", "bold")
-	out3 := NewOutput("/X", *data.ParsePatterns("foo"), *data.ParsePatterns(""), false, "red", "blue", "cyan", "green", "white")
+	out1 := NewOutput("", *data.ParsePatterns("foo", false), *data.ParsePatterns("bar", false), false, false, "red", "blue", "cyan", "green", "white")
+	out2 := NewOutput("", *data.ParsePatterns("foo", false), *data.ParsePatterns("bar", false), false, false, "magenta", "yellow", "cyan", "black", "bold")
+	out3 := NewOutput("/X", *data.ParsePatterns("foo", false), *data.ParsePatterns("", false), false, false, "red", "blue", "cyan", "green", "white")
 
 	beforeGroup := out1.GroupSprintf("HELLO")
 	beforeProfile := out1.ProfileSprintf("HELLO")

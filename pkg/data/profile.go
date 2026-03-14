@@ -6,18 +6,24 @@ import (
 )
 
 type Profile struct {
-	env       map[string]string // The actual key value pair
-	rightCase map[string]string // VAR -> Var (maps to actual case, used for case insensitive comparison on Windows)
-	isNil     map[string]bool   // True if item is to be removed (uses UPPER case name)
+	env             map[string]string // The actual key value pair
+	rightCase       map[string]string // VAR -> Var (maps to actual case, used for case insensitive comparison on Windows)
+	isNil           map[string]bool   // True if item is to be removed (uses UPPER case name)
+	caseInsensitive bool
 }
 type Profiles map[string]Profile
 
-func NewProfile() *Profile {
-	return &Profile{env: make(map[string]string), rightCase: make(map[string]string), isNil: make(map[string]bool)}
+func NewProfile(caseInsensitive bool) *Profile {
+	return &Profile{
+		env:             make(map[string]string),
+		rightCase:       make(map[string]string),
+		isNil:           make(map[string]bool),
+		caseInsensitive: caseInsensitive,
+	}
 }
 
 func (profile *Profile) GetCorrectCase(name string, create bool) string {
-	if caseInsensitive {
+	if profile.caseInsensitive {
 		upper := strings.ToUpper(name)
 		existingCase, exists := profile.rightCase[upper]
 		if exists {
@@ -77,7 +83,7 @@ func (profile *Profile) SortedNames(includeNil bool) []string {
 
 // Clone creates a new copy of the Profile.
 func (profile *Profile) Clone() *Profile {
-	p := NewProfile()
+	p := NewProfile(profile.caseInsensitive)
 	for k, v := range profile.env {
 		p.env[k] = v
 	}

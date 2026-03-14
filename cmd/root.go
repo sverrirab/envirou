@@ -36,7 +36,7 @@ Using without any command will display the current environment in a shortened fo
 The next step is to use "set" to modify the current environment (this requires "ev"
 shell function to be installed)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		matches, remaining := app.configuration.Groups.MatchAll(app.baseEnv.SortedNames(false))
+		matches, remaining := app.configuration.Groups.MatchAll(app.baseEnv.SortedNames(false), app.caseInsensitive)
 		if !showAllGroups && len(actionShowGroups) > 0 {
 			for _, actionShowGroup := range actionShowGroups {
 				if !displayGroup(app.out, actionShowGroup, matches[actionShowGroup], app.baseEnv, app.sh) {
@@ -74,6 +74,7 @@ shell function to be installed)`,
 
 // appState holds runtime state initialized during startup.
 type appState struct {
+	caseInsensitive      bool
 	configuration        *config.Configuration
 	sh                   *shell.Shell
 	out                  *output.Output
@@ -154,8 +155,11 @@ func initConfig() {
 	if cfgFile == "" {
 		cfgFile = config.GetDefaultConfigFilePath()
 	}
+	//goland:noinspection ALL
+	app.caseInsensitive = runtime.GOOS == "windows"
+
 	var err error
-	app.configuration, err = config.ReadConfiguration(cfgFile)
+	app.configuration, err = config.ReadConfiguration(cfgFile, app.caseInsensitive)
 	if err != nil {
 		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
@@ -167,9 +171,7 @@ func initConfig() {
 	// Display modifiers
 	output.NoColor(noColor)
 	replacePathTilde := ""
-	//goland:noinspection ALL
-	if runtime.GOOS == "windows" {
-		data.SetCaseInsensitive()
+	if app.caseInsensitive {
 		if app.configuration.SettingsPathTilde {
 			replacePathTilde = os.Getenv("HOME")
 		}
@@ -178,9 +180,9 @@ func initConfig() {
 		app.sh = shell.NewShell(false, false)
 	}
 
-	app.out = output.NewOutput(replacePathTilde, app.configuration.SettingsPath, app.configuration.SettingsPassword, displayUnformatted, app.configuration.FormatGroup, app.configuration.FormatProfile, app.configuration.FormatEnvName, app.configuration.FormatPath, app.configuration.FormatDiff)
+	app.out = output.NewOutput(replacePathTilde, app.configuration.SettingsPath, app.configuration.SettingsPassword, displayUnformatted, app.caseInsensitive, app.configuration.FormatGroup, app.configuration.FormatProfile, app.configuration.FormatEnvName, app.configuration.FormatPath, app.configuration.FormatDiff)
 
-	app.baseEnv = data.NewProfile()
+	app.baseEnv = data.NewProfile(app.caseInsensitive)
 	app.baseEnv.MergeStrings(os.Environ())
 
 	// Figure out what profiles are active.

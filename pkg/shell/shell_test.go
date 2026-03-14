@@ -44,10 +44,10 @@ func TestEscape(t *testing.T) {
 
 func TestCommandsBash(t *testing.T) {
 	e1 := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
-	before := data.NewProfile()
+	before := data.NewProfile(false)
 	before.MergeStrings(e1)
 	e2 := []string{"SMURF=yes yes", "BOAT", "FOO"}
-	after := data.NewProfile()
+	after := data.NewProfile(false)
 	after.MergeStrings(e2)
 
 	sh := NewShell(false, false)
@@ -60,10 +60,10 @@ func TestCommandsBash(t *testing.T) {
 
 func TestCommandsBat(t *testing.T) {
 	e1 := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
-	before := data.NewProfile()
+	before := data.NewProfile(false)
 	before.MergeStrings(e1)
 	e2 := []string{"SMURF=yes yes", "BOAT", "FOO"}
-	after := data.NewProfile()
+	after := data.NewProfile(false)
 	after.MergeStrings(e2)
 
 	sh := NewShell(false, true)
