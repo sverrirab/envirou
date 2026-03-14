@@ -1,27 +1,26 @@
 name: build
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-go@v5
       with:
         go-version: '>=1.21.0'
-    
+
     - name: Build
-      run: go build . 
-      
+      run: go build .
+
     - name: Run vet
-      run: |
-        go vet .
-    
+      run: go vet ./...
+
     - name: Run tests
-      run: |
-        go test -coverprofile=c.out ./...
-        go tool cover -html=c.out
-    
+      run: go test -coverprofile=c.out ./...
