@@ -1,14 +1,19 @@
 # PowerShell and envirou
 
-To enable ev in your current session run this script: [ev.ps1](./ev.ps1) or (it's built into envirou):
+## Install
+Add this to your PowerShell profile (`$PROFILE`):
 ```powershell
-Invoke-Expression -Command $(envirou bootstrap --powershell)
+Invoke-Expression -Command $(envirou bootstrap powershell)
+```
+
+To also customize your prompt with active profile display and exit code:
+```powershell
+Invoke-Expression -Command $(envirou bootstrap powershell --prompt)
 ```
 
 ## Uninstall
+1. Remove the `Invoke-Expression` line from your `$PROFILE`
+2. Remove the binary:
 ```powershell
 Remove-Item (Get-Command envirou).Source
 ```
-
-## Update prompt with envirou profile
-Run this script [prompt.ps1](./prompt.ps1) 
