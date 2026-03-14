@@ -13,9 +13,12 @@ var embeddedBootstrapBash string
 //go:embed powershell/ev.ps1
 var embeddedBootstrapPowerShell string
 
+//go:embed powershell/prompt.ps1
+var embeddedPromptPowerShell string
+
 //go:embed ev.cmd
 var embeddedBootstrapBat string
 
 func main() {
-	cmd.Execute(embeddedBootstrapBash, embeddedBootstrapPowerShell, embeddedBootstrapBat)
+	cmd.Execute(embeddedBootstrapBash, embeddedBootstrapPowerShell, embeddedPromptPowerShell, embeddedBootstrapBat)
 }

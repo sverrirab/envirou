@@ -62,6 +62,11 @@ func needsEscape(value string) bool {
 	return false
 }
 
+func (shell *Shell) ForcePowershell() {
+	shell.powerShell = true
+	shell.bat = false
+}
+
 func (shell *Shell) Escape(value string) string {
 	if shell.powerShell {
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "''"))

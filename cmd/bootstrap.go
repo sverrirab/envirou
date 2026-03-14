@@ -28,7 +28,11 @@ var bootstrapCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "powershell" {
+			sh.ForcePowershell()
 			shellCommands = append(shellCommands, powershellBootstrap)
+			if addPrompt {
+				shellCommands = append(shellCommands, powershellPrompt)
+			}
 		} else if args[0] == "bat" {
 			shellCommands = append(shellCommands, batBootstrap)
 		} else { // bash + zsh
@@ -38,8 +42,13 @@ var bootstrapCmd = &cobra.Command{
 	},
 }
 
+var (
+	addPrompt = false
+)
+
 func init() {
 	addCommand(bootstrapCmd)
+	bootstrapCmd.Flags().BoolVarP(&addPrompt, "prompt", "p", addPrompt, "Also modify prompt")
 }
 
 func removeFirstLine(s string) string {

@@ -78,6 +78,7 @@ var (
 	configuration       *config.Configuration
 	bashBootstrap       string
 	powershellBootstrap string
+	powershellPrompt    string
 	batBootstrap        string
 
 	// Global flags
@@ -109,9 +110,10 @@ var (
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(bash, powershell, bat string) {
+func Execute(bash, powershell, psPrompt, bat string) {
 	bashBootstrap = bash
 	powershellBootstrap = powershell
+	powershellPrompt = psPrompt
 	batBootstrap = bat
 
 	err := rootCmd.Execute()
