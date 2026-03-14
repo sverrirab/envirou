@@ -27,7 +27,7 @@ etc etc.
 
 
 ## Quickstart
-1. You will need to have [go installed](https://go.dev/) (go1.22 or newer) 
+1. You will need to have [go installed](https://go.dev/) (go1.21 or newer)
 2. Install with `go install github.com/sverrirab/envirou@latest`
 3. Run `envirou` to view your current environment or `envirou --help` for more information
 
