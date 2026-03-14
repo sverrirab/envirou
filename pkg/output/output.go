@@ -22,6 +22,7 @@ type Output struct {
 	passwords        data.Patterns
 	displayRaw       bool
 	caseInsensitive  bool
+	diffNames        map[string]bool
 
 	groupSprintf   ColorPrintFunc
 	profileSprintf ColorPrintFunc
@@ -125,13 +126,21 @@ func (out *Output) DiffSprintf(format string, a ...interface{}) string {
 	return out.diffSprintf(format, a...)
 }
 
+func (out *Output) SetDiffNames(names map[string]bool) {
+	out.diffNames = names
+}
+
 func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 	outputName := name
 	outputValue := value
 	if out.displayRaw {
 		outputValue = sh.Escape(value)
 	} else {
-		outputName = out.EnvNameSprintf("%s", name)
+		if out.diffNames != nil && out.diffNames[name] {
+			outputName = out.DiffSprintf("%s", name)
+		} else {
+			outputName = out.EnvNameSprintf("%s", name)
+		}
 		if data.MatchAny(name, &out.passwords, out.caseInsensitive) {
 			outputValue = "****--->hidden<---****"
 		} else if data.MatchAny(name, &out.paths, out.caseInsensitive) {

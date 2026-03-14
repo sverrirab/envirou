@@ -79,6 +79,7 @@ type appState struct {
 	sh                   *shell.Shell
 	out                  *output.Output
 	baseEnv              *data.Profile
+	snapshot             *data.Profile
 	profileNames         []string
 	activeProfileNames   []string
 	inactiveProfileNames []string
@@ -184,6 +185,19 @@ func initConfig() {
 
 	app.baseEnv = data.NewProfile(app.caseInsensitive)
 	app.baseEnv.MergeStrings(os.Environ())
+
+	app.snapshot, _ = config.LoadSnapshot(app.caseInsensitive)
+	if app.snapshot != nil {
+		added, changed, _ := data.FullDiff(app.baseEnv, app.snapshot)
+		diffNames := make(map[string]bool)
+		for _, n := range added {
+			diffNames[n] = true
+		}
+		for _, n := range changed {
+			diffNames[n] = true
+		}
+		app.out.SetDiffNames(diffNames)
+	}
 
 	// Figure out what profiles are active.
 	app.profileNames = make([]string, 0, len(app.configuration.Profiles))

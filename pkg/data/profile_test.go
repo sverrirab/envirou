@@ -119,6 +119,38 @@ func TestFind(t *testing.T) {
 	}
 }
 
+func TestFullDiff(t *testing.T) {
+	current := NewProfile(false)
+	current.MergeStrings([]string{"FOO=1", "BAR=changed", "NEW=added"})
+
+	snapshot := NewProfile(false)
+	snapshot.MergeStrings([]string{"FOO=1", "BAR=original", "OLD=removed"})
+
+	added, changed, removed := FullDiff(current, snapshot)
+
+	matchList(t, []string{"NEW"}, added)
+	matchList(t, []string{"BAR"}, changed)
+	matchList(t, []string{"OLD"}, removed)
+
+	// Verify sorted order
+	if len(added) > 0 && added[0] != "NEW" {
+		t.Errorf("Expected sorted added list")
+	}
+}
+
+func TestFullDiffEmpty(t *testing.T) {
+	current := NewProfile(false)
+	current.MergeStrings([]string{"FOO=1"})
+
+	snapshot := NewProfile(false)
+	snapshot.MergeStrings([]string{"FOO=1"})
+
+	added, changed, removed := FullDiff(current, snapshot)
+	if len(added) != 0 || len(changed) != 0 || len(removed) != 0 {
+		t.Error("Expected no differences")
+	}
+}
+
 func TestCaseInsensitive(t *testing.T) {
 	p := NewProfile(true)
 	p.Set("Hello", "world")

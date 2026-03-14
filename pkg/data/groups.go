@@ -46,6 +46,18 @@ func (groups Groups) String() string {
 	return strings.Join(result, " | ")
 }
 
+// IsIgnored returns true if name matches any group whose name starts with ".."
+func (groups *Groups) IsIgnored(name string, caseInsensitive bool) bool {
+	for groupName, patterns := range *groups {
+		if strings.HasPrefix(groupName, "..") {
+			if MatchAny(name, &patterns, caseInsensitive) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // MatchAll returns a map of group names to all env variables as well as a list of unmatched ones
 func (groups *Groups) MatchAll(envs Envs, caseInsensitive bool) (GroupNameToEnvs, Envs) {
 	result := make(GroupNameToEnvs, len(*groups))

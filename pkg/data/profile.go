@@ -161,6 +161,27 @@ func (profile *Profile) String() string {
 	return strings.Join(profile.SortedNames(true), ",")
 }
 
+// FullDiff compares current against snapshot and returns added, changed, and removed variable names (sorted).
+func FullDiff(current, snapshot *Profile) (added, changed, removed []string) {
+	added = make([]string, 0)
+	changed = make([]string, 0)
+	removed = make([]string, 0)
+	for _, name := range current.SortedNames(false) {
+		snapshotVal, inSnapshot := snapshot.Get(name)
+		if !inSnapshot {
+			added = append(added, name)
+		} else if currentVal, _ := current.Get(name); currentVal != snapshotVal {
+			changed = append(changed, name)
+		}
+	}
+	for _, name := range snapshot.SortedNames(false) {
+		if _, inCurrent := current.Get(name); !inCurrent {
+			removed = append(removed, name)
+		}
+	}
+	return added, changed, removed
+}
+
 func (profiles *Profiles) FindProfile(name string) (profile *Profile, found bool) {
 	var result *Profile
 	for profileName, profile := range *profiles {

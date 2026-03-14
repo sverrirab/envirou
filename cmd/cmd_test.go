@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/spf13/pflag"
+	"github.com/sverrirab/envirou/pkg/config"
 )
 
 const testConfigForCmd = `
@@ -60,6 +61,8 @@ func executeCommand(t *testing.T, args ...string) string {
 	addPrompt = false
 	showActiveProfilesOnly = false
 	showInactiveProfilesOnly = false
+	snapshotReset = false
+	diffSaveProfile = ""
 
 	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -335,4 +338,59 @@ func TestConfigWithEditor(t *testing.T) {
 	if !strings.Contains(out, "echo") {
 		t.Errorf("Expected editor command in output, got: %s", out)
 	}
+}
+
+// --- Snapshot tests ---
+
+func TestSnapshotCommand(t *testing.T) {
+	t.Setenv("TEST_SNAP", "value1")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	// Verify snapshot was saved by loading it
+	snapshot, err := config.LoadSnapshot(false)
+	if err != nil {
+		t.Fatalf("Failed to load snapshot: %v", err)
+	}
+	if snapshot == nil {
+		t.Fatal("Expected snapshot to be saved")
+	}
+	if v, ok := snapshot.Get("TEST_SNAP"); !ok || v != "value1" {
+		t.Errorf("Expected TEST_SNAP=value1 in snapshot, got %s", v)
+	}
+}
+
+func TestSnapshotReset(t *testing.T) {
+	// First save a snapshot
+	_ = executeCommand(t, "snapshot")
+	// Now reset it
+	_ = executeCommand(t, "snapshot", "--reset")
+
+	snapshot, err := config.LoadSnapshot(false)
+	if err != nil {
+		t.Fatalf("Failed to load snapshot: %v", err)
+	}
+	if snapshot != nil {
+		t.Error("Expected snapshot to be removed after reset")
+	}
+}
+
+// --- Diff tests ---
+
+func TestDiffNoSnapshot(t *testing.T) {
+	config.RemoveSnapshot()
+	// Should not error, just print message
+	_ = executeCommand(t, "diff")
+}
+
+func TestDiffWithChanges(t *testing.T) {
+	// Save a snapshot with TEST_DIFF set
+	t.Setenv("TEST_DIFF", "before")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	// Change the env and run diff
+	t.Setenv("TEST_DIFF", "after")
+	t.Setenv("TEST_NEW", "added")
+	_ = executeCommand(t, "diff")
 }
