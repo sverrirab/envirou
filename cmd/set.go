@@ -20,15 +20,15 @@ To change profiles edit the config file (see "config" command)`,
 	GroupID: "profiles",
 	Args:    cobra.MatchAll(cobra.MinimumNArgs(1)),
 	Run: func(cmd *cobra.Command, args []string) {
-		newEnv := baseEnv.Clone()
+		newEnv := app.baseEnv.Clone()
 		for _, activateName := range args {
-			profile, found := findProfile(out, configuration, activateName)
+			profile, found := findProfile(app.out, app.configuration, activateName)
 			if found {
 				newEnv.Merge(profile)
-				output.Printf("Profile %s enabled\n", out.ProfileSprintf(activateName))
+				output.Printf("Profile %s enabled\n", app.out.ProfileSprintf(activateName))
 			}
 		}
-		shellCommands = append(shellCommands, sh.GetCommands(baseEnv, newEnv)...)
+		app.shellCommands = append(app.shellCommands, app.sh.GetCommands(app.baseEnv, newEnv)...)
 	},
 }
 

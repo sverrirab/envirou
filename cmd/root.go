@@ -32,36 +32,36 @@ var rootCmd = &cobra.Command{
 	Long: `You can view categorized and sorted env variables as well as easily
 create custom profiles to quickly identify the local configuration
 
-Using without any command will display the current environment in a shortened format. 
-The next step is to use "set" to modify the current environment (this requires "ev" 
+Using without any command will display the current environment in a shortened format.
+The next step is to use "set" to modify the current environment (this requires "ev"
 shell function to be installed)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		matches, remaining := configuration.Groups.MatchAll(baseEnv.SortedNames(false))
+		matches, remaining := app.configuration.Groups.MatchAll(app.baseEnv.SortedNames(false))
 		if !showAllGroups && len(actionShowGroups) > 0 {
 			for _, actionShowGroup := range actionShowGroups {
-				if !displayGroup(out, actionShowGroup, matches[actionShowGroup], baseEnv, sh) {
-					output.Printf(out.GroupSprintf("# %s (group empty, use -a to show all)\n", actionShowGroup))
+				if !displayGroup(app.out, actionShowGroup, matches[actionShowGroup], app.baseEnv, app.sh) {
+					output.Printf(app.out.GroupSprintf("# %s (group empty, use -a to show all)\n", actionShowGroup))
 				}
 			}
 		} else {
 			notDisplayed := make([]string, 0)
 			for _, groupName := range matches.GetAllNames() {
 				hideGroup := !showAllGroups && strings.HasPrefix(groupName, ".")
-				if hideGroup || !displayGroup(out, groupName, matches[groupName], baseEnv, sh) {
+				if hideGroup || !displayGroup(app.out, groupName, matches[groupName], app.baseEnv, app.sh) {
 					notDisplayed = append(notDisplayed, groupName)
 				}
 			}
-			displayGroup(out, "(no group)", remaining, baseEnv, sh)
-			if len(notDisplayed) > 0 && !configuration.SettingsQuiet {
+			displayGroup(app.out, "(no group)", remaining, app.baseEnv, app.sh)
+			if len(notDisplayed) > 0 && !app.configuration.SettingsQuiet {
 				sort.Strings(notDisplayed)
-				output.Printf(out.GroupSprintf("# Groups not displayed: %s (use -a to show all)\n", strings.Join(notDisplayed, " ")))
+				output.Printf(app.out.GroupSprintf("# Groups not displayed: %s (use -a to show all)\n", strings.Join(notDisplayed, " ")))
 			}
 		}
-		out.PrintProfileList(profileNames, activeProfileNames)
+		app.out.PrintProfileList(app.profileNames, app.activeProfileNames)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if len(shellCommands) > 0 {
-			commands := sh.RunCommands(shellCommands)
+		if len(app.shellCommands) > 0 {
+			commands := app.sh.RunCommands(app.shellCommands)
 			if verbose || dryRun {
 				output.Printf("Shell commands to execute:\n>\n> %s>\n", commands)
 			}
@@ -72,39 +72,38 @@ shell function to be installed)`,
 	},
 }
 
+// appState holds runtime state initialized during startup.
+type appState struct {
+	configuration        *config.Configuration
+	sh                   *shell.Shell
+	out                  *output.Output
+	baseEnv              *data.Profile
+	profileNames         []string
+	activeProfileNames   []string
+	inactiveProfileNames []string
+	isActiveProfile      map[string]bool
+	shellCommands        []string
+}
+
 var (
+	app appState
+
 	// Initial configuration
 	cfgFile             string
-	configuration       *config.Configuration
 	bashBootstrap       string
 	powershellBootstrap string
 	powershellPrompt    string
 	batBootstrap        string
 
 	// Global flags
-	verbose            bool = false
-	noColor            bool = false
-	displayUnformatted bool = false
-	outputPowerShell   bool = false
-	dryRun             bool = false
-
-	// These are initialized using the current configuration
-	sh  *shell.Shell
-	out *output.Output
-
-	// Current environment
-	baseEnv *data.Profile
-
-	profileNames         []string
-	activeProfileNames   []string
-	inactiveProfileNames []string
-	isActiveProfile      map[string]bool
-
-	// Here is what will be executed
-	shellCommands []string
+	verbose            bool
+	noColor            bool
+	displayUnformatted bool
+	outputPowerShell   bool
+	dryRun             bool
 
 	// Used by root command
-	showAllGroups    bool = false
+	showAllGroups    bool
 	actionShowGroups []string
 )
 
@@ -156,7 +155,7 @@ func initConfig() {
 		cfgFile = config.GetDefaultConfigFilePath()
 	}
 	var err error
-	configuration, err = config.ReadConfiguration(cfgFile)
+	app.configuration, err = config.ReadConfiguration(cfgFile)
 	if err != nil {
 		output.Printf("Failed to read config file: %v\n", err)
 		os.Exit(3)
@@ -171,38 +170,38 @@ func initConfig() {
 	//goland:noinspection ALL
 	if runtime.GOOS == "windows" {
 		data.SetCaseInsensitive()
-		if configuration.SettingsPathTilde {
+		if app.configuration.SettingsPathTilde {
 			replacePathTilde = os.Getenv("HOME")
 		}
-		sh = shell.NewShell(outputPowerShell, !outputPowerShell)
+		app.sh = shell.NewShell(outputPowerShell, !outputPowerShell)
 	} else {
-		sh = shell.NewShell(false, false)
+		app.sh = shell.NewShell(false, false)
 	}
 
-	out = output.NewOutput(replacePathTilde, configuration.SettingsPath, configuration.SettingsPassword, displayUnformatted, configuration.FormatGroup, configuration.FormatProfile, configuration.FormatEnvName, configuration.FormatPath, configuration.FormatDiff)
+	app.out = output.NewOutput(replacePathTilde, app.configuration.SettingsPath, app.configuration.SettingsPassword, displayUnformatted, app.configuration.FormatGroup, app.configuration.FormatProfile, app.configuration.FormatEnvName, app.configuration.FormatPath, app.configuration.FormatDiff)
 
-	baseEnv = data.NewProfile()
-	baseEnv.MergeStrings(os.Environ())
+	app.baseEnv = data.NewProfile()
+	app.baseEnv.MergeStrings(os.Environ())
 
 	// Figure out what profiles are active.
-	profileNames = make([]string, 0, len(configuration.Profiles))
-	activeProfileNames = make([]string, 0, len(configuration.Profiles))
-	inactiveProfileNames = make([]string, 0, len(configuration.Profiles))
-	isActiveProfile = make(map[string]bool)
+	app.profileNames = make([]string, 0, len(app.configuration.Profiles))
+	app.activeProfileNames = make([]string, 0, len(app.configuration.Profiles))
+	app.inactiveProfileNames = make([]string, 0, len(app.configuration.Profiles))
+	app.isActiveProfile = make(map[string]bool)
 
-	for name, profile := range configuration.Profiles {
-		profileNames = append(profileNames, name)
-		if baseEnv.IsMerged(&profile) {
-			activeProfileNames = append(activeProfileNames, name)
-			isActiveProfile[name] = true
+	for name, profile := range app.configuration.Profiles {
+		app.profileNames = append(app.profileNames, name)
+		if app.baseEnv.IsMerged(&profile) {
+			app.activeProfileNames = append(app.activeProfileNames, name)
+			app.isActiveProfile[name] = true
 		} else {
-			inactiveProfileNames = append(inactiveProfileNames, name)
-			isActiveProfile[name] = false
+			app.inactiveProfileNames = append(app.inactiveProfileNames, name)
+			app.isActiveProfile[name] = false
 		}
 	}
-	sort.Strings(profileNames)
-	sort.Strings(activeProfileNames)
-	sort.Strings(inactiveProfileNames)
+	sort.Strings(app.profileNames)
+	sort.Strings(app.activeProfileNames)
+	sort.Strings(app.inactiveProfileNames)
 
-	shellCommands = make([]string, 0)
+	app.shellCommands = make([]string, 0)
 }

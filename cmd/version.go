@@ -6,11 +6,14 @@ import (
 	"runtime"
 )
 
+// Version is set at build time via -ldflags "-X github.com/sverrirab/envirou/cmd.Version=..."
+var Version = "dev"
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		output.Printf("Envirou (ev) Version 5.0 on %s/%s\n", runtime.GOOS, runtime.GOARCH)
+		output.Printf("Envirou (ev) Version %s on %s/%s\n", Version, runtime.GOOS, runtime.GOARCH)
 	},
 }
 

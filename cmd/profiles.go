@@ -11,10 +11,10 @@ var profilesCmd = &cobra.Command{
 	Short:   "List profiles",
 	GroupID: "profiles",
 	Run: func(cmd *cobra.Command, args []string) {
-		for _, profileName := range profileNames {
-			active := isActiveProfile[profileName]
+		for _, profileName := range app.profileNames {
+			active := app.isActiveProfile[profileName]
 			if active && !showInactiveProfilesOnly {
-				output.Printf(out.ProfileSprintf("%s ", profileName))
+				output.Printf(app.out.ProfileSprintf("%s ", profileName))
 			} else if !active && !showActiveProfilesOnly {
 				output.Printf("%s ", profileName)
 			}

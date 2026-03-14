@@ -30,16 +30,16 @@ var bootstrapCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "powershell" {
-			sh = shell.NewShell(true, false)
-			shellCommands = append(shellCommands, powershellBootstrap)
+			app.sh = shell.NewShell(true, false)
+			app.shellCommands = append(app.shellCommands, powershellBootstrap)
 			if addPrompt {
-				shellCommands = append(shellCommands, powershellPrompt)
+				app.shellCommands = append(app.shellCommands, powershellPrompt)
 			}
 		} else if args[0] == "bat" {
-			shellCommands = append(shellCommands, batBootstrap)
+			app.shellCommands = append(app.shellCommands, batBootstrap)
 		} else { // bash + zsh
 			// Removing the she-bang line from the script
-			shellCommands = append(shellCommands, removeFirstLine(bashBootstrap))
+			app.shellCommands = append(app.shellCommands, removeFirstLine(bashBootstrap))
 		}
 	},
 }

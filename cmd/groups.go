@@ -13,8 +13,8 @@ var groupsCmd = &cobra.Command{
 	Long:    `List all the groups defined in the config file`,
 	GroupID: "groups",
 	Run: func(cmd *cobra.Command, args []string) {
-		for _, group := range configuration.Groups.GetAllNames() {
-			output.Printf(out.GroupSprintf("# %s\n", group))
+		for _, group := range app.configuration.Groups.GetAllNames() {
+			output.Printf(app.out.GroupSprintf("# %s\n", group))
 		}
 	},
 }
