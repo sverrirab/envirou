@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/sverrirab/envirou/pkg/shell"
 )
 
 // setCmd represents the set command
@@ -28,7 +30,7 @@ var bootstrapCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "powershell" {
-			sh.ForcePowershell()
+			sh = shell.NewShell(true, false)
 			shellCommands = append(shellCommands, powershellBootstrap)
 			if addPrompt {
 				shellCommands = append(shellCommands, powershellPrompt)
@@ -42,13 +44,11 @@ var bootstrapCmd = &cobra.Command{
 	},
 }
 
-var (
-	addPrompt = false
-)
+var addPrompt bool
 
 func init() {
 	addCommand(bootstrapCmd)
-	bootstrapCmd.Flags().BoolVarP(&addPrompt, "prompt", "p", addPrompt, "Also modify prompt")
+	bootstrapCmd.Flags().BoolVarP(&addPrompt, "prompt", "p", addPrompt, "Also modify prompt (PowerShell only)")
 }
 
 func removeFirstLine(s string) string {
