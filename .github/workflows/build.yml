@@ -1,6 +1,6 @@
 name: build
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -23,4 +23,4 @@ jobs:
       run: go vet ./...
 
     - name: Run tests
-      run: go test -coverprofile=c.out ./...
+      run: go test ./...
