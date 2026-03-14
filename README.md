@@ -25,10 +25,28 @@ are PATH's to tools/SDK versions, external service endpoints for your PROD and D
 etc etc.
 
 
+## Install
+
+**Homebrew** (macOS/Linux):
+```bash
+brew install sverrirab/tap/envirou
+```
+
+**Scoop** (Windows):
+```powershell
+scoop bucket add sverrirab https://github.com/sverrirab/scoop-bucket
+scoop install envirou
+```
+
+**Go install**:
+```bash
+go install github.com/sverrirab/envirou@latest
+```
+
+**Binary download**: grab the latest release from the [releases page](https://github.com/sverrirab/envirou/releases).
+
 ## Quickstart
-1. You will need to have [go installed](https://go.dev/) (go1.21 or newer)
-2. Install with `go install github.com/sverrirab/envirou@latest`
-3. Run `envirou` to view your current environment or `envirou help` for more information
+Run `envirou` to view your current environment or `envirou help` for more information.
 
 ## Shell integration
 To get the full power of envirou you need to allow it to modify your environment (switch profiles).
