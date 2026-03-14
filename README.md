@@ -10,12 +10,12 @@ environment. Display important variables with nice formatting and hide the ones 
 
 # Key highlights
 * Works with any other tool - just views and optionally sets environment variables.
-* Compact output (replaces $HOME with `~` and _underscores_ paths for readability).
+* Compact output (replaces `$HOME` with `~` and highlights paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
 * Fully customizable.
 * Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
 * Fully standalone go binary.
-* Command completion support (bash + zsh).
+* Command completion support (bash, zsh, PowerShell, fish).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
