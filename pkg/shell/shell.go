@@ -72,10 +72,6 @@ func (shell *Shell) Escape(value string) string {
 	}
 }
 
-func (shell *Shell) EscapePowerShell(value string) string {
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "''"))
-}
-
 func (shell *Shell) ExportVar(name, value string) string {
 	if shell.powerShell {
 		return fmt.Sprintf("$Env:%s = %s", name, shell.Escape(value))

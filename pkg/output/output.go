@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pathListSeperator = string(os.PathListSeparator)
+	pathListSeparator = string(os.PathListSeparator)
 )
 
 type ColorPrintFunc func(format string, a ...interface{}) string
@@ -135,7 +135,7 @@ func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 		if data.MatchAny(name, &out.passwords, out.caseInsensitive) {
 			outputValue = "****--->hidden<---****"
 		} else if data.MatchAny(name, &out.paths, out.caseInsensitive) {
-			sections := strings.Split(value, pathListSeperator)
+			sections := strings.Split(value, pathListSeparator)
 			for i := range sections {
 				if len(out.replacePathTilde) > 0 {
 					if strings.HasPrefix(sections[i], out.replacePathTilde) {
@@ -147,7 +147,7 @@ func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 					sections[i] = out.PathSprintf(sections[i])
 				}
 			}
-			outputValue = strings.Join(sections, pathListSeperator)
+			outputValue = strings.Join(sections, pathListSeparator)
 		}
 	}
 	return fmt.Sprintf("%s=%s\n", outputName, outputValue)

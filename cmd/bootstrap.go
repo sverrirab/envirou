@@ -19,12 +19,9 @@ var bootstrapCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("only provide one argument: type of shell to bootstrap")
 		}
-
-		for _, arg := range args {
-			if !contains(cmd.ValidArgs, arg) {
-				validArgs := strings.Join(cmd.ValidArgs, ",")
-				return fmt.Errorf("invalid argument \"%s\", must be one of %s", arg, validArgs)
-			}
+		if !contains(cmd.ValidArgs, args[0]) {
+			validArgs := strings.Join(cmd.ValidArgs, ", ")
+			return fmt.Errorf("invalid argument \"%s\", must be one of %s", args[0], validArgs)
 		}
 		return nil
 	},
