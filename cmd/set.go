@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/sverrirab/envirou/pkg/config"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
@@ -21,12 +23,18 @@ To change profiles edit the config file (see "config" command)`,
 	Args:    cobra.MatchAll(cobra.MinimumNArgs(1)),
 	Run: func(cmd *cobra.Command, args []string) {
 		newEnv := app.baseEnv.Clone()
+		var notFound []string
 		for _, activateName := range args {
 			profile, found := findProfile(app.out, app.configuration, activateName)
 			if found {
 				newEnv.Merge(profile)
 				output.Printf("Profile %s enabled\n", app.out.ProfileSprintf(activateName))
+			} else {
+				notFound = append(notFound, activateName)
 			}
+		}
+		if len(notFound) > 0 {
+			output.Printf("Warning: %d of %d profiles not found, skipped: %s\n", len(notFound), len(args), strings.Join(notFound, ", "))
 		}
 		app.shellCommands = append(app.shellCommands, app.sh.GetCommands(app.baseEnv, newEnv)...)
 	},
