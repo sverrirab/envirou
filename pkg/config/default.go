@@ -64,11 +64,17 @@ python=VIRTUAL_ENV
 `
 
 const configFileName = "config.ini"
+const snapshotFileName = "snapshot.ini"
 
 // GetDefaultConfigFilePath Returns full path to the config file
 func GetDefaultConfigFilePath() string {
 	full_path := filepath.Join(GetDefaultConfigFileFolder(), configFileName)
 	return full_path
+}
+
+// GetSnapshotFilePath returns the full path to the snapshot file
+func GetSnapshotFilePath() string {
+	return filepath.Join(GetDefaultConfigFileFolder(), snapshotFileName)
 }
 
 // GetDefaultConfigFileFolder Figures out where the config file should be
