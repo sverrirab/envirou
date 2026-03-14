@@ -15,8 +15,8 @@ func NewGroups() *Groups {
 	return (*Groups)(&g)
 }
 
-func (groups *Groups) ParseAndAdd(name string, patterns string) {
-	(*groups)[name] = *ParsePatterns(patterns)
+func (groups *Groups) ParseAndAdd(name string, patterns string, caseInsensitive bool) {
+	(*groups)[name] = *ParsePatterns(patterns, caseInsensitive)
 }
 
 func (groups *Groups) GetPatterns(name string) (*Patterns, bool) {
@@ -47,7 +47,7 @@ func (groups Groups) String() string {
 }
 
 // MatchAll returns a map of group names to all env variables as well as a list of unmatched ones
-func (groups *Groups) MatchAll(envs Envs) (GroupNameToEnvs, Envs) {
+func (groups *Groups) MatchAll(envs Envs, caseInsensitive bool) (GroupNameToEnvs, Envs) {
 	result := make(GroupNameToEnvs, len(*groups))
 	matched := make(map[string]bool, len(*groups))
 	unmatched := make(Envs, 0)
@@ -58,7 +58,7 @@ func (groups *Groups) MatchAll(envs Envs) (GroupNameToEnvs, Envs) {
 			if !found {
 				continue
 			}
-			if MatchAny(env, patterns) {
+			if MatchAny(env, patterns, caseInsensitive) {
 				matched[env] = true
 				result[group] = append(result[group], env)
 			}

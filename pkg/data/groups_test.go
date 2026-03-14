@@ -10,9 +10,9 @@ func TestGroups(t *testing.T) {
 	if len(g.GetAllNames()) != 0 {
 		t.Error("len should be 0")
 	}
-	g.ParseAndAdd("smurf", "one, two*")
-	g.ParseAndAdd("foobar", "*FOO*")
-	names := g.GetAllNames()	
+	g.ParseAndAdd("smurf", "one, two*", false)
+	g.ParseAndAdd("foobar", "*FOO*", false)
+	names := g.GetAllNames()
 	if len(names) != 2 {
 		t.Error("len should be 2")
 	}
@@ -28,19 +28,19 @@ func TestGroups(t *testing.T) {
 	if !found {
 		t.Error("should find smurf")
 	}
-	if ! MatchAny("twofold", patterns) {
+	if !MatchAny("twofold", patterns, false) {
 		t.Error("pattern not correct")
 	}
 }
 
 func TestMatchAll(t *testing.T) {
 	g := NewGroups()
-	g.ParseAndAdd("zero", "SMURF, DURF")
-	g.ParseAndAdd("foo", "*FOO*")
-	g.ParseAndAdd("bar", "FOO*, SMURF")
-	g.ParseAndAdd("joe", "whatever*")
+	g.ParseAndAdd("zero", "SMURF, DURF", false)
+	g.ParseAndAdd("foo", "*FOO*", false)
+	g.ParseAndAdd("bar", "FOO*, SMURF", false)
+	g.ParseAndAdd("joe", "whatever*", false)
 
-	m, r := g.MatchAll([]string{"SMURF", "FOOBAR", "bob"})
+	m, r := g.MatchAll([]string{"SMURF", "FOOBAR", "bob"}, false)
 	if len(m) != 3 {
 		t.Error("Expected three matching groups")
 	}
@@ -54,7 +54,7 @@ func TestMatchAll(t *testing.T) {
 
 func TestStringer(t *testing.T) {
 	g := NewGroups()
-	g.ParseAndAdd("a", "YES")
+	g.ParseAndAdd("a", "YES", false)
 	if g.String() != "a=[YES]" {
 		t.Errorf("Stringer interface changed: \"%s\"", g)
 	}

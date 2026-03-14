@@ -1,0 +1,64 @@
+version: 2
+
+project_name: envirou
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - main: .
+    binary: envirou
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/sverrirab/envirou/cmd.Version={{.Version}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+brews:
+  - repository:
+      owner: sverrirab
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/sverrirab/envirou
+    description: View and manage your shell environment variables
+    license: MIT
+    install: |
+      bin.install "envirou"
+    test: |
+      system "#{bin}/envirou", "version"
+
+scoops:
+  - repository:
+      owner: sverrirab
+      name: scoop-bucket
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/sverrirab/envirou
+    description: View and manage your shell environment variables
+    license: MIT

@@ -1,62 +1,67 @@
 package data
 
 import (
-	"runtime"
 	"sort"
 	"strings"
 )
 
 type Profile struct {
-	env       map[string]string // The actual key value pair
-	rightCase map[string]string // UPPER -> Upper (maps to actual case, used for case insensitive comparison on Windows)
-	isNil     map[string]bool   // True if item is to be removed (uses UPPER case name)
+	env             map[string]string // The actual key value pair
+	rightCase       map[string]string // VAR -> Var (maps to actual case, used for case insensitive comparison on Windows)
+	isNil           map[string]bool   // True if item is to be removed (uses UPPER case name)
+	caseInsensitive bool
 }
 type Profiles map[string]Profile
 
-func NewProfile() *Profile {
-	return &Profile{env: make(map[string]string), rightCase: make(map[string]string), isNil: make(map[string]bool)}
+func NewProfile(caseInsensitive bool) *Profile {
+	return &Profile{
+		env:             make(map[string]string),
+		rightCase:       make(map[string]string),
+		isNil:           make(map[string]bool),
+		caseInsensitive: caseInsensitive,
+	}
 }
 
-func (profile *Profile) GetCorrectCase(name string, create bool) (string, bool) {
-	if runtime.GOOS == "windows" {
+func (profile *Profile) GetCorrectCase(name string, create bool) string {
+	if profile.caseInsensitive {
 		upper := strings.ToUpper(name)
 		existingCase, exists := profile.rightCase[upper]
 		if exists {
-			return existingCase, exists
+			return existingCase
 		} else if create {
 			profile.rightCase[upper] = name
 		}
 	}
-	return name, false
+	return name
 }
 
 // Set will set an entry
 func (profile *Profile) Set(name string, value string) {
-	correctCase, _ := profile.GetCorrectCase(name, true)
+	correctCase := profile.GetCorrectCase(name, true)
 	profile.env[correctCase] = value
 	delete(profile.isNil, correctCase)
 }
 
 // SetNil will mark entry as nil
 func (profile *Profile) SetNil(name string) {
-	correctCase, exists := profile.GetCorrectCase(name, true)
+	correctCase := profile.GetCorrectCase(name, true)
+	_, exists := profile.env[correctCase]
 	if exists {
 		delete(profile.env, correctCase)
-		delete(profile.rightCase, strings.ToUpper(name))
 	}
 	profile.isNil[correctCase] = true
 }
 
 // Get retrieve value
 func (profile *Profile) Get(name string) (string, bool) {
-	correctCase, _ := profile.GetCorrectCase(name, false)
+	correctCase := profile.GetCorrectCase(name, false)
 	value, ok := profile.env[correctCase]
 	return value, ok
 }
 
 // GetNil returns true if the value has been explitly set to nil.
 func (profile *Profile) GetNil(name string) bool {
-	correctCase, _ := profile.GetCorrectCase(name, false)
+	correctCase := profile.GetCorrectCase(name, false)
 	_, ok := profile.isNil[correctCase]
 	return ok
 }
@@ -78,7 +83,7 @@ func (profile *Profile) SortedNames(includeNil bool) []string {
 
 // Clone creates a new copy of the Profile.
 func (profile *Profile) Clone() *Profile {
-	p := NewProfile()
+	p := NewProfile(profile.caseInsensitive)
 	for k, v := range profile.env {
 		p.env[k] = v
 	}
@@ -152,7 +157,7 @@ func (profile *Profile) MergeStrings(envList []string) {
 	}
 }
 
-func (profile Profile) String() string {
+func (profile *Profile) String() string {
 	return strings.Join(profile.SortedNames(true), ",")
 }
 

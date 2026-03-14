@@ -17,7 +17,7 @@ func verifyNil(t *testing.T, p *Profile, name string, isNil bool) {
 }
 
 func TestProfile(t *testing.T) {
-	p1 := NewProfile()
+	p1 := NewProfile(false)
 
 	p1.Set("hello", "world")
 	verifyValue(t, p1, "hello", "world")
@@ -29,7 +29,7 @@ func TestProfile(t *testing.T) {
 	p1.SetNil("two")
 	verifyNil(t, p1, "two", true)
 
-	p2 := NewProfile()
+	p2 := NewProfile(false)
 	p2.Set("world", "oyster")
 	p2.Set("one", "1")
 
@@ -48,9 +48,22 @@ func TestProfile(t *testing.T) {
 	verifyNil(t, p3, "two", true)
 }
 
+func TestProfileSetUnset(t *testing.T) {
+	p1 := NewProfile(false)
+
+	p1.Set("hello", "world")
+	verifyValue(t, p1, "hello", "world")
+
+	p2 := NewProfile(false)
+	p2.SetNil("hello")
+
+	p1.Merge(p2)
+	verifyNil(t, p1, "hello", true)
+}
+
 func TestMergeStrings(t *testing.T) {
 	e := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
-	p := NewProfile()
+	p := NewProfile(false)
 	p.MergeStrings(e)
 	verifyValue(t, p, "FOO", "2")
 	verifyValue(t, p, "BAR", "FOO=FOOBAR")
@@ -77,9 +90,9 @@ func matchList(t *testing.T, expected []string, actual []string) {
 }
 
 func TestDiff(t *testing.T) {
-	p1 := NewProfile()
+	p1 := NewProfile(false)
 	p1.MergeStrings([]string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "BAD=true", "REMOVE"})
-	p2 := NewProfile()
+	p2 := NewProfile(false)
 	p2.MergeStrings([]string{"FOO=3", "BAR=FOO=FOOBAR", "BLURB=yes", "ALSO_REMOVE", "BAD"})
 	changed, removed := p1.Diff(p2)
 	matchList(t, []string{"FOO", "BLURB"}, changed)
@@ -95,7 +108,7 @@ func TestDiff(t *testing.T) {
 
 func TestFind(t *testing.T) {
 	profiles := make(Profiles)
-	profiles["foo"] = *NewProfile()
+	profiles["foo"] = *NewProfile(false)
 	_, found := profiles.FindProfile("foo")
 	if !found {
 		t.Error("Failed to find profile")
@@ -104,4 +117,16 @@ func TestFind(t *testing.T) {
 	if found {
 		t.Error("Should not find profile")
 	}
+}
+
+func TestCaseInsensitive(t *testing.T) {
+	p := NewProfile(true)
+	p.Set("Hello", "world")
+	verifyValue(t, p, "Hello", "world")
+	verifyValue(t, p, "HELLO", "world")
+	verifyValue(t, p, "hello", "world")
+
+	p.SetNil("GOODBYE")
+	verifyNil(t, p, "goodbye", true)
+	verifyNil(t, p, "GOODBYE", true)
 }

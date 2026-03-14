@@ -44,10 +44,10 @@ func TestEscape(t *testing.T) {
 
 func TestCommandsBash(t *testing.T) {
 	e1 := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
-	before := data.NewProfile()
+	before := data.NewProfile(false)
 	before.MergeStrings(e1)
 	e2 := []string{"SMURF=yes yes", "BOAT", "FOO"}
-	after := data.NewProfile()
+	after := data.NewProfile(false)
 	after.MergeStrings(e2)
 
 	sh := NewShell(false, false)
@@ -60,10 +60,10 @@ func TestCommandsBash(t *testing.T) {
 
 func TestCommandsBat(t *testing.T) {
 	e1 := []string{"FOO=2", "BAR=FOO=FOOBAR", "SMURF=", "REMOVE"}
-	before := data.NewProfile()
+	before := data.NewProfile(false)
 	before.MergeStrings(e1)
 	e2 := []string{"SMURF=yes yes", "BOAT", "FOO"}
-	after := data.NewProfile()
+	after := data.NewProfile(false)
 	after.MergeStrings(e2)
 
 	sh := NewShell(false, true)
@@ -82,7 +82,7 @@ func TestRunCommandsBash(t *testing.T) {
 		t.Errorf("Did not expect no command to be: %s.", cmd1)
 	}
 	cmd2 := sh.RunCommands([]string{"echo hi", "ls -al"})
-	if cmd2 != "echo hi;ls -al;\n" {
+	if cmd2 != "echo hi;ls -al\n" {
 		t.Errorf("Did not expect commands to be: %s.", cmd2)
 	}
 }

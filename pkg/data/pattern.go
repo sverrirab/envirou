@@ -1,7 +1,6 @@
 package data
 
 import (
-	"runtime"
 	"strings"
 )
 
@@ -9,12 +8,12 @@ type Pattern string
 type Patterns []Pattern
 
 // ParsePatterns parses a string with patterns
-func ParsePatterns(s string) *Patterns {
+func ParsePatterns(s string, caseInsensitive bool) *Patterns {
 	patterns := make(Patterns, 0, 8)
 	for _, p := range strings.Split(s, ",") {
 		trimmed := strings.TrimSpace(p)
 		if len(trimmed) > 0 {
-			if runtime.GOOS == "windows" {
+			if caseInsensitive {
 				trimmed = strings.ToUpper(trimmed)
 			}
 			patterns = append(patterns, Pattern(trimmed))
@@ -24,9 +23,9 @@ func ParsePatterns(s string) *Patterns {
 }
 
 // MatchAny Match any of the patterns
-func MatchAny(s string, patterns *Patterns) bool {
+func MatchAny(s string, patterns *Patterns, caseInsensitive bool) bool {
 	for _, p := range *patterns {
-		if Match(s, p) {
+		if Match(s, p, caseInsensitive) {
 			return true
 		}
 	}
@@ -34,9 +33,9 @@ func MatchAny(s string, patterns *Patterns) bool {
 }
 
 // Match Simple glob macher where pattern can be PATTERN, *PATTERN, *PATTERN* or PATTERN*
-func Match(s string, p Pattern) bool {
+func Match(s string, p Pattern, caseInsensitive bool) bool {
 	pattern := string(p)
-	if runtime.GOOS == "windows" {
+	if caseInsensitive {
 		s = strings.ToUpper(s)
 	}
 	if pattern == "" {

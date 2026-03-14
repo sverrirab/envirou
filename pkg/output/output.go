@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pathListSeperator = string(os.PathListSeparator)
+	pathListSeparator = string(os.PathListSeparator)
 )
 
 type ColorPrintFunc func(format string, a ...interface{}) string
@@ -21,6 +21,7 @@ type Output struct {
 	paths            data.Patterns
 	passwords        data.Patterns
 	displayRaw       bool
+	caseInsensitive  bool
 
 	groupSprintf   ColorPrintFunc
 	profileSprintf ColorPrintFunc
@@ -29,13 +30,14 @@ type Output struct {
 	diffSprintf    ColorPrintFunc
 }
 
-func NewOutput(replacePathTilde string, paths, passwords data.Patterns, displayRaw bool,
+func NewOutput(replacePathTilde string, paths, passwords data.Patterns, displayRaw bool, caseInsensitive bool,
 	groupColor, profileColor, envNameColor, pathColor, diffColor string) *Output {
 	return &Output{
 		replacePathTilde: replacePathTilde,
 		paths:            paths,
 		passwords:        passwords,
 		displayRaw:       displayRaw,
+		caseInsensitive:  caseInsensitive,
 		groupSprintf:     color.New(mapColorDefault(groupColor, "magenta")).SprintfFunc(),
 		profileSprintf:   color.New(mapColorDefault(profileColor, "green")).SprintfFunc(),
 		envNameSprintf:   color.New(mapColorDefault(envNameColor, "cyan")).SprintfFunc(),
@@ -130,10 +132,10 @@ func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 		outputValue = sh.Escape(value)
 	} else {
 		outputName = out.EnvNameSprintf("%s", name)
-		if data.MatchAny(name, &out.passwords) {
+		if data.MatchAny(name, &out.passwords, out.caseInsensitive) {
 			outputValue = "****--->hidden<---****"
-		} else if data.MatchAny(name, &out.paths) {
-			sections := strings.Split(value, pathListSeperator)
+		} else if data.MatchAny(name, &out.paths, out.caseInsensitive) {
+			sections := strings.Split(value, pathListSeparator)
 			for i := range sections {
 				if len(out.replacePathTilde) > 0 {
 					if strings.HasPrefix(sections[i], out.replacePathTilde) {
@@ -145,7 +147,7 @@ func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 					sections[i] = out.PathSprintf(sections[i])
 				}
 			}
-			outputValue = strings.Join(sections, pathListSeperator)
+			outputValue = strings.Join(sections, pathListSeparator)
 		}
 	}
 	return fmt.Sprintf("%s=%s\n", outputName, outputValue)

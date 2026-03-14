@@ -1,10 +1,8 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
 	"testing"
 )
 
@@ -35,18 +33,30 @@ FIVE= magic
 
 `
 
-func readTestConfig(t *testing.T, stringConfig string) *Configuration {
-	file, err := ioutil.TempFile("", "config")
+func removeFile(name string) {
+	err := os.Remove(name)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(file.Name())
+}
+
+func readTestConfig(t *testing.T, stringConfig string) *Configuration {
+	file, err := os.CreateTemp("", "config")
+	if err != nil {
+		log.Fatal(err)
+	}
+	name := file.Name()
+	defer removeFile(name)
 	_, err = file.WriteString(stringConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	config, err := ReadConfiguration(file.Name())
+	config, err := ReadConfiguration(name, false)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
@@ -85,7 +95,7 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestReadDefault(t *testing.T) {
-	file, err := ioutil.TempFile("", "config")
+	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,11 +105,11 @@ func TestReadDefault(t *testing.T) {
 	}
 	err = os.Remove(file.Name())
 	if err != nil {
-		log.Fatal(err)
+		t.Error("Failed to delete file")
 	}
 
-	// Deleted temp file so it does not exist - this should create the file:
-	config, err := ReadConfiguration(file.Name())
+	// Deleted temp file - this should create the file:
+	config, err := ReadConfiguration(file.Name(), false)
 	if err != nil {
 		t.Error("Failed to read configuration")
 	}
@@ -130,7 +140,7 @@ func TestReadDefault(t *testing.T) {
 	if len(config.Groups) != 12 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
-	os.Remove(file.Name())
+	removeFile(file.Name())
 }
 
 func TestReadDefaultPath(t *testing.T) {
@@ -166,9 +176,4 @@ func TestProfile(t *testing.T) {
 	validateProfileNil(t, config, "foo", "THREE", true)
 	validateProfileNil(t, config, "foo", "NOT-THREE", false)
 
-	if runtime.GOOS == "windows" {
-		// Test case insensitivity
-		validateProfileValue(t, config, "foo", "One", "one")
-		validateProfileNil(t, config, "foo", "Three", true)
-	}
 }

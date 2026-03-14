@@ -24,15 +24,15 @@ func validateSame(t *testing.T, before, after string) {
 func TestColorChange(t *testing.T) {
 	NoColor(false) // Test need to force color.
 	sh := shell.NewShell(false, false)
-	const pathListSeperator = string(os.PathListSeparator)
+	const pathListSeparator = string(os.PathListSeparator)
 	profileNames := []string{"p1", "p2", "p3"}
 	activeNames := []string{"p3"}
 
-	twoPath := strings.Join([]string{"FOO", "BAR"}, pathListSeperator)
+	twoPath := strings.Join([]string{"FOO", "BAR"}, pathListSeparator)
 
-	out1 := NewOutput("", *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false, "red", "blue", "cyan", "green", "white")
-	out2 := NewOutput("", *data.ParsePatterns("foo"), *data.ParsePatterns("bar"), false, "magenta", "yellow", "cyan", "black", "bold")
-	out3 := NewOutput("/X", *data.ParsePatterns("foo"), *data.ParsePatterns(""), false, "red", "blue", "cyan", "green", "white")
+	out1 := NewOutput("", *data.ParsePatterns("foo", false), *data.ParsePatterns("bar", false), false, false, "red", "blue", "cyan", "green", "white")
+	out2 := NewOutput("", *data.ParsePatterns("foo", false), *data.ParsePatterns("bar", false), false, false, "magenta", "yellow", "cyan", "black", "bold")
+	out3 := NewOutput("/X", *data.ParsePatterns("foo", false), *data.ParsePatterns("", false), false, false, "red", "blue", "cyan", "green", "white")
 
 	beforeGroup := out1.GroupSprintf("HELLO")
 	beforeProfile := out1.ProfileSprintf("HELLO")
