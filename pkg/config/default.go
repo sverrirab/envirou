@@ -15,7 +15,7 @@ const default_ini = `
 [settings]
 quiet=0
 sort_keys=1
-path_tilde=1
+path_tilde=1  ; display only: replaces $HOME with ~ in output
 password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
