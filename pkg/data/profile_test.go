@@ -151,6 +151,123 @@ func TestFullDiffEmpty(t *testing.T) {
 	}
 }
 
+func TestMergePrepend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+}
+
+func TestMergeAppend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", "/usr/local/bin:/usr/bin:/bin:/opt/tools/bin")
+}
+
+func TestMergePrependAlreadyPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	env.Merge(profile)
+	// Should be a no-op — component already exists
+	verifyValue(t, env, "PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+}
+
+func TestMergeAppendAlreadyPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/usr/local/bin:/usr/bin:/opt/tools/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	env.Merge(profile)
+	// No-op
+	verifyValue(t, env, "PATH", "/usr/local/bin:/usr/bin:/opt/tools/bin")
+}
+
+func TestMergePrependMultipleComponents(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/a:/b", MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", "/a:/b:/usr/bin:/bin")
+}
+
+func TestMergePrependPartialOverlap(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/a:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/a:/new", MergePrepend)
+
+	env.Merge(profile)
+	// /a already exists, only /new should be prepended
+	verifyValue(t, env, "PATH", "/new:/a:/usr/bin:/bin")
+}
+
+func TestIsMergedPrepend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	if !env.IsMerged(profile) {
+		t.Error("Profile should be considered merged — component is present in PATH")
+	}
+}
+
+func TestIsMergedPrependNotPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	if env.IsMerged(profile) {
+		t.Error("Profile should not be considered merged — component is missing from PATH")
+	}
+}
+
+func TestIsMergedAppendAnywhere(t *testing.T) {
+	env := NewProfile(false)
+	// Component is in the middle, not at the end — should still count as merged
+	env.Set("PATH", "/usr/local/bin:/opt/tools/bin:/usr/bin:/bin")
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	if !env.IsMerged(profile) {
+		t.Error("Profile should be considered merged — component is present anywhere in PATH")
+	}
+}
+
+func TestMergeEmptyExisting(t *testing.T) {
+	env := NewProfile(false)
+	// PATH not set yet
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/new/bin", MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", "/new/bin")
+}
+
 func TestCaseInsensitive(t *testing.T) {
 	p := NewProfile(true)
 	p.Set("Hello", "world")

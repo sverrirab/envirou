@@ -24,6 +24,13 @@ TEST_ENV=development
 [profile:prod]
 TEST_ENV=production
 TEST_DEBUG
+
+[profile:venv]
+TEST_PATH^=/home/user/venv/bin
+VIRTUAL_ENV=/home/user/venv
+
+[profile:tools]
+TEST_PATH+=/opt/tools/bin
 `
 
 // executeCommand sets up a test config, resets global state, and executes
@@ -211,11 +218,12 @@ func TestSetPartialMissing(t *testing.T) {
 func TestProfilesList(t *testing.T) {
 	_ = executeCommand(t, "profiles")
 	// Verify profiles were populated from config
-	if len(app.profileNames) != 2 {
-		t.Errorf("Expected 2 profiles, got %d: %v", len(app.profileNames), app.profileNames)
+	if len(app.profileNames) != 4 {
+		t.Errorf("Expected 4 profiles, got %d: %v", len(app.profileNames), app.profileNames)
 	}
-	if !contains(app.profileNames, "dev") || !contains(app.profileNames, "prod") {
-		t.Errorf("Expected dev and prod profiles, got: %v", app.profileNames)
+	if !contains(app.profileNames, "dev") || !contains(app.profileNames, "prod") ||
+		!contains(app.profileNames, "venv") || !contains(app.profileNames, "tools") {
+		t.Errorf("Expected dev, prod, venv, tools profiles, got: %v", app.profileNames)
 	}
 }
 
@@ -438,5 +446,54 @@ func TestFindNameValueMutuallyExclusive(t *testing.T) {
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Error("Expected error when both --name and --value are set")
+	}
+}
+
+// --- Prepend/Append tests ---
+
+func TestSetPrependProfile(t *testing.T) {
+	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	out := executeCommand(t, "set", "venv")
+	if !strings.Contains(out, "TEST_PATH") {
+		t.Errorf("Expected TEST_PATH in output, got: %s", out)
+	}
+	// Should prepend venv bin to existing path
+	if !strings.Contains(out, "/home/user/venv/bin") {
+		t.Errorf("Expected prepended path in output, got: %s", out)
+	}
+}
+
+func TestSetAppendProfile(t *testing.T) {
+	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	out := executeCommand(t, "set", "tools")
+	if !strings.Contains(out, "TEST_PATH") {
+		t.Errorf("Expected TEST_PATH in output, got: %s", out)
+	}
+	if !strings.Contains(out, "/opt/tools/bin") {
+		t.Errorf("Expected appended path in output, got: %s", out)
+	}
+}
+
+func TestSetPrependAlreadyPresent(t *testing.T) {
+	// Component already in path — should be a no-op for that var
+	t.Setenv("TEST_PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	t.Setenv("VIRTUAL_ENV", "/home/user/venv")
+	out := executeCommand(t, "set", "venv")
+	// TEST_PATH should not change (component already present)
+	// VIRTUAL_ENV already matches — no shell command needed
+	if strings.Contains(out, "TEST_PATH") {
+		t.Errorf("Expected no TEST_PATH change when component already present, got: %s", out)
+	}
+}
+
+func TestSetPrependAndAppendCombined(t *testing.T) {
+	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	out := executeCommand(t, "set", "venv", "tools")
+	// Both should be applied
+	if !strings.Contains(out, "/home/user/venv/bin") {
+		t.Errorf("Expected prepended venv path, got: %s", out)
+	}
+	if !strings.Contains(out, "/opt/tools/bin") {
+		t.Errorf("Expected appended tools path, got: %s", out)
 	}
 }
