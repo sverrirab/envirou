@@ -1,8 +1,15 @@
 package data
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
+
+// p joins path components with the platform path separator.
+func p(parts ...string) string {
+	return strings.Join(parts, string(os.PathListSeparator))
+}
 
 func verifyValue(t *testing.T, p *Profile, name string, value string) {
 	if v, ok := p.Get(name); !ok || value != v {
@@ -153,76 +160,76 @@ func TestFullDiffEmpty(t *testing.T) {
 
 func TestMergePrepend(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
 
 	env.Merge(profile)
-	verifyValue(t, env, "PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	verifyValue(t, env, "PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
 }
 
 func TestMergeAppend(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
 
 	env.Merge(profile)
-	verifyValue(t, env, "PATH", "/usr/local/bin:/usr/bin:/bin:/opt/tools/bin")
+	verifyValue(t, env, "PATH", p("/usr/local/bin", "/usr/bin", "/bin", "/opt/tools/bin"))
 }
 
 func TestMergePrependAlreadyPresent(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
 
 	env.Merge(profile)
 	// Should be a no-op — component already exists
-	verifyValue(t, env, "PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	verifyValue(t, env, "PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
 }
 
 func TestMergeAppendAlreadyPresent(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/usr/local/bin:/usr/bin:/opt/tools/bin")
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/opt/tools/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
 
 	env.Merge(profile)
 	// No-op
-	verifyValue(t, env, "PATH", "/usr/local/bin:/usr/bin:/opt/tools/bin")
+	verifyValue(t, env, "PATH", p("/usr/local/bin", "/usr/bin", "/opt/tools/bin"))
 }
 
 func TestMergePrependMultipleComponents(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/usr/bin:/bin")
+	env.Set("PATH", p("/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
-	profile.SetWithMode("PATH", "/a:/b", MergePrepend)
+	profile.SetWithMode("PATH", p("/a", "/b"), MergePrepend)
 
 	env.Merge(profile)
-	verifyValue(t, env, "PATH", "/a:/b:/usr/bin:/bin")
+	verifyValue(t, env, "PATH", p("/a", "/b", "/usr/bin", "/bin"))
 }
 
 func TestMergePrependPartialOverlap(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/a:/usr/bin:/bin")
+	env.Set("PATH", p("/a", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
-	profile.SetWithMode("PATH", "/a:/new", MergePrepend)
+	profile.SetWithMode("PATH", p("/a", "/new"), MergePrepend)
 
 	env.Merge(profile)
 	// /a already exists, only /new should be prepended
-	verifyValue(t, env, "PATH", "/new:/a:/usr/bin:/bin")
+	verifyValue(t, env, "PATH", p("/new", "/a", "/usr/bin", "/bin"))
 }
 
 func TestIsMergedPrepend(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
@@ -234,7 +241,7 @@ func TestIsMergedPrepend(t *testing.T) {
 
 func TestIsMergedPrependNotPresent(t *testing.T) {
 	env := NewProfile(false)
-	env.Set("PATH", "/usr/local/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
@@ -247,7 +254,7 @@ func TestIsMergedPrependNotPresent(t *testing.T) {
 func TestIsMergedAppendAnywhere(t *testing.T) {
 	env := NewProfile(false)
 	// Component is in the middle, not at the end — should still count as merged
-	env.Set("PATH", "/usr/local/bin:/opt/tools/bin:/usr/bin:/bin")
+	env.Set("PATH", p("/usr/local/bin", "/opt/tools/bin", "/usr/bin", "/bin"))
 
 	profile := NewProfile(false)
 	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
