@@ -63,6 +63,10 @@ func executeCommand(t *testing.T, args ...string) string {
 	showInactiveProfilesOnly = false
 	snapshotReset = false
 	diffSaveProfile = ""
+	findNameOnly = false
+	findValueOnly = false
+	findIgnoreCase = false
+	findRegex = false
 
 	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -393,4 +397,46 @@ func TestDiffWithChanges(t *testing.T) {
 	t.Setenv("TEST_DIFF", "after")
 	t.Setenv("TEST_NEW", "added")
 	_ = executeCommand(t, "diff")
+}
+
+// --- Find tests ---
+
+func TestFindByName(t *testing.T) {
+	t.Setenv("FIND_TEST_VAR", "some_value")
+	_ = executeCommand(t, "find", "FIND_TEST")
+	// Should match - output goes to stderr so we just verify no error
+}
+
+func TestFindNoMatch(t *testing.T) {
+	_ = executeCommand(t, "find", "ZZZZ_NONEXISTENT_QQQQQ")
+	// Should succeed with "No matches found" on stderr
+}
+
+func TestFindByValue(t *testing.T) {
+	t.Setenv("FIND_VAL_TEST", "unique_search_value_42")
+	_ = executeCommand(t, "find", "--value", "unique_search_value_42")
+}
+
+func TestFindNameOnly(t *testing.T) {
+	t.Setenv("FIND_NAME_ONLY", "should_not_match_this")
+	_ = executeCommand(t, "find", "--name", "FIND_NAME_ONLY")
+}
+
+func TestFindIgnoreCase(t *testing.T) {
+	t.Setenv("FIND_CASE_TEST", "hello")
+	_ = executeCommand(t, "find", "--ignore-case", "find_case_test")
+}
+
+func TestFindRegex(t *testing.T) {
+	t.Setenv("FIND_RE_FOO", "one")
+	t.Setenv("FIND_RE_BAR", "two")
+	_ = executeCommand(t, "find", "--regex", "FIND_RE_(FOO|BAR)")
+}
+
+func TestFindNameValueMutuallyExclusive(t *testing.T) {
+	rootCmd.SetArgs([]string{"find", "--name", "--value", "test"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("Expected error when both --name and --value are set")
+	}
 }

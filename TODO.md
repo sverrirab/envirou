@@ -2,10 +2,6 @@
 
 ## Features
 
-### search/find env variables
-ev find -i path 
-with simple regex support
-
 ### Chained profiles
 Support profile dependencies — if activating `profileX`, automatically import `profileY`
 first. This enables an `init` profile that always runs as a baseline, and layered profiles

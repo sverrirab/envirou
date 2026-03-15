@@ -88,8 +88,21 @@ For more details:
 |---------|-------------|
 | `ev` | Display current environment (grouped and formatted) |
 | `ev set PROFILE [...]` | Activate one or more profiles |
+| `ev find PATTERN` | Search env variable names and values |
 | `ev profiles` | List all profiles (active ones highlighted) |
 | `ev groups` | List all configured groups |
+
+### Searching
+
+| Command | Description |
+|---------|-------------|
+| `ev find PATH` | Find variables with PATH in name or value |
+| `ev find --name PATH` | Search names only |
+| `ev find --value /usr/local` | Search values only |
+| `ev find -i path` | Case-insensitive search |
+| `ev find -r 'PATH\|HOME'` | Regex search (quote to avoid shell expansion) |
+
+`ev search` is an alias for `ev find`.
 
 ### Loading environment files
 
