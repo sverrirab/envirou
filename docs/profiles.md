@@ -47,10 +47,12 @@ If your PATH is `/usr/local/bin:/usr/bin:/bin`, running `ev set py3` produces:
 PATH=/Users/you/envs/py3/bin:/usr/local/bin:/usr/bin:/bin
 ```
 
-You can prepend multiple components at once:
+You can prepend multiple components at once on a single line:
 ```ini
 PATH^=/a:/b
 ```
+
+**Important:** Each variable can only appear once per profile. If you list the same variable twice, only the last value is used and envirou will print a warning. Use a single line with multiple components separated by `:` (or `;` on Windows) instead.
 
 **Note:** `ev diff --save` always writes profiles using `=` (full replacement), since it captures the exact environment state rather than the delta. You can manually edit saved profiles to use `^=` or `+=` if desired.
 

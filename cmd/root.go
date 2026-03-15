@@ -172,10 +172,10 @@ func initConfig() {
 	// Display modifiers
 	output.NoColor(noColor)
 	replacePathTilde := ""
+	if app.configuration.SettingsPathTilde {
+		replacePathTilde = os.Getenv("HOME")
+	}
 	if app.caseInsensitive {
-		if app.configuration.SettingsPathTilde {
-			replacePathTilde = os.Getenv("HOME")
-		}
 		app.sh = shell.NewShell(outputPowerShell, !outputPowerShell)
 	} else {
 		app.sh = shell.NewShell(false, false)

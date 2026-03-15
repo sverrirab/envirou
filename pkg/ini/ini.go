@@ -31,8 +31,15 @@ type Section struct {
 	variables map[string]Variable
 }
 
+// Duplicate records a variable that appeared more than once in a section.
+type Duplicate struct {
+	Section  string
+	Variable string
+}
+
 type IniFile struct {
-	sections map[string]Section
+	sections   map[string]Section
+	Duplicates []Duplicate
 }
 
 func NewIni(path string) (*IniFile, error) {
@@ -64,6 +71,9 @@ func NewIni(path string) (*IniFile, error) {
 		if !ok {
 			section = Section{variables: make(map[string]Variable)}
 			ini.sections[sectionName] = section
+		}
+		if _, exists := section.variables[varName]; exists {
+			ini.Duplicates = append(ini.Duplicates, Duplicate{Section: sectionName, Variable: varName})
 		}
 		section.variables[varName] = Variable{varType: varType, value: varValue, Operator: operator}
 	}

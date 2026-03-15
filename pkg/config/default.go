@@ -12,43 +12,54 @@ const default_ini = `
 ; Default configuration file for envirou - feel free to edit!
 ; (If you remove it a new one will be generated).
 
+; ── Settings ─────────────────────────────────────────────────
+
 [settings]
 quiet=0
 sort_keys=1
-path_tilde=1
+path_tilde=1  ; display only: replaces $HOME with ~ in output
 password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
+; ── Display colors ───────────────────────────────────────────
+; Valid colors: green, magenta, red, yellow, blue, cyan, white,
+;               black, bold, underline, reverse, deleted, none
+
 [format]
-; <color> can be one of: green, magenta, red, yellow, blue, bold, cyan, white, black, underline, reverse, deleted, none
 group=magenta
 profile=green
 env_name=cyan
 path=reverse
 
+; ── Visible groups ───────────────────────────────────────────
+; Use * for wildcards. These groups are shown by default.
+
 [groups]
-; Use * at the end to match multiple:
 basic=PATH
 aws=AWS_*, EC2_*
-golang=GOROOT, GOPATH
-java=JAVA_HOME
-python=VIRTUAL_ENV
+cloud=KUBECONFIG, KUBE_*, DOCKER_*, COMPOSE_*, TF_*, TERRAFORM_*
+dev=GOROOT, GOPATH, GOBIN, JAVA_HOME, JAVA_OPTS, JDK_HOME, CLASSPATH, MAVEN_HOME, GRADLE_HOME, VIRTUAL_ENV, PYTHONPATH, PYTHONHOME, CONDA_*, PYENV_*, NODE_*, NPM_*, NVM_*, CARGO_HOME, RUSTUP_HOME, GEM_HOME, RBENV_*, BUNDLE_*
+git=GIT_*
 
-; Names starting with . are hidden by default.
-.basic=LOGNAME, NAME, PROMPT, PS1, USER, TMP, TMPDIR, HOME, EDITOR, MAIL
-.term=ZSH, SHELL, COLORFGBG, COLORTERM, COLORTERM, LSCOLORS, LS_COLORS, LESS, LESSCLOSE, LESSOPEN, PAGER, TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, LC_*, LANG, LANGUAGE
-.system=SSH_*, XDG_*, XPC_*, SUDO_*, COMMAND_MODE, SECURITYSESSIONID, DISPLAY, MOTD_SHOWN, PULSE_SERVER, WAYLAND_DISPLAY
+; ── Hidden groups (. prefix) ─────────────────────────────────
+; Shown only with -a flag. Split these in [custom] if you need finer control.
 
-; Names starting with .. are hidden and not used in diff/reset to default.
-..ignore=_, PWD, OLDPWD, SHLVL, SESSIONNAME, TERM_SESSION_ID, ITERM_*,
+.shell=BASH_*, BASH, BASHPID, BASHOPTS, BASH_ENV, COMP_WORDBREAKS, DIRSTACK, EPOCHREALTIME, EPOCHSECONDS, FUNCNAME, GROUPS, HISTCMD, LINENO, MACHTYPE, OPTARG, OPTIND, OSTYPE, PIPESTATUS, SHELLOPTS, SHLVL, ZSH_*, ZSH, ZSH_NAME, ZSH_VERSION, ZDOTDIR, ZLE_*, RPROMPT, RPS1, PROMPT, PROMPT2, PROMPT3, PROMPT4, PROMPT_EOL_MARK, PSVAR, PS*, SECONDS, RANDOM, _, COLUMNS, LINES, TTY, HIST*, SAVEHIST, MAIL, MAILCHECK, UID, EUID, PPID
+.locale=LANG, LANGUAGE, LC_*, LINGUAS
+.network=SSH_*, TMUX, TMUX_*, STY, WINDOW
+.system=XDG_*, SUDO_*, COMMAND_MODE, DISPLAY, MOTD_SHOWN, PULSE_SERVER, WAYLAND_DISPLAY, SECURITYSESSIONID, LOGNAME, NAME, USER, TMP, TMPDIR, HOME, EDITOR, SHELL, INFOPATH, HOMEBREW_*
+.terminal=TERM, TERM_PROGRAM, TERM_PROGRAM_VERSION, TERMCAP, TERMINFO_*, TERM_FEATURES, COLORTERM, COLORFGBG, LSCOLORS, LS_COLORS, LESS, LESSCLOSE, LESSOPEN, PAGER
+.editors=VSCODE_*, VSCODE_GIT_ASKPASS_*, GIT_ASKPASS
+.macos=__CF_*, XPC_*, TERM_SESSION_ID, LC_TERMINAL, LC_TERMINAL_VERSION, OSLogRateLimit, SQLITE_EXEMPT_PATH_FROM_VNODE_GUARDS, ITERM_*, VTE_*, Apple_PubSub_Socket_Render, LaunchInstanceID
+.windows=TEMP, USERNAME, USERPROFILE, USERDOMAIN*, OS, LOGONSERVER, COMPUTERNAME, HOMEDRIVE, HOMEPATH, PUBLIC, APPDATA, LOCALAPPDATA, PROGRAMDATA, PROGRAMFILES, PROGRAMFILES(X86), PROGRAMW6432, COMMONPROGRAMFILES, COMMONPROGRAMFILES(X86), COMMONPROGRAMW6432, DRIVERDATA, SYSTEMDRIVE, SYSTEMROOT, WINDIR, NUMBER_OF_PROCESSORS, PROCESSOR_*, ALLUSERSPROFILE, PSMODULEPATH, FP_NO_HOST_CHECK, PATHEXT, OneDrive*, COMSPEC, CMDCMDLINE, CMDEXTVERSION, ERRORLEVEL, SESSIONNAME, CLIENTNAME, WT_*, HOSTTYPE, WSLENV, WSL_DISTRO_NAME, WSL_*, WSL2_*
+.powershell=PWD, PID, HOME, Host, Error, Args, Input, Matches, MyInvocation, NestedPromptLevel, LASTEXITCODE, ShellId, StackTrace, PSItem, this, foreach, switch, Event, EventArgs, EventSubscriber, Sender, PSSenderInfo, IsWindows, IsLinux, IsMacOS, IsCoreCLR, EnabledExperimentalFeatures, true, false, null
 
-; Apple specific 
-.apple=Apple_PubSub_Socket_Render, __CF_USER_TEXT_ENCODING, LaunchInstanceID, __CFBundleIdentifier
+; ── Ignored groups (.. prefix) ───────────────────────────────
+; Hidden and excluded from snapshot/diff.
 
-; Windows specific below
-.winbasic=TEMP, USERNAME, USERPROFILE, USERDOMAIN*, OS, LOGONSERVER, COMPUTERNAME, HOMEDRIVE, HOMEPATH, PUBLIC, APPDATA, LOCALAPPDATA
-.windows=HOSTTYPE, WSLENV, WSL_DISTRO_NAME, MOTD_SHOWNOS, COMSPEC, PROGRAMDATA, PROGRAMFILES, PROGRAMFILES(X86), PROGRAMW6432, COMMONPROGRAMFILES, COMMONPROGRAMFILES(X86), COMMONPROGRAMW6432, DRIVERDATA, SYSTEMDRIVE, SYSTEMROOT, WINDIR, NUMBER_OF_PROCESSORS, PROCESSOR_*, ALLUSERSPROFILE, PSMODULEPATH, FP_NO_HOST_CHECK, PATHEXT, OneDrive*, WT_*, WSLENV, WSL_*, WSL2_*
+..ignore=_, PWD, OLDPWD, SHLVL
 
+; ── Custom ───────────────────────────────────────────────────
 ; Add your customizations below this point.
 
 [custom]
