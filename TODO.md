@@ -13,5 +13,9 @@ Make the config file easier to read and modify. Ideas:
 - Show config diff after editing
 - Better formatting/comments in generated default config
 
+### Diff improvements
+Support reset to snapshot? This might be a footgun so potentially a bad idea.
+
+
 ## Bugs / Cleanup
 * Test and document command line completion scripts
