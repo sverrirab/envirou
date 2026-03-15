@@ -130,6 +130,19 @@ func (out *Output) SetDiffNames(names map[string]bool) {
 	out.diffNames = names
 }
 
+// IsPathVariable returns true if the variable name matches the configured path patterns.
+func (out *Output) IsPathVariable(name string) bool {
+	return data.MatchAny(name, &out.paths, out.caseInsensitive)
+}
+
+// ReplaceHomeTilde replaces the home directory prefix with ~ if configured.
+func (out *Output) ReplaceHomeTilde(path string) string {
+	if len(out.replacePathTilde) > 0 && strings.HasPrefix(path, out.replacePathTilde) {
+		return strings.Replace(path, out.replacePathTilde, "~", 1)
+	}
+	return path
+}
+
 func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 	outputName := name
 	outputValue := value

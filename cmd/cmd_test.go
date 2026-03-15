@@ -19,6 +19,7 @@ func tp(parts ...string) string {
 const testConfigForCmd = `
 [settings]
 quiet=1
+path=TEST_PATH
 
 [groups]
 test=TEST_*
@@ -79,6 +80,7 @@ func executeCommand(t *testing.T, args ...string) string {
 	findValueOnly = false
 	findIgnoreCase = false
 	findRegex = false
+	pathCheck = false
 
 	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -501,4 +503,29 @@ func TestSetPrependAndAppendCombined(t *testing.T) {
 	if !strings.Contains(out, "/opt/tools/bin") {
 		t.Errorf("Expected appended tools path, got: %s", out)
 	}
+}
+
+// --- Path command tests ---
+
+func TestPathCommand(t *testing.T) {
+	t.Setenv("TEST_PATH", tp("/usr/local/bin", "/usr/bin", "/bin"))
+	_ = executeCommand(t, "path")
+	// Should run without error and display TEST_PATH
+}
+
+func TestPathSpecificVar(t *testing.T) {
+	t.Setenv("TEST_PATH", tp("/usr/local/bin", "/usr/bin", "/bin"))
+	_ = executeCommand(t, "path", "TEST_PATH")
+}
+
+func TestPathVarNotFound(t *testing.T) {
+	_ = executeCommand(t, "path", "NONEXISTENT_VAR_ZZZZZ")
+	// Should print "not found" but not error
+}
+
+func TestPathCheck(t *testing.T) {
+	// Use a real dir and a missing dir
+	t.Setenv("TEST_PATH", tp(os.TempDir(), "/nonexistent_path_zzz", os.TempDir()))
+	_ = executeCommand(t, "path", "--check", "TEST_PATH")
+	// Should flag the missing dir and the duplicate
 }
