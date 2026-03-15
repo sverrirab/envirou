@@ -101,7 +101,7 @@ var pathCmd = &cobra.Command{
 					}
 					output.Printf("%s %s\n", app.out.GroupSprintf("# %s —", entryCount(len(parts))), app.out.DiffSprintf(strings.Join(issues, ", ")))
 				} else {
-					output.Printf("%s\n", app.out.GroupSprintf("# %s", entryCount(len(parts))))
+					output.Printf("%s %s\n", app.out.GroupSprintf("# %s —", entryCount(len(parts))), app.out.ProfileSprintf("all ok"))
 				}
 			} else {
 				output.Printf("%s\n", app.out.GroupSprintf("# %s", entryCount(len(parts))))
