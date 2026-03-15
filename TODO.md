@@ -2,10 +2,9 @@
 
 ## Features
 
-### Environment diff and snapshot
-Track changes to the environment since a point in time. Set a snapshot of the current
-environment, make changes (install tools, activate virtualenvs, etc.), then diff to see
-what changed. Create a new profile directly from the diff.
+### search/find env variables
+ev find -i path 
+with simple regex support
 
 ### Chained profiles
 Support profile dependencies — if activating `profileX`, automatically import `profileY`
@@ -20,12 +19,9 @@ profiles only specify the delta, not the entire PATH.
 
 ### Improve config editing
 Make the config file easier to read and modify. Ideas:
-- Interactive profile creation (`ev add-profile`)
 - Validate config on save
 - Show config diff after editing
 - Better formatting/comments in generated default config
 
 ## Bugs / Cleanup
-
-* Config file env variables on Windows need to be upper case?
 * Test and document command line completion scripts
