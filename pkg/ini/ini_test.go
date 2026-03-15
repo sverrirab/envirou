@@ -152,6 +152,38 @@ PATH+=/opt/tools/bin
 PATH=/custom/only
 `
 
+func TestDuplicateVariables(t *testing.T) {
+	content := `
+[profile:test]
+PATH^=/a
+PATH^=/b
+FOO=bar
+`
+	file, err := ioutil.TempFile("", "config")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+	file.WriteString(content)
+	file.Close()
+
+	ini, err := NewIni(file.Name())
+	if err != nil {
+		t.Fatal("Failed to read configuration")
+	}
+
+	if len(ini.Duplicates) != 1 {
+		t.Errorf("Expected 1 duplicate, got %d", len(ini.Duplicates))
+	}
+	if len(ini.Duplicates) > 0 {
+		if ini.Duplicates[0].Section != "profile:test" || ini.Duplicates[0].Variable != "PATH" {
+			t.Errorf("Unexpected duplicate: %+v", ini.Duplicates[0])
+		}
+	}
+	// Last value wins
+	checkString(t, ini, "profile:test", "PATH", "/b")
+}
+
 func TestOperators(t *testing.T) {
 	file, err := ioutil.TempFile("", "config")
 	if err != nil {

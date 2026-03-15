@@ -76,6 +76,12 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""), caseInsensitive)
 	}
 
+	for _, dup := range config.Duplicates {
+		if strings.HasPrefix(dup.Section, "profile:") {
+			output.Printf("Warning: duplicate variable %s in [%s] (only last value is used)\n", dup.Variable, dup.Section)
+		}
+	}
+
 	sections := config.GetAllSections()
 	for _, section := range sections {
 		split := strings.SplitN(section, ":", 2)
