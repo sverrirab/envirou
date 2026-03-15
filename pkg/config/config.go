@@ -86,7 +86,15 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 				if config.IsNil(section, entry) {
 					profile.SetNil(entry)
 				} else {
-					profile.Set(entry, config.GetString(section, entry, ""))
+					op := config.GetOperator(section, entry)
+					mode := data.MergeReplace
+					switch op {
+					case ini.OpPrepend:
+						mode = data.MergePrepend
+					case ini.OpAppend:
+						mode = data.MergeAppend
+					}
+					profile.SetWithMode(entry, config.GetString(section, entry, ""), mode)
 				}
 			}
 			configuration.Profiles[profileName] = *profile

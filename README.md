@@ -159,16 +159,16 @@ can create different profiles that for example have a different default namespac
 
 ```inifile
 [profile:basic]
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/sab/src/custom/bin
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 VIRTUAL_ENV
 AWS_PROFILE
 
 [profile:py3]
-PATH=/Users/sab/sdk/py3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/sab/src/custom/bin
+PATH^=/Users/sab/sdk/py3/bin
 VIRTUAL_ENV=/Users/sab/sdk/py3
 
 [profile:py2]
-PATH=/Users/sab/sdk/py2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/sab/src/custom/bin
+PATH^=/Users/sab/sdk/py2/bin
 VIRTUAL_ENV=/Users/sab/sdk/py2
 
 [profile:awsprod]
@@ -180,7 +180,7 @@ AWS_PROFILE=dev
 
 Now you can switch profiles by running `ev set py3 awsprod`.
 
-See the [profiles guide](./docs/profiles.md) for more details on creating and using profiles.
+See the [profiles guide](./docs/profiles.md) for more details on creating and using profiles, including `^=` (prepend) and `+=` (append) operators for PATH-like variables.
 
 
 ## Where does the name come from?

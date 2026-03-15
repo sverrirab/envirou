@@ -139,3 +139,53 @@ func TestReadConfig(t *testing.T) {
 		}
 	}
 }
+
+const testOperatorConfig = `
+[profile:venv]
+PATH^=/home/user/venv/bin
+VIRTUAL_ENV=/home/user/venv
+
+[profile:tools]
+PATH+=/opt/tools/bin
+
+[profile:replace]
+PATH=/custom/only
+`
+
+func TestOperators(t *testing.T) {
+	file, err := ioutil.TempFile("", "config")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+	file.WriteString(testOperatorConfig)
+	file.Close()
+
+	ini, err := NewIni(file.Name())
+	if err != nil {
+		t.Fatal("Failed to read configuration")
+	}
+
+	// ^= should parse as prepend
+	checkString(t, ini, "profile:venv", "PATH", "/home/user/venv/bin")
+	if op := ini.GetOperator("profile:venv", "PATH"); op != OpPrepend {
+		t.Errorf("Expected OpPrepend for PATH^=, got %d", op)
+	}
+
+	// Regular = should still work
+	checkString(t, ini, "profile:venv", "VIRTUAL_ENV", "/home/user/venv")
+	if op := ini.GetOperator("profile:venv", "VIRTUAL_ENV"); op != OpReplace {
+		t.Errorf("Expected OpReplace for VIRTUAL_ENV=, got %d", op)
+	}
+
+	// += should parse as append
+	checkString(t, ini, "profile:tools", "PATH", "/opt/tools/bin")
+	if op := ini.GetOperator("profile:tools", "PATH"); op != OpAppend {
+		t.Errorf("Expected OpAppend for PATH+=, got %d", op)
+	}
+
+	// Plain = should be replace
+	if op := ini.GetOperator("profile:replace", "PATH"); op != OpReplace {
+		t.Errorf("Expected OpReplace for PATH=, got %d", op)
+	}
+}

@@ -13,9 +13,18 @@ const (
 	typeString
 )
 
+// Operator indicates how a variable value should be applied.
+const (
+	OpReplace = iota // name=value (default)
+	OpPrepend        // name^=value
+	OpAppend         // name+=value
+)
+
+
 type Variable struct {
-	varType int
+	varType  int
 	value    string
+	Operator int // OpReplace, OpPrepend, or OpAppend
 }
 
 type Section struct {
@@ -50,26 +59,59 @@ func NewIni(path string) (*IniFile, error) {
 			sectionName = string(bytes.TrimSpace(line[1 : len(line)-1]))
 			continue
 		}
-		split := bytes.SplitN(line, []byte{'='}, 2)
-		varName := string(bytes.TrimSpace(split[0]))
-		varType := typeNil
-		varValue := ""
-		if len(split) == 2 {
-			varValue = string(bytes.TrimSpace(split[1]))
-			if len(varValue) == 0 {
-				varType = typeEmpty
-			} else {
-				varType = typeString
-			}
-		}
+		varName, varValue, varType, operator := parseLine(line)
 		section, ok := ini.sections[sectionName]
 		if !ok {
 			section = Section{variables: make(map[string]Variable)}
 			ini.sections[sectionName] = section
 		}
-		section.variables[varName] = Variable{varType: varType, value: varValue}
+		section.variables[varName] = Variable{varType: varType, value: varValue, Operator: operator}
 	}
 	return &ini, nil
+}
+
+// parseLine extracts variable name, value, type, and operator from an INI line.
+// Recognizes ^= (prepend), += (append), and = (replace).
+func parseLine(line []byte) (string, string, int, int) {
+	operator := OpReplace
+	// Check for ^= and += before falling back to =
+	if idx := bytes.Index(line, []byte("^=")); idx >= 0 {
+		operator = OpPrepend
+		name := string(bytes.TrimSpace(line[:idx]))
+		value := string(bytes.TrimSpace(line[idx+2:]))
+		if len(value) == 0 {
+			return name, "", typeEmpty, operator
+		}
+		return name, value, typeString, operator
+	}
+	if idx := bytes.Index(line, []byte("+=")); idx >= 0 {
+		operator = OpAppend
+		name := string(bytes.TrimSpace(line[:idx]))
+		value := string(bytes.TrimSpace(line[idx+2:]))
+		if len(value) == 0 {
+			return name, "", typeEmpty, operator
+		}
+		return name, value, typeString, operator
+	}
+	split := bytes.SplitN(line, []byte{'='}, 2)
+	varName := string(bytes.TrimSpace(split[0]))
+	if len(split) == 2 {
+		varValue := string(bytes.TrimSpace(split[1]))
+		if len(varValue) == 0 {
+			return varName, "", typeEmpty, OpReplace
+		}
+		return varName, varValue, typeString, OpReplace
+	}
+	return varName, "", typeNil, OpReplace
+}
+
+// GetOperator returns the operator for a variable (OpReplace, OpPrepend, or OpAppend).
+func (iniFile *IniFile) GetOperator(section string, name string) int {
+	v, ok := iniFile.getVariable(section, name)
+	if !ok {
+		return OpReplace
+	}
+	return v.Operator
 }
 
 // GetString Read string variable from a section

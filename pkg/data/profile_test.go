@@ -1,8 +1,15 @@
 package data
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
+
+// p joins path components with the platform path separator.
+func p(parts ...string) string {
+	return strings.Join(parts, string(os.PathListSeparator))
+}
 
 func verifyValue(t *testing.T, p *Profile, name string, value string) {
 	if v, ok := p.Get(name); !ok || value != v {
@@ -149,6 +156,123 @@ func TestFullDiffEmpty(t *testing.T) {
 	if len(added) != 0 || len(changed) != 0 || len(removed) != 0 {
 		t.Error("Expected no differences")
 	}
+}
+
+func TestMergePrepend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
+}
+
+func TestMergeAppend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", p("/usr/local/bin", "/usr/bin", "/bin", "/opt/tools/bin"))
+}
+
+func TestMergePrependAlreadyPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	env.Merge(profile)
+	// Should be a no-op — component already exists
+	verifyValue(t, env, "PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
+}
+
+func TestMergeAppendAlreadyPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/opt/tools/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	env.Merge(profile)
+	// No-op
+	verifyValue(t, env, "PATH", p("/usr/local/bin", "/usr/bin", "/opt/tools/bin"))
+}
+
+func TestMergePrependMultipleComponents(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", p("/a", "/b"), MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", p("/a", "/b", "/usr/bin", "/bin"))
+}
+
+func TestMergePrependPartialOverlap(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/a", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", p("/a", "/new"), MergePrepend)
+
+	env.Merge(profile)
+	// /a already exists, only /new should be prepended
+	verifyValue(t, env, "PATH", p("/new", "/a", "/usr/bin", "/bin"))
+}
+
+func TestIsMergedPrepend(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	if !env.IsMerged(profile) {
+		t.Error("Profile should be considered merged — component is present in PATH")
+	}
+}
+
+func TestIsMergedPrependNotPresent(t *testing.T) {
+	env := NewProfile(false)
+	env.Set("PATH", p("/usr/local/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/home/user/venv/bin", MergePrepend)
+
+	if env.IsMerged(profile) {
+		t.Error("Profile should not be considered merged — component is missing from PATH")
+	}
+}
+
+func TestIsMergedAppendAnywhere(t *testing.T) {
+	env := NewProfile(false)
+	// Component is in the middle, not at the end — should still count as merged
+	env.Set("PATH", p("/usr/local/bin", "/opt/tools/bin", "/usr/bin", "/bin"))
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/opt/tools/bin", MergeAppend)
+
+	if !env.IsMerged(profile) {
+		t.Error("Profile should be considered merged — component is present anywhere in PATH")
+	}
+}
+
+func TestMergeEmptyExisting(t *testing.T) {
+	env := NewProfile(false)
+	// PATH not set yet
+
+	profile := NewProfile(false)
+	profile.SetWithMode("PATH", "/new/bin", MergePrepend)
+
+	env.Merge(profile)
+	verifyValue(t, env, "PATH", "/new/bin")
 }
 
 func TestCaseInsensitive(t *testing.T) {
