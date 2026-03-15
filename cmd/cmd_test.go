@@ -11,6 +11,11 @@ import (
 	"github.com/sverrirab/envirou/pkg/config"
 )
 
+// tp joins path components with the platform path separator.
+func tp(parts ...string) string {
+	return strings.Join(parts, string(os.PathListSeparator))
+}
+
 const testConfigForCmd = `
 [settings]
 quiet=1
@@ -452,7 +457,7 @@ func TestFindNameValueMutuallyExclusive(t *testing.T) {
 // --- Prepend/Append tests ---
 
 func TestSetPrependProfile(t *testing.T) {
-	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	t.Setenv("TEST_PATH", tp("/usr/local/bin", "/usr/bin", "/bin"))
 	out := executeCommand(t, "set", "venv")
 	if !strings.Contains(out, "TEST_PATH") {
 		t.Errorf("Expected TEST_PATH in output, got: %s", out)
@@ -464,7 +469,7 @@ func TestSetPrependProfile(t *testing.T) {
 }
 
 func TestSetAppendProfile(t *testing.T) {
-	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	t.Setenv("TEST_PATH", tp("/usr/local/bin", "/usr/bin", "/bin"))
 	out := executeCommand(t, "set", "tools")
 	if !strings.Contains(out, "TEST_PATH") {
 		t.Errorf("Expected TEST_PATH in output, got: %s", out)
@@ -476,7 +481,7 @@ func TestSetAppendProfile(t *testing.T) {
 
 func TestSetPrependAlreadyPresent(t *testing.T) {
 	// Component already in path — should be a no-op for that var
-	t.Setenv("TEST_PATH", "/home/user/venv/bin:/usr/local/bin:/usr/bin:/bin")
+	t.Setenv("TEST_PATH", tp("/home/user/venv/bin", "/usr/local/bin", "/usr/bin", "/bin"))
 	t.Setenv("VIRTUAL_ENV", "/home/user/venv")
 	out := executeCommand(t, "set", "venv")
 	// TEST_PATH should not change (component already present)
@@ -487,7 +492,7 @@ func TestSetPrependAlreadyPresent(t *testing.T) {
 }
 
 func TestSetPrependAndAppendCombined(t *testing.T) {
-	t.Setenv("TEST_PATH", "/usr/local/bin:/usr/bin:/bin")
+	t.Setenv("TEST_PATH", tp("/usr/local/bin", "/usr/bin", "/bin"))
 	out := executeCommand(t, "set", "venv", "tools")
 	// Both should be applied
 	if !strings.Contains(out, "/home/user/venv/bin") {
