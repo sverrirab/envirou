@@ -66,12 +66,12 @@ eval "$(envirou bootstrap zsh)"
 
 **PowerShell** (`$PROFILE`):
 ```powershell
-Invoke-Expression -Command $(envirou bootstrap powershell)
+Invoke-Expression (& envirou bootstrap powershell)
 ```
 
 To also customize your PowerShell prompt with active profile display:
 ```powershell
-Invoke-Expression -Command $(envirou bootstrap powershell --prompt)
+Invoke-Expression (& envirou bootstrap powershell --prompt)
 ```
 
 **Windows CMD**: see `envirou bootstrap bat`

@@ -3,12 +3,12 @@
 ## Install
 Add this to your PowerShell profile (`$PROFILE`):
 ```powershell
-Invoke-Expression -Command $(envirou bootstrap powershell)
+Invoke-Expression (& envirou bootstrap powershell)
 ```
 
 To also customize your prompt with active profile display and exit code:
 ```powershell
-Invoke-Expression -Command $(envirou bootstrap powershell --prompt)
+Invoke-Expression (& envirou bootstrap powershell --prompt)
 ```
 
 ## Uninstall
