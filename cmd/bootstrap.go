@@ -28,9 +28,9 @@ var bootstrapCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "powershell" {
 			app.sh = shell.NewShell(true, false)
-			app.shellCommands = append(app.shellCommands, powershellBootstrap)
+			app.shellCommands = append(app.shellCommands, collapseToOneLine(powershellBootstrap))
 			if addPrompt {
-				app.shellCommands = append(app.shellCommands, powershellPrompt)
+				app.shellCommands = append(app.shellCommands, collapseToOneLine(powershellPrompt))
 			}
 		} else if args[0] == "bat" {
 			app.shellCommands = append(app.shellCommands, batBootstrap)
@@ -54,6 +54,19 @@ func removeFirstLine(s string) string {
 		return lines[1]
 	}
 	return s
+}
+
+// collapseToOneLine converts a multi-line script to a single line
+// by replacing newlines with "; " and collapsing extra whitespace.
+func collapseToOneLine(s string) string {
+	var parts []string
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return strings.Join(parts, "; ")
 }
 
 func contains(slice []string, val string) bool {
