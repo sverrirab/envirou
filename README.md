@@ -52,19 +52,38 @@ Run `envirou` to view your current environment or `envirou help` for more inform
 To get the full power of envirou you need to allow it to modify your environment (switch profiles).
 This requires it to run in the context of the current shell via the `ev` wrapper function.
 
-Add the following to your shell startup file:
+The easiest way to install is:
+```
+envirou install
+```
+This auto-detects your shell and adds the bootstrap line to your profile.
+Use `--prompt` to also customize your PowerShell prompt, or `--dry-run` to preview changes.
 
-**Bash** (`.bashrc`):
+You can also specify the shell explicitly:
+```
+envirou install zsh
+envirou install powershell --prompt
+```
+
+To remove: `envirou install --uninstall`
+
+<details>
+<summary>Manual installation (if you prefer not to let envirou modify your profile)</summary>
+
+You can use `envirou install --dry-run` to see exactly what would be added and where,
+or add the bootstrap line yourself:
+
+**Bash** — add to `.bashrc` (or `.bash_profile` on macOS):
 ```bash
 eval "$(envirou bootstrap bash)"
 ```
 
-**Zsh** (`.zshrc`):
+**Zsh** — add to `.zshrc`:
 ```bash
 eval "$(envirou bootstrap zsh)"
 ```
 
-**PowerShell** (`$PROFILE`):
+**PowerShell** — add to `$PROFILE`:
 ```powershell
 Invoke-Expression (& envirou bootstrap powershell)
 ```
@@ -75,6 +94,10 @@ Invoke-Expression (& envirou bootstrap powershell --prompt)
 ```
 
 **Windows CMD**: see `envirou bootstrap bat`
+
+To uninstall manually, remove the line you added above from your shell profile.
+
+</details>
 
 For more details:
 * [Bash (and zsh) instructions](./bash/README.md)
@@ -128,6 +151,8 @@ See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 
 | Command | Description |
 |---------|-------------|
+| `envirou install` | Auto-install shell integration into your profile |
+| `envirou install --uninstall` | Remove shell integration from your profile |
 | `ev config` | Open config file in `$EDITOR` |
 | `ev bootstrap bash\|zsh\|powershell\|bat` | Output shell integration script |
 | `ev version` | Show version information |
