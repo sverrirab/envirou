@@ -1,7 +1,16 @@
 # Bash (or zsh) with envirou
 
 ## Install
-Add this to your bash configuration file `.bashrc` (or `.zshrc` for zsh):
+The easiest way to install:
+```bash
+envirou install
+```
+This auto-detects your shell (bash or zsh) and adds the bootstrap line to your profile.
+
+Use `envirou install --dry-run` to preview what will be added and where.
+
+### Manual install
+If you prefer to edit your profile yourself, add this to `.bashrc` (or `.zshrc` for zsh):
 ```bash
 eval "$(envirou bootstrap bash)"
 ```
@@ -11,11 +20,27 @@ eval "$(envirou bootstrap zsh)"
 ```
 Then restart your shell (or run the command directly in your current shell).
 
-## Oh-My-Zsh
-Link the theme folder in this repository into your local theme folder and add `ZSH_THEME="envirou"` to your startup.
+## Oh-My-Zsh theme
+To use the envirou zsh theme (shows active profiles in your prompt):
+
+1. Copy (or symlink) the theme file to your Oh-My-Zsh custom themes folder:
+   ```bash
+   cp oh-my-zsh/envirou.zsh-theme ~/.oh-my-zsh/custom/themes/
+   ```
+2. Set the theme in your `.zshrc`:
+   ```bash
+   ZSH_THEME="envirou"
+   ```
+3. Restart your shell.
+
+Note: the `ev` shell function must also be installed (see above).
 
 ## Uninstall
+```bash
+envirou install --uninstall
+```
 
+Or manually:
 1. Remove the `eval` line from your `.bashrc` / `.zshrc`
 2. Remove the binary `rm $(which envirou)`
 3. If you don't want to restart your current shell run `unset ev` (or `unset -f ev` for zsh)

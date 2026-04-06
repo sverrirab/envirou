@@ -1,5 +1,5 @@
-# ZSH Theme - based in the bira theme with envirou support
-# Note: you need to source the prompt.inc script in this folder before you set this theme.
+# ZSH Theme - based on the bira theme with envirou support
+# Requires: envirou installed and on PATH (see README for shell integration)
 
 local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
 
@@ -15,7 +15,7 @@ local current_dir='%{$terminfo[bold]$fg[blue]%}%~ %{$reset_color%}'
 local git_branch='$(git_prompt_info)'
 local rvm_ruby='$(ruby_prompt_info)'
 local venv_prompt='$(virtualenv_prompt_info)'
-local envirou_prompt='$(envirou --active-profiles-colored 2>&1) '
+local envirou_prompt='$(envirou profiles --active 2>&1) '
 
 ZSH_THEME_RVM_PROMPT_OPTIONS="i v g"
 
