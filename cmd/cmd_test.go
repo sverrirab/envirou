@@ -4,12 +4,22 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
 	"github.com/sverrirab/envirou/pkg/config"
 )
+
+// bashProfileName returns the expected bash profile filename for the current OS.
+func bashProfileName() string {
+	if runtime.GOOS == "darwin" {
+		return ".bash_profile"
+	}
+	return ".bashrc"
+}
 
 // tp joins path components with the platform path separator.
 func tp(parts ...string) string {
@@ -632,16 +642,13 @@ func TestRootShowAllGroups(t *testing.T) {
 
 func TestInstallAndUninstallFlow(t *testing.T) {
 	tmpDir := t.TempDir()
-	profilePath := tmpDir + "/.bashrc"
+	profilePath := filepath.Join(tmpDir, bashProfileName())
 
-	// Override HOME so detectShell/install writes to our temp file
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("SHELL", "/bin/bash")
 
-	// Install
 	_ = executeCommand(t, "install", "bash")
 
-	// Verify the bootstrap line was written
 	content, err := os.ReadFile(profilePath)
 	if err != nil {
 		t.Fatalf("Expected profile to be created: %v", err)
@@ -650,13 +657,12 @@ func TestInstallAndUninstallFlow(t *testing.T) {
 		t.Errorf("Expected bootstrap line in profile, got: %s", content)
 	}
 
-	// Install again — should report already installed
+	// Install again -- should report already installed
 	_ = executeCommand(t, "install", "bash")
 
 	// Uninstall
 	_ = executeCommand(t, "install", "bash", "--uninstall")
 
-	// Verify the bootstrap line was removed
 	content, err = os.ReadFile(profilePath)
 	if err != nil {
 		t.Fatalf("Expected profile to still exist: %v", err)
@@ -688,13 +694,12 @@ func TestInstallAutoDetectBash(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("SHELL", "/bin/bash")
 
-	// No explicit shell arg — should auto-detect bash
 	_ = executeCommand(t, "install")
 
-	profilePath := tmpDir + "/.bashrc"
+	profilePath := filepath.Join(tmpDir, bashProfileName())
 	content, err := os.ReadFile(profilePath)
 	if err != nil {
-		t.Fatalf("Expected .bashrc to be created: %v", err)
+		t.Fatalf("Expected %s to be created: %v", bashProfileName(), err)
 	}
 	if !strings.Contains(string(content), "envirou bootstrap bash") {
 		t.Errorf("Expected bash bootstrap line, got: %s", content)
@@ -725,9 +730,8 @@ func TestInstallUninstallNotPresent(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("SHELL", "/bin/bash")
 
-	// Create an empty profile file
-	os.WriteFile(tmpDir+"/.bashrc", []byte("# empty\n"), 0644)
+	profilePath := filepath.Join(tmpDir, bashProfileName())
+	os.WriteFile(profilePath, []byte("# empty\n"), 0644)
 
 	_ = executeCommand(t, "install", "--uninstall")
-	// Should report "not found" but not error
 }
