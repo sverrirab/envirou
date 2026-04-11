@@ -120,11 +120,14 @@ For more details:
 
 | Command | Description |
 |---------|-------------|
-| `ev find PATH` | Find variables with PATH in name or value |
+| `ev find PATH` | Find variables with PATH in name or value (substring) |
+| `ev find 'AWS_*'` | Wildcard prefix match |
+| `ev find '*_HOME'` | Wildcard suffix match |
 | `ev find --name PATH` | Search names only |
 | `ev find --value /usr/local` | Search values only |
 | `ev find -i path` | Case-insensitive search |
-| `ev find -r 'PATH&#124;HOME'` | Regex search (Go regex syntax; quote to avoid shell expansion) |
+
+Patterns without `*` are treated as substring matches. Use `*` for prefix, suffix, or contains matching — the same glob syntax used in config groups.
 
 Most commands have short aliases shown in the table above. Additionally `ev dotenv` can be written as `ev .env`.
 
