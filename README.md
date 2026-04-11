@@ -27,15 +27,11 @@ etc etc.
 
 ## Install
 
+**Binary download** (all platforms): grab the latest release from the [releases page](https://github.com/sverrirab/envirou/releases). This is the recommended method on Windows.
+
 **Homebrew** (macOS/Linux):
 ```bash
 brew install sverrirab/tap/envirou
-```
-
-**Scoop** (Windows):
-```powershell
-scoop bucket add sverrirab https://github.com/sverrirab/scoop-bucket
-scoop install envirou
 ```
 
 **Go install**:
@@ -43,7 +39,19 @@ scoop install envirou
 go install github.com/sverrirab/envirou@latest
 ```
 
-**Binary download**: grab the latest release from the [releases page](https://github.com/sverrirab/envirou/releases).
+<details>
+<summary>Scoop (Windows, experimental)</summary>
+
+Scoop support is experimental and may not work reliably.
+
+```powershell
+scoop bucket add sverrirab https://github.com/sverrirab/scoop-bucket
+scoop install envirou
+```
+
+If you run into issues, use the binary download above instead.
+
+</details>
 
 ## Quickstart
 Run `envirou` to view your current environment or `envirou help` for more information.
