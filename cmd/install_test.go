@@ -198,15 +198,24 @@ func TestRemoveLineWithWhitespace(t *testing.T) {
 }
 
 func TestInstallDryRun(t *testing.T) {
+	skipOnWindows(t)
+	setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
 	_ = executeCommand(t, "install", "--dry-run")
 }
 
 func TestInstallExplicitShellDryRun(t *testing.T) {
+	skipOnWindows(t)
+	setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
 	_ = executeCommand(t, "install", "bash", "--dry-run")
 	_ = executeCommand(t, "install", "zsh", "--dry-run")
 }
 
 func TestInstallUninstallNotInstalled(t *testing.T) {
+	skipOnWindows(t)
+	setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
 	_ = executeCommand(t, "install", "--uninstall")
 }
 

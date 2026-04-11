@@ -4,12 +4,42 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
 	"github.com/sverrirab/envirou/pkg/config"
 )
+
+// bashProfileName returns the expected bash profile filename for the current OS.
+func bashProfileName() string {
+	if runtime.GOOS == "darwin" {
+		return ".bash_profile"
+	}
+	return ".bashrc"
+}
+
+// setTempHome sets HOME (and USERPROFILE on Windows) to a temp directory
+// so install tests never touch real shell profiles.
+func setTempHome(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
+	return tmpDir
+}
+
+// skipOnWindows skips tests that depend on Unix shell detection.
+func skipOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("test requires Unix shell detection")
+	}
+}
 
 // tp joins path components with the platform path separator.
 func tp(parts ...string) string {
@@ -41,10 +71,11 @@ TEST_PATH+=/opt/tools/bin
 
 // executeCommand sets up a test config, resets global state, and executes
 // the root command with the given args. Returns captured stdout.
-func executeCommand(t *testing.T, args ...string) string {
+// resetState creates a temp config file and resets all global state
+// so tests don't leak into each other.
+func resetState(t *testing.T) {
 	t.Helper()
 
-	// Create temp config
 	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +89,6 @@ func executeCommand(t *testing.T, args ...string) string {
 	}
 	file.Close()
 
-	// Reset global state
 	cfgFile = name
 	bashBootstrap = "#!/bin/bash\nfunction ev() { eval \"$(envirou \"$@\")\"; }"
 	powershellBootstrap = "function ev { Invoke-Expression (envirou $args) }"
@@ -80,21 +110,26 @@ func executeCommand(t *testing.T, args ...string) string {
 	findValueOnly = false
 	findIgnoreCase = false
 	pathCheck = false
+	installPrompt = false
+	uninstall = false
 
-	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	for _, c := range rootCmd.Commands() {
 		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	}
+}
 
-	// Capture stdout (where shell commands are printed)
+func executeCommand(t *testing.T, args ...string) string {
+	t.Helper()
+	resetState(t)
+
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
 	rootCmd.SetArgs(args)
-	err = rootCmd.Execute()
+	err := rootCmd.Execute()
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -158,7 +193,7 @@ func TestBootstrapBat(t *testing.T) {
 }
 
 func TestBootstrapInvalidArg(t *testing.T) {
-	// Can't use executeCommand because we expect an error
+	resetState(t)
 	rootCmd.SetArgs([]string{"bootstrap", "fish"})
 	err := rootCmd.Execute()
 	if err == nil {
@@ -167,6 +202,7 @@ func TestBootstrapInvalidArg(t *testing.T) {
 }
 
 func TestBootstrapNoArg(t *testing.T) {
+	resetState(t)
 	rootCmd.SetArgs([]string{"bootstrap"})
 	err := rootCmd.Execute()
 	if err == nil {
@@ -358,6 +394,7 @@ func TestConfigWithEditor(t *testing.T) {
 	}
 }
 
+
 // --- Snapshot tests ---
 
 func TestSnapshotCommand(t *testing.T) {
@@ -413,6 +450,52 @@ func TestDiffWithChanges(t *testing.T) {
 	_ = executeCommand(t, "diff")
 }
 
+func TestDiffWithRemovedVars(t *testing.T) {
+	// Snapshot includes a var that is then removed
+	t.Setenv("TEST_REMOVED", "was_here")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	os.Unsetenv("TEST_REMOVED")
+	_ = executeCommand(t, "diff")
+	// Should show TEST_REMOVED as removed (-)
+}
+
+func TestDiffNoChanges(t *testing.T) {
+	// Snapshot and current are identical — should report no changes
+	t.Setenv("TEST_SAME", "value")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	_ = executeCommand(t, "diff")
+}
+
+func TestDiffSaveProfile(t *testing.T) {
+	t.Setenv("TEST_SAVE_VAR", "original")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	// Add a new var and change one
+	t.Setenv("TEST_SAVE_VAR", "changed")
+	t.Setenv("TEST_SAVE_NEW", "added")
+	out := executeCommand(t, "diff", "--save", "savedprofile")
+
+	// Shell commands go to stdout — but the profile save message goes to stderr.
+	// Just verify no error; the profile is written to the temp config file.
+	_ = out
+}
+
+func TestDiffSaveDuplicateProfile(t *testing.T) {
+	// "dev" already exists in the test config
+	t.Setenv("TEST_DUP", "val")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	t.Setenv("TEST_DUP", "changed")
+	_ = executeCommand(t, "diff", "--save", "dev")
+	// Should print "already exists" message, not error
+}
+
 // --- Find tests ---
 
 func TestFindByName(t *testing.T) {
@@ -460,6 +543,7 @@ func TestFindGlobExact(t *testing.T) {
 }
 
 func TestFindNameValueMutuallyExclusive(t *testing.T) {
+	resetState(t)
 	rootCmd.SetArgs([]string{"find", "--name", "--value", "test"})
 	err := rootCmd.Execute()
 	if err == nil {
@@ -539,4 +623,129 @@ func TestPathCheck(t *testing.T) {
 	t.Setenv("TEST_PATH", tp(os.TempDir(), "/nonexistent_path_zzz", os.TempDir()))
 	_ = executeCommand(t, "path", "--check", "TEST_PATH")
 	// Should flag the missing dir and the duplicate
+}
+
+func TestPathSingleEntry(t *testing.T) {
+	// Cover the "1 entry" singular branch in entryCount
+	t.Setenv("TEST_PATH", "/single/path")
+	_ = executeCommand(t, "path", "TEST_PATH")
+}
+
+func TestPathCheckAllOk(t *testing.T) {
+	// All entries exist and no duplicates — should print "all ok"
+	t.Setenv("TEST_PATH", os.TempDir())
+	_ = executeCommand(t, "path", "--check", "TEST_PATH")
+}
+
+// --- Root command extra tests ---
+
+func TestRootVerbose(t *testing.T) {
+	_ = executeCommand(t, "--verbose")
+}
+
+func TestRootShowGroup(t *testing.T) {
+	t.Setenv("TEST_VAR", "hello")
+	_ = executeCommand(t, "-g", "test")
+}
+
+func TestRootShowEmptyGroup(t *testing.T) {
+	// Request a group that exists but has no matching env vars
+	_ = executeCommand(t, "-g", "test")
+}
+
+func TestRootShowAllGroups(t *testing.T) {
+	t.Setenv("TEST_VAR", "hello")
+	_ = executeCommand(t, "-a")
+}
+
+// --- Install full flow tests ---
+
+func TestInstallAndUninstallFlow(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
+	profilePath := filepath.Join(tmpDir, bashProfileName())
+
+	_ = executeCommand(t, "install", "bash")
+
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected profile to be created: %v", err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bootstrap line in profile, got: %s", content)
+	}
+
+	// Install again -- should report already installed
+	_ = executeCommand(t, "install", "bash")
+
+	// Uninstall
+	_ = executeCommand(t, "install", "bash", "--uninstall")
+
+	content, err = os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected profile to still exist: %v", err)
+	}
+	if strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bootstrap line removed, got: %s", content)
+	}
+}
+
+func TestInstallZshFlow(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	_ = executeCommand(t, "install", "zsh")
+
+	profilePath := filepath.Join(tmpDir, ".zshrc")
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected .zshrc to be created: %v", err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap zsh") {
+		t.Errorf("Expected zsh bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallAutoDetectBash(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
+
+	_ = executeCommand(t, "install")
+
+	profilePath := filepath.Join(tmpDir, bashProfileName())
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected %s to be created: %v", bashProfileName(), err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bash bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallAlreadyInstalledOtherVariant(t *testing.T) {
+	skipOnWindows(t)
+	setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
+
+	_ = executeCommand(t, "install", "bash")
+	_ = executeCommand(t, "install", "bash", "--prompt")
+}
+
+func TestInstallPowershellDryRun(t *testing.T) {
+	setTempHome(t)
+	_ = executeCommand(t, "install", "powershell", "--dry-run")
+}
+
+func TestInstallUninstallNotPresent(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/bash")
+
+	profilePath := filepath.Join(tmpDir, bashProfileName())
+	os.WriteFile(profilePath, []byte("# empty\n"), 0644)
+
+	_ = executeCommand(t, "install", "--uninstall")
 }
