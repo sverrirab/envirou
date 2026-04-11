@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// setCmd represents the set command
+// configCmd opens the config file in the user's editor.
 var configCmd = &cobra.Command{
 	Use:     "config",
 	Short:   "Configure settings",

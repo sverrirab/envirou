@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-const default_ini = `
+const defaultIni = `
 ; Default configuration file for envirou - feel free to edit!
 ; (If you remove it a new one will be generated).
 
@@ -17,7 +17,7 @@ const default_ini = `
 quiet=0
 sort_keys=1
 path_tilde=1  ; display only: replaces $HOME with ~ in output
-password=AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+password=*SECRET*, *TOKEN*, *PASSWORD*, *API_KEY*, *PRIVATE_KEY*, *CREDENTIALS*
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
 ; ── Display colors ───────────────────────────────────────────
@@ -78,8 +78,7 @@ const snapshotFileName = "snapshot.ini"
 
 // GetDefaultConfigFilePath Returns full path to the config file
 func GetDefaultConfigFilePath() string {
-	full_path := filepath.Join(GetDefaultConfigFileFolder(), configFileName)
-	return full_path
+	return filepath.Join(GetDefaultConfigFileFolder(), configFileName)
 }
 
 // GetSnapshotFilePath returns the full path to the snapshot file
@@ -89,11 +88,11 @@ func GetSnapshotFilePath() string {
 
 // GetDefaultConfigFileFolder Figures out where the config file should be
 func GetDefaultConfigFileFolder() string {
-	current_user, err := user.Current()
+	currentUser, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return filepath.Join(current_user.HomeDir, ".config", "envirou")
+	return filepath.Join(currentUser.HomeDir, ".config", "envirou")
 }
 
 // WriteDefaultConfigFile write the default config file if no file exists already
@@ -105,7 +104,7 @@ func WriteDefaultConfigFile(path string) error {
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		err = os.WriteFile(path, []byte(default_ini), 0644)
+		err = os.WriteFile(path, []byte(defaultIni), 0644)
 	}
 	return err
 }

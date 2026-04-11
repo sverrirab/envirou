@@ -97,7 +97,7 @@ func (shell *Shell) RunCommands(commands []string) string {
 		return ""
 	} else {
 		if shell.bat {
-			// Windows bat file use & as seperator
+			// Windows bat file use & as separator
 			return fmt.Sprintf("%s\n", strings.Join(commands, " & "))
 		} else {
 			// Unixes require ; termination (as well as PowerShell)

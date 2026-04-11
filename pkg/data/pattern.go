@@ -32,7 +32,7 @@ func MatchAny(s string, patterns *Patterns, caseInsensitive bool) bool {
 	return false
 }
 
-// Match Simple glob macher where pattern can be PATTERN, *PATTERN, *PATTERN* or PATTERN*
+// Match Simple glob matcher where pattern can be PATTERN, *PATTERN, *PATTERN* or PATTERN*
 func Match(s string, p Pattern, caseInsensitive bool) bool {
 	pattern := string(p)
 	if caseInsensitive {
@@ -43,19 +43,19 @@ func Match(s string, p Pattern, caseInsensitive bool) bool {
 	} else if pattern == "*" {
 		return true
 	}
-	first_char := pattern[0]
-	last_char_pos := len(pattern) - 1
-	last_char := pattern[last_char_pos]
-	if first_char == '*' && last_char == '*' {
-		if strings.Contains(s, pattern[1:last_char_pos]) {
+	firstChar := pattern[0]
+	lastCharPos := len(pattern) - 1
+	lastChar := pattern[lastCharPos]
+	if firstChar == '*' && lastChar == '*' {
+		if strings.Contains(s, pattern[1:lastCharPos]) {
 			return true
 		}
-	} else if last_char == '*' {
-		if strings.HasPrefix(s, pattern[0:last_char_pos]) {
+	} else if lastChar == '*' {
+		if strings.HasPrefix(s, pattern[0:lastCharPos]) {
 			return true
 		}
-	} else if first_char == '*' {
-		if strings.HasSuffix(s, pattern[1:last_char_pos+1]) {
+	} else if firstChar == '*' {
+		if strings.HasSuffix(s, pattern[1:lastCharPos+1]) {
 			return true
 		}
 	} else if s == pattern {

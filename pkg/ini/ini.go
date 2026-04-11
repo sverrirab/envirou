@@ -55,13 +55,13 @@ func NewIni(path string) (*IniFile, error) {
 		if len(line) == 0 {
 			continue
 		}
-		first_char := line[0]
+		firstChar := line[0]
 
-		if first_char == ';' || first_char == '#' {
+		if firstChar == ';' || firstChar == '#' {
 			// Comment - ignore for now.
 			continue
 		}
-		if first_char == '[' && line[len(line)-1] == ']' {
+		if firstChar == '[' && line[len(line)-1] == ']' {
 			// Section header
 			sectionName = string(bytes.TrimSpace(line[1 : len(line)-1]))
 			continue
