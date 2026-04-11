@@ -120,14 +120,14 @@ For more details:
 
 | Command | Description |
 |---------|-------------|
-| `ev find PATH` | Find variables with PATH in name or value (substring) |
-| `ev find 'AWS_*'` | Wildcard prefix match |
-| `ev find '*_HOME'` | Wildcard suffix match |
+| `ev find PATH` | Substring — matches PATH, CLASSPATH, PATH_INFO, ... |
+| `ev find 'PATH*'` | Prefix — matches PATH, PATH_INFO but not CLASSPATH |
+| `ev find '*PATH'` | Suffix — matches PATH, CLASSPATH but not PATH_INFO |
 | `ev find --name PATH` | Search names only |
 | `ev find --value /usr/local` | Search values only |
 | `ev find -i path` | Case-insensitive search |
 
-Patterns without `*` are treated as substring matches. Use `*` for prefix, suffix, or contains matching — the same glob syntax used in config groups. **Quote patterns containing `*`** to prevent your shell from expanding them against filenames (e.g., `ev find 'AWS_*'` not `ev find AWS_*`).
+Patterns without `*` are treated as substring matches. Add `*` to restrict to prefix or suffix matching — the same glob syntax used in config groups. **Quote patterns containing `*`** to prevent your shell from expanding them (e.g., `ev find 'PATH*'` not `ev find PATH*`).
 
 Most commands have short aliases shown in the table above. Additionally `ev dotenv` can be written as `ev .env`.
 

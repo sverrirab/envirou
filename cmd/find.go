@@ -21,15 +21,14 @@ var findCmd = &cobra.Command{
 	Long: `Search environment variable names and values for a glob match.
 
 Patterns support * as a wildcard:
-  PATH      substring match (finds any name/value containing PATH)
-  PATH*     prefix match
-  *PATH     suffix match
-  *PATH*    explicit substring match (same as PATH without wildcards)
+  PATH      substring — matches PATH, CLASSPATH, PATH_INFO, ...
+  PATH*     prefix   — matches PATH, PATH_INFO but not CLASSPATH
+  *PATH     suffix   — matches PATH, CLASSPATH but not PATH_INFO
   *         matches everything
 
 Quote patterns containing * to prevent shell expansion:
-  ev find 'AWS_*'     (correct)
-  ev find AWS_*       (may break — shell expands * against filenames)
+  ev find 'PATH*'     (correct)
+  ev find PATH*       (may break — shell expands * against filenames)
 
 By default both names and values are searched. Use --name or --value to restrict.`,
 	GroupID: "profiles",
