@@ -16,14 +16,17 @@ var configCmd = &cobra.Command{
 	Long:    `By default this will run an editor with the current config file`,
 	GroupID: "configuration",
 	Run: func(cmd *cobra.Command, args []string) {
+		configFile := config.GetDefaultConfigFilePath()
 		editor, found := app.baseEnv.Get("EDITOR")
 		if !found {
-			output.Printf("You need to set the EDITOR environment to point to your editor first\n")
-			output.Printf("Configuration file location: %s\n", config.GetDefaultConfigFilePath())
-			os.Exit(3)
+			output.Printf("EDITOR is not set. To open the config file, either:\n")
+			output.Printf("  export EDITOR=nano   # (or vim, code, etc.)\n")
+			output.Printf("  ev config\n")
+			output.Printf("Or edit directly:\n")
+			output.Printf("  %s\n", configFile)
+			os.Exit(1)
 		}
 		output.Printf("Launching EDITOR ...\n")
-		configFile := config.GetDefaultConfigFilePath()
 		app.shellCommands = append(app.shellCommands, fmt.Sprintf("%s \"%s\"", editor, configFile))
 	},
 }

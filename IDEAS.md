@@ -20,42 +20,29 @@ building from source, installing, and testing every command against the docs and
 
 ## Potential Improvements
 
-1. **`ev config` without EDITOR exits with code 3** - Could be friendlier. Maybe suggest
-   common editors or offer to use `vi`/`nano` as fallback? Or at least exit with code 1
-   (the conventional "general error") rather than 3.
-
-2. **`diff` and `snapshot` are in "Configuration commands" group** - In the help output these
+1. **`diff` and `snapshot` are in "Configuration commands" group** - In the help output these
    appear under "Configuration commands" alongside `bootstrap`, `config`, and `install`. The
    README organizes them under "Tracking changes" which feels more natural. Consider moving
    them to a "Tracking" command group or into "Profile commands".
 
-3. **`set` command doesn't validate profile names** - `ev set nonexistent` prints a warning
+2. **`set` command doesn't validate profile names** - `ev set nonexistent` prints a warning
    but exits 0. Some users might prefer a non-zero exit code when no profiles were
    successfully applied. At minimum, `ev set nonexistent` (all profiles missing) could exit
    non-zero.
 
-4. **No way to list what a profile contains** - `ev profiles` lists profile names but there's
+3. **No way to list what a profile contains** - `ev profiles` lists profile names but there's
    no `ev profiles show <name>` or `ev profile <name>` to see what variables a profile would
    set. Users have to open the config file. A `ev profiles --show <name>` flag or similar
    would be useful.
 
-5. **Completion not integrated into install** - The `completion` command exists (bash, zsh,
+4. **Completion not integrated into install** - The `completion` command exists (bash, zsh,
    fish, powershell) but `envirou install` doesn't set up completions. Users have to
    manually run `envirou completion bash > /etc/bash_completion.d/envirou` or similar.
    Consider adding completion setup to the install command, or at least mentioning it.
 
-6. **`ev dotenv` without `.env` file exits with code 1** - This is correct behavior, but
-   could be friendlier. A message like "No .env file found in current directory. Specify
-   a file: ev dotenv <file>" would help new users.
-
-7. **No `ev unset` command** - To deactivate a profile, users have to create a "reset"
+5. **No `ev unset` command** - To deactivate a profile, users have to create a "reset"
    profile that unsets everything, or manually unset variables. A complement to `ev set`
    would be useful (this is partially covered in TODO.md's "chained profiles" idea).
-
-8. **Variables can appear in multiple groups** - In `-a` output, variables like `HOME`, `PWD`,
-   and `SHLVL` appear under multiple groups (`.powershell`, `.shell`, `.system`, `..ignore`).
-   This might be intentional for completeness but could be confusing. Consider noting this
-   behavior or adding a setting to show each variable only once.
 
 ---
 

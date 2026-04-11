@@ -39,7 +39,10 @@ When multiple files are given, they are loaded in order and later values overrid
 func loadDotenvFile(filename string, env *data.Profile) error {
 	file, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("file not found")
+		if os.IsNotExist(err) && filename == ".env" {
+			return fmt.Errorf("no .env file in current directory (specify a file: ev dotenv <file>)")
+		}
+		return fmt.Errorf("file not found: %s", filename)
 	}
 	defer closeFile(file)
 

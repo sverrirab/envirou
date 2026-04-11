@@ -42,6 +42,7 @@ git=GIT_*
 
 ; ── Hidden groups (. prefix) ─────────────────────────────────
 ; Shown only with -a flag. Split these in [custom] if you need finer control.
+; Note: a variable can appear in multiple groups — this is by design.
 
 .shell=BASH_*, BASH, BASHPID, BASHOPTS, BASH_ENV, COMP_WORDBREAKS, DIRSTACK, EPOCHREALTIME, EPOCHSECONDS, FUNCNAME, GROUPS, HISTCMD, LINENO, MACHTYPE, OPTARG, OPTIND, OSTYPE, PIPESTATUS, SHELLOPTS, SHLVL, ZSH_*, ZSH, ZSH_NAME, ZSH_VERSION, ZDOTDIR, ZLE_*, RPROMPT, RPS1, PROMPT, PROMPT2, PROMPT3, PROMPT4, PROMPT_EOL_MARK, PSVAR, PS*, SECONDS, RANDOM, _, COLUMNS, LINES, TTY, HIST*, SAVEHIST, MAIL, MAILCHECK, UID, EUID, PPID
 .locale=LANG, LANGUAGE, LC_*, LINGUAS
