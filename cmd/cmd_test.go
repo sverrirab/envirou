@@ -80,6 +80,8 @@ func executeCommand(t *testing.T, args ...string) string {
 	findValueOnly = false
 	findIgnoreCase = false
 	pathCheck = false
+	installPrompt = false
+	uninstall = false
 
 	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -358,6 +360,7 @@ func TestConfigWithEditor(t *testing.T) {
 	}
 }
 
+
 // --- Snapshot tests ---
 
 func TestSnapshotCommand(t *testing.T) {
@@ -411,6 +414,52 @@ func TestDiffWithChanges(t *testing.T) {
 	t.Setenv("TEST_DIFF", "after")
 	t.Setenv("TEST_NEW", "added")
 	_ = executeCommand(t, "diff")
+}
+
+func TestDiffWithRemovedVars(t *testing.T) {
+	// Snapshot includes a var that is then removed
+	t.Setenv("TEST_REMOVED", "was_here")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	os.Unsetenv("TEST_REMOVED")
+	_ = executeCommand(t, "diff")
+	// Should show TEST_REMOVED as removed (-)
+}
+
+func TestDiffNoChanges(t *testing.T) {
+	// Snapshot and current are identical — should report no changes
+	t.Setenv("TEST_SAME", "value")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	_ = executeCommand(t, "diff")
+}
+
+func TestDiffSaveProfile(t *testing.T) {
+	t.Setenv("TEST_SAVE_VAR", "original")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	// Add a new var and change one
+	t.Setenv("TEST_SAVE_VAR", "changed")
+	t.Setenv("TEST_SAVE_NEW", "added")
+	out := executeCommand(t, "diff", "--save", "savedprofile")
+
+	// Shell commands go to stdout — but the profile save message goes to stderr.
+	// Just verify no error; the profile is written to the temp config file.
+	_ = out
+}
+
+func TestDiffSaveDuplicateProfile(t *testing.T) {
+	// "dev" already exists in the test config
+	t.Setenv("TEST_DUP", "val")
+	_ = executeCommand(t, "snapshot")
+	t.Cleanup(func() { config.RemoveSnapshot() })
+
+	t.Setenv("TEST_DUP", "changed")
+	_ = executeCommand(t, "diff", "--save", "dev")
+	// Should print "already exists" message, not error
 }
 
 // --- Find tests ---
@@ -539,4 +588,141 @@ func TestPathCheck(t *testing.T) {
 	t.Setenv("TEST_PATH", tp(os.TempDir(), "/nonexistent_path_zzz", os.TempDir()))
 	_ = executeCommand(t, "path", "--check", "TEST_PATH")
 	// Should flag the missing dir and the duplicate
+}
+
+func TestPathSingleEntry(t *testing.T) {
+	// Cover the "1 entry" singular branch in entryCount
+	t.Setenv("TEST_PATH", "/single/path")
+	_ = executeCommand(t, "path", "TEST_PATH")
+}
+
+func TestPathCheckAllOk(t *testing.T) {
+	// All entries exist and no duplicates — should print "all ok"
+	t.Setenv("TEST_PATH", os.TempDir())
+	_ = executeCommand(t, "path", "--check", "TEST_PATH")
+}
+
+// --- Root command extra tests ---
+
+func TestRootVerbose(t *testing.T) {
+	_ = executeCommand(t, "--verbose")
+}
+
+func TestRootShowGroup(t *testing.T) {
+	t.Setenv("TEST_VAR", "hello")
+	_ = executeCommand(t, "-g", "test")
+}
+
+func TestRootShowEmptyGroup(t *testing.T) {
+	// Request a group that exists but has no matching env vars
+	_ = executeCommand(t, "-g", "test")
+}
+
+func TestRootShowAllGroups(t *testing.T) {
+	t.Setenv("TEST_VAR", "hello")
+	_ = executeCommand(t, "-a")
+}
+
+// --- Install full flow tests ---
+
+func TestInstallAndUninstallFlow(t *testing.T) {
+	tmpDir := t.TempDir()
+	profilePath := tmpDir + "/.bashrc"
+
+	// Override HOME so detectShell/install writes to our temp file
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SHELL", "/bin/bash")
+
+	// Install
+	_ = executeCommand(t, "install", "bash")
+
+	// Verify the bootstrap line was written
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected profile to be created: %v", err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bootstrap line in profile, got: %s", content)
+	}
+
+	// Install again — should report already installed
+	_ = executeCommand(t, "install", "bash")
+
+	// Uninstall
+	_ = executeCommand(t, "install", "bash", "--uninstall")
+
+	// Verify the bootstrap line was removed
+	content, err = os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected profile to still exist: %v", err)
+	}
+	if strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bootstrap line removed, got: %s", content)
+	}
+}
+
+func TestInstallZshFlow(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	_ = executeCommand(t, "install", "zsh")
+
+	profilePath := tmpDir + "/.zshrc"
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected .zshrc to be created: %v", err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap zsh") {
+		t.Errorf("Expected zsh bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallAutoDetectBash(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SHELL", "/bin/bash")
+
+	// No explicit shell arg — should auto-detect bash
+	_ = executeCommand(t, "install")
+
+	profilePath := tmpDir + "/.bashrc"
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected .bashrc to be created: %v", err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap bash") {
+		t.Errorf("Expected bash bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallAlreadyInstalledOtherVariant(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SHELL", "/bin/bash")
+
+	// First install without prompt
+	_ = executeCommand(t, "install", "bash")
+
+	// Try installing with --prompt — should say "already installed"
+	_ = executeCommand(t, "install", "bash", "--prompt")
+}
+
+func TestInstallPowershellDryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	_ = executeCommand(t, "install", "powershell", "--dry-run")
+}
+
+func TestInstallUninstallNotPresent(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("SHELL", "/bin/bash")
+
+	// Create an empty profile file
+	os.WriteFile(tmpDir+"/.bashrc", []byte("# empty\n"), 0644)
+
+	_ = executeCommand(t, "install", "--uninstall")
+	// Should report "not found" but not error
 }
