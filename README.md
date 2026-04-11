@@ -127,7 +127,7 @@ For more details:
 | `ev find --value /usr/local` | Search values only |
 | `ev find -i path` | Case-insensitive search |
 
-Patterns without `*` are treated as substring matches. Use `*` for prefix, suffix, or contains matching — the same glob syntax used in config groups.
+Patterns without `*` are treated as substring matches. Use `*` for prefix, suffix, or contains matching — the same glob syntax used in config groups. **Quote patterns containing `*`** to prevent your shell from expanding them against filenames (e.g., `ev find 'AWS_*'` not `ev find AWS_*`).
 
 Most commands have short aliases shown in the table above. Additionally `ev dotenv` can be written as `ev .env`.
 

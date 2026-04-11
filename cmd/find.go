@@ -27,6 +27,10 @@ Patterns support * as a wildcard:
   *PATH*    explicit substring match (same as PATH without wildcards)
   *         matches everything
 
+Quote patterns containing * to prevent shell expansion:
+  ev find 'AWS_*'     (correct)
+  ev find AWS_*       (may break — shell expands * against filenames)
+
 By default both names and values are searched. Use --name or --value to restrict.`,
 	GroupID: "profiles",
 	Args:    cobra.ExactArgs(1),
