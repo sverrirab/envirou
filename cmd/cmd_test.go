@@ -41,10 +41,11 @@ TEST_PATH+=/opt/tools/bin
 
 // executeCommand sets up a test config, resets global state, and executes
 // the root command with the given args. Returns captured stdout.
-func executeCommand(t *testing.T, args ...string) string {
+// resetState creates a temp config file and resets all global state
+// so tests don't leak into each other.
+func resetState(t *testing.T) {
 	t.Helper()
 
-	// Create temp config
 	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +59,6 @@ func executeCommand(t *testing.T, args ...string) string {
 	}
 	file.Close()
 
-	// Reset global state
 	cfgFile = name
 	bashBootstrap = "#!/bin/bash\nfunction ev() { eval \"$(envirou \"$@\")\"; }"
 	powershellBootstrap = "function ev { Invoke-Expression (envirou $args) }"
@@ -83,20 +83,23 @@ func executeCommand(t *testing.T, args ...string) string {
 	installPrompt = false
 	uninstall = false
 
-	// Reset cobra flag "changed" state so mutually exclusive checks work
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	for _, c := range rootCmd.Commands() {
 		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	}
+}
 
-	// Capture stdout (where shell commands are printed)
+func executeCommand(t *testing.T, args ...string) string {
+	t.Helper()
+	resetState(t)
+
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
 	rootCmd.SetArgs(args)
-	err = rootCmd.Execute()
+	err := rootCmd.Execute()
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -160,7 +163,7 @@ func TestBootstrapBat(t *testing.T) {
 }
 
 func TestBootstrapInvalidArg(t *testing.T) {
-	// Can't use executeCommand because we expect an error
+	resetState(t)
 	rootCmd.SetArgs([]string{"bootstrap", "fish"})
 	err := rootCmd.Execute()
 	if err == nil {
@@ -169,6 +172,7 @@ func TestBootstrapInvalidArg(t *testing.T) {
 }
 
 func TestBootstrapNoArg(t *testing.T) {
+	resetState(t)
 	rootCmd.SetArgs([]string{"bootstrap"})
 	err := rootCmd.Execute()
 	if err == nil {
@@ -509,6 +513,7 @@ func TestFindGlobExact(t *testing.T) {
 }
 
 func TestFindNameValueMutuallyExclusive(t *testing.T) {
+	resetState(t)
 	rootCmd.SetArgs([]string{"find", "--name", "--value", "test"})
 	err := rootCmd.Execute()
 	if err == nil {
