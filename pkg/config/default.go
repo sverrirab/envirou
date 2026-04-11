@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -106,7 +105,7 @@ func WriteDefaultConfigFile(path string) error {
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		err = ioutil.WriteFile(path, []byte(default_ini), 0644)
+		err = os.WriteFile(path, []byte(default_ini), 0644)
 	}
 	return err
 }

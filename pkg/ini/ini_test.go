@@ -1,7 +1,6 @@
 package ini
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -90,7 +89,7 @@ func checkType(t *testing.T, iniFile *IniFile, sectionName string, name string, 
 }
 
 func TestReadConfig(t *testing.T) {
-	file, err := ioutil.TempFile("", "config")
+	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,7 +158,7 @@ PATH^=/a
 PATH^=/b
 FOO=bar
 `
-	file, err := ioutil.TempFile("", "config")
+	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,7 +184,7 @@ FOO=bar
 }
 
 func TestOperators(t *testing.T) {
-	file, err := ioutil.TempFile("", "config")
+	file, err := os.CreateTemp("", "config")
 	if err != nil {
 		log.Fatal(err)
 	}

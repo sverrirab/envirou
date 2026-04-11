@@ -2,7 +2,7 @@ package ini
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 )
@@ -44,7 +44,7 @@ type IniFile struct {
 
 func NewIni(path string) (*IniFile, error) {
 	ini := IniFile{sections: make(map[string]Section)}
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (iniFile *IniFile) GetString(section string, name string, defaultValue stri
 	return v.value
 }
 
-// GetString Read string variable from a section
+// GetBool Read bool variable from a section
 func (iniFile *IniFile) GetBool(section string, name string, defaultValue bool) bool {
 	v, ok := iniFile.getVariable(section, name)
 	if ! ok {
