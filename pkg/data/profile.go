@@ -84,7 +84,7 @@ func (profile *Profile) Get(name string) (string, bool) {
 	return value, ok
 }
 
-// GetNil returns true if the value has been explitly set to nil.
+// GetNil returns true if the value has been explicitly set to nil.
 func (profile *Profile) GetNil(name string) bool {
 	correctCase := profile.GetCorrectCase(name, false)
 	_, ok := profile.isNil[correctCase]

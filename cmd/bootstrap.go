@@ -8,7 +8,7 @@ import (
 	"github.com/sverrirab/envirou/pkg/shell"
 )
 
-// setCmd represents the set command
+// bootstrapCmd outputs the shell integration script for a given shell.
 var bootstrapCmd = &cobra.Command{
 	Use:       "bootstrap [bash|zsh|powershell|bat]",
 	Short:     "Bootstrap current shell",

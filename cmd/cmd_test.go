@@ -79,7 +79,6 @@ func executeCommand(t *testing.T, args ...string) string {
 	findNameOnly = false
 	findValueOnly = false
 	findIgnoreCase = false
-	findRegex = false
 	pathCheck = false
 
 	// Reset cobra flag "changed" state so mutually exclusive checks work
@@ -442,10 +441,22 @@ func TestFindIgnoreCase(t *testing.T) {
 	_ = executeCommand(t, "find", "--ignore-case", "find_case_test")
 }
 
-func TestFindRegex(t *testing.T) {
-	t.Setenv("FIND_RE_FOO", "one")
-	t.Setenv("FIND_RE_BAR", "two")
-	_ = executeCommand(t, "find", "--regex", "FIND_RE_(FOO|BAR)")
+func TestFindGlobPrefix(t *testing.T) {
+	t.Setenv("FIND_GLOB_FOO", "one")
+	t.Setenv("FIND_GLOB_BAR", "two")
+	t.Setenv("OTHER_VAR", "three")
+	_ = executeCommand(t, "find", "FIND_GLOB_*")
+}
+
+func TestFindGlobSuffix(t *testing.T) {
+	t.Setenv("MY_SPECIAL_PATH", "value")
+	_ = executeCommand(t, "find", "--name", "*PATH")
+}
+
+func TestFindGlobExact(t *testing.T) {
+	t.Setenv("FIND_EXACT_VAR", "value")
+	// Without wildcards, should do substring match
+	_ = executeCommand(t, "find", "FIND_EXACT")
 }
 
 func TestFindNameValueMutuallyExclusive(t *testing.T) {

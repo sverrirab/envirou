@@ -1,6 +1,8 @@
 # envirou - View and manage your shell environment
 
 [![build](https://github.com/sverrirab/envirou/actions/workflows/build.yml/badge.svg)](https://github.com/sverrirab/envirou/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/sverrirab/envirou/branch/main/graph/badge.svg)](https://codecov.io/gh/sverrirab/envirou)
+[![license](https://img.shields.io/github/license/sverrirab/envirou)](./LICENSE)
 
 Envirou (`ev`) helps you to quickly view and configure your shell
 environment. Display important variables with nice formatting and hide the ones you don't care about. No more custom shell scripts to configure your environment or guessing which one is active!
@@ -27,15 +29,11 @@ etc etc.
 
 ## Install
 
+**Binary download** (all platforms): grab the latest release from the [releases page](https://github.com/sverrirab/envirou/releases). This is the recommended method on Windows.
+
 **Homebrew** (macOS/Linux):
 ```bash
 brew install sverrirab/tap/envirou
-```
-
-**Scoop** (Windows):
-```powershell
-scoop bucket add sverrirab https://github.com/sverrirab/scoop-bucket
-scoop install envirou
 ```
 
 **Go install**:
@@ -43,7 +41,19 @@ scoop install envirou
 go install github.com/sverrirab/envirou@latest
 ```
 
-**Binary download**: grab the latest release from the [releases page](https://github.com/sverrirab/envirou/releases).
+<details>
+<summary>Scoop (Windows, experimental)</summary>
+
+Scoop support is experimental and may not work reliably.
+
+```powershell
+scoop bucket add sverrirab https://github.com/sverrirab/scoop-bucket
+scoop install envirou
+```
+
+If you run into issues, use the binary download above instead.
+
+</details>
 
 ## Quickstart
 Run `envirou` to view your current environment or `envirou help` for more information.
@@ -110,22 +120,36 @@ For more details:
 | Command | Description |
 |---------|-------------|
 | `ev` | Display current environment (grouped and formatted) |
-| `ev set PROFILE [...]` | Activate one or more profiles |
-| `ev find PATTERN` | Search env variable names and values |
-| `ev profiles` | List all profiles (active ones highlighted) |
-| `ev groups` | List all configured groups |
+| `ev set PROFILE [...]` | Activate one or more profiles (alias: `.`) |
+| `ev find PATTERN` | Search env variable names and values (alias: `search`) |
+| `ev path [VAR]` | Display path-like variables one entry per line |
+| `ev profiles` | List all profiles (alias: `profile`, `p`) |
+| `ev groups` | List all configured groups (alias: `group`, `g`) |
 
 ### Searching
 
 | Command | Description |
 |---------|-------------|
-| `ev find PATH` | Find variables with PATH in name or value |
+| `ev find PATH` | Substring — matches PATH, CLASSPATH, PATH_INFO, ... |
+| `ev find 'PATH*'` | Prefix — matches PATH, PATH_INFO but not CLASSPATH |
+| `ev find '*PATH'` | Suffix — matches PATH, CLASSPATH but not PATH_INFO |
 | `ev find --name PATH` | Search names only |
 | `ev find --value /usr/local` | Search values only |
 | `ev find -i path` | Case-insensitive search |
-| `ev find -r 'PATH\|HOME'` | Regex search (quote to avoid shell expansion) |
 
-`ev search` is an alias for `ev find`.
+Patterns without `*` are treated as substring matches. Add `*` to restrict to prefix or suffix matching — the same glob syntax used in config groups. **Quote patterns containing `*`** to prevent your shell from expanding them (e.g., `ev find 'PATH*'` not `ev find PATH*`).
+
+Most commands have short aliases shown in the table above. Additionally `ev dotenv` can be written as `ev .env`.
+
+### Inspecting path variables
+
+| Command | Description |
+|---------|-------------|
+| `ev path` | Show all path-like variables with one entry per line |
+| `ev path PATH` | Show a specific variable |
+| `ev path --check` | Flag missing directories and duplicates |
+
+See the [path guide](./docs/path.md) for details.
 
 ### Loading environment files
 
@@ -140,7 +164,7 @@ See the [dotenv guide](./docs/dotenv.md) for syntax details and examples.
 
 | Command | Description |
 |---------|-------------|
-| `ev snapshot` | Save current environment as a baseline |
+| `ev snapshot` | Save current environment as a baseline (alias: `snap`) |
 | `ev diff` | Show what changed since the snapshot |
 | `ev diff --save NAME` | Create a new profile from the changes |
 | `ev snapshot --reset` | Remove the saved snapshot |

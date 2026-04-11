@@ -131,7 +131,7 @@ func TestReadDefault(t *testing.T) {
 	if config.FormatEnvName != "cyan" {
 		t.Error("expected cyan")
 	}
-	if len(config.SettingsPassword) != 2 {
+	if len(config.SettingsPassword) != 6 {
 		t.Errorf("Unexpected password: %s", config.SettingsPassword)
 	}
 	if len(config.SettingsPath) != 6 {
