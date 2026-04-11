@@ -21,6 +21,26 @@ func bashProfileName() string {
 	return ".bashrc"
 }
 
+// setTempHome sets HOME (and USERPROFILE on Windows) to a temp directory
+// so install tests never touch real shell profiles.
+func setTempHome(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
+	return tmpDir
+}
+
+// skipOnWindows skips tests that depend on Unix shell detection.
+func skipOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("test requires Unix shell detection")
+	}
+}
+
 // tp joins path components with the platform path separator.
 func tp(parts ...string) string {
 	return strings.Join(parts, string(os.PathListSeparator))
@@ -641,11 +661,10 @@ func TestRootShowAllGroups(t *testing.T) {
 // --- Install full flow tests ---
 
 func TestInstallAndUninstallFlow(t *testing.T) {
-	tmpDir := t.TempDir()
-	profilePath := filepath.Join(tmpDir, bashProfileName())
-
-	t.Setenv("HOME", tmpDir)
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
 	t.Setenv("SHELL", "/bin/bash")
+	profilePath := filepath.Join(tmpDir, bashProfileName())
 
 	_ = executeCommand(t, "install", "bash")
 
@@ -673,13 +692,13 @@ func TestInstallAndUninstallFlow(t *testing.T) {
 }
 
 func TestInstallZshFlow(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
 	t.Setenv("SHELL", "/bin/zsh")
 
 	_ = executeCommand(t, "install", "zsh")
 
-	profilePath := tmpDir + "/.zshrc"
+	profilePath := filepath.Join(tmpDir, ".zshrc")
 	content, err := os.ReadFile(profilePath)
 	if err != nil {
 		t.Fatalf("Expected .zshrc to be created: %v", err)
@@ -690,8 +709,8 @@ func TestInstallZshFlow(t *testing.T) {
 }
 
 func TestInstallAutoDetectBash(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
 	t.Setenv("SHELL", "/bin/bash")
 
 	_ = executeCommand(t, "install")
@@ -707,27 +726,22 @@ func TestInstallAutoDetectBash(t *testing.T) {
 }
 
 func TestInstallAlreadyInstalledOtherVariant(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	skipOnWindows(t)
+	setTempHome(t)
 	t.Setenv("SHELL", "/bin/bash")
 
-	// First install without prompt
 	_ = executeCommand(t, "install", "bash")
-
-	// Try installing with --prompt — should say "already installed"
 	_ = executeCommand(t, "install", "bash", "--prompt")
 }
 
 func TestInstallPowershellDryRun(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
-
+	setTempHome(t)
 	_ = executeCommand(t, "install", "powershell", "--dry-run")
 }
 
 func TestInstallUninstallNotPresent(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
 	t.Setenv("SHELL", "/bin/bash")
 
 	profilePath := filepath.Join(tmpDir, bashProfileName())
