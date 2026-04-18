@@ -197,6 +197,34 @@ func TestRemoveLineWithWhitespace(t *testing.T) {
 	}
 }
 
+func TestPSProfilePathSelection(t *testing.T) {
+	tmpDir := t.TempDir()
+	modernDir := filepath.Join(tmpDir, "Documents", "PowerShell")
+	legacyDir := filepath.Join(tmpDir, "Documents", "WindowsPowerShell")
+	modernFile := filepath.Join(modernDir, "Microsoft.PowerShell_profile.ps1")
+	legacyFile := filepath.Join(legacyDir, "Microsoft.PowerShell_profile.ps1")
+
+	// Neither dir exists: should prefer modern path
+	got := windowsPowerShellProfile(tmpDir)
+	if got != modernFile {
+		t.Errorf("neither exists: expected modern path %s, got %s", modernFile, got)
+	}
+
+	// Only legacy dir exists: should use legacy
+	os.MkdirAll(legacyDir, 0755)
+	got = windowsPowerShellProfile(tmpDir)
+	if got != legacyFile {
+		t.Errorf("only legacy: expected legacy path %s, got %s", legacyFile, got)
+	}
+
+	// Both exist: should prefer modern
+	os.MkdirAll(modernDir, 0755)
+	got = windowsPowerShellProfile(tmpDir)
+	if got != modernFile {
+		t.Errorf("both exist: expected modern path %s, got %s", modernFile, got)
+	}
+}
+
 func TestInstallDryRun(t *testing.T) {
 	skipOnWindows(t)
 	setTempHome(t)

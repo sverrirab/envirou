@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/sverrirab/envirou/pkg/config"
-	"github.com/sverrirab/envirou/pkg/output"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/output"
 )
 
 // configCmd opens the config file in the user's editor.
@@ -19,12 +20,17 @@ var configCmd = &cobra.Command{
 		configFile := config.GetDefaultConfigFilePath()
 		editor, found := app.baseEnv.Get("EDITOR")
 		if !found {
-			output.Printf("EDITOR is not set. To open the config file, either:\n")
-			output.Printf("  export EDITOR=nano   # (or vim, code, etc.)\n")
-			output.Printf("  ev config\n")
-			output.Printf("Or edit directly:\n")
-			output.Printf("  %s\n", configFile)
-			os.Exit(1)
+			if runtime.GOOS == "windows" {
+				editor = "notepad"
+				found = true
+			} else {
+				output.Printf("EDITOR is not set. To open the config file, either:\n")
+				output.Printf("  export EDITOR=nano   # (or vim, code, etc.)\n")
+				output.Printf("  ev config\n")
+				output.Printf("Or edit directly:\n")
+				output.Printf("  %s\n", configFile)
+				os.Exit(1)
+			}
 		}
 		output.Printf("Launching EDITOR ...\n")
 		app.shellCommands = append(app.shellCommands, fmt.Sprintf("%s \"%s\"", editor, configFile))

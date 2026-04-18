@@ -739,6 +739,40 @@ func TestInstallPowershellDryRun(t *testing.T) {
 	_ = executeCommand(t, "install", "powershell", "--dry-run")
 }
 
+func TestInstallPowershellFlow(t *testing.T) {
+	tmpDir := setTempHome(t)
+
+	_ = executeCommand(t, "install", "powershell")
+
+	// Profile should be created even when directories didn't exist.
+	// On a fresh system (no existing PS dirs), modern PowerShell 7+ path is used.
+	var profilePath string
+	if runtime.GOOS == "windows" {
+		profilePath = filepath.Join(tmpDir, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+	} else {
+		profilePath = filepath.Join(tmpDir, ".config", "powershell", "Microsoft.PowerShell_profile.ps1")
+	}
+
+	content, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected PowerShell profile to be created at %s: %v", profilePath, err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap powershell") {
+		t.Errorf("Expected bootstrap line in profile, got: %s", content)
+	}
+
+	// Uninstall
+	_ = executeCommand(t, "install", "powershell", "--uninstall")
+
+	content, err = os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("Expected profile to still exist: %v", err)
+	}
+	if strings.Contains(string(content), "envirou bootstrap powershell") {
+		t.Errorf("Expected bootstrap line removed, got: %s", content)
+	}
+}
+
 func TestInstallUninstallNotPresent(t *testing.T) {
 	skipOnWindows(t)
 	tmpDir := setTempHome(t)
