@@ -34,18 +34,27 @@ func getBootstrapLine(shellName string, prompt bool) string {
 	}
 }
 
+// windowsPowerShellProfile returns the PowerShell profile path for Windows.
+// Prefers the modern PowerShell 7+ directory unless the legacy WindowsPowerShell
+// directory already exists (and the modern one does not).
+func windowsPowerShellProfile(home string) string {
+	modern := filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+	legacy := filepath.Join(home, "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1")
+	_, modernErr := os.Stat(filepath.Dir(modern))
+	_, legacyErr := os.Stat(filepath.Dir(legacy))
+	if os.IsNotExist(modernErr) && !os.IsNotExist(legacyErr) {
+		return legacy
+	}
+	return modern
+}
+
 func detectShell() *shellInfo {
 	if runtime.GOOS == "windows" {
 		profilePath := os.Getenv("USERPROFILE")
 		if profilePath == "" {
 			return nil
 		}
-		psProfile := filepath.Join(profilePath, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
-		// Check if the newer PowerShell 7+ profile dir exists, otherwise fall back to WindowsPowerShell
-		if _, err := os.Stat(filepath.Dir(psProfile)); os.IsNotExist(err) {
-			psProfile = filepath.Join(profilePath, "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1")
-		}
-		return &shellInfo{name: "powershell", profilePath: psProfile}
+		return &shellInfo{name: "powershell", profilePath: windowsPowerShellProfile(profilePath)}
 	}
 
 	shellEnv := os.Getenv("SHELL")
@@ -180,11 +189,7 @@ If no shell is specified, the current shell is auto-detected.`,
 				si.profilePath = filepath.Join(home, ".zshrc")
 			case "powershell":
 				if runtime.GOOS == "windows" {
-					psProfile := filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
-					if _, err := os.Stat(filepath.Dir(psProfile)); os.IsNotExist(err) {
-						psProfile = filepath.Join(home, "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1")
-					}
-					si.profilePath = psProfile
+					si.profilePath = windowsPowerShellProfile(home)
 				} else {
 					si.profilePath = filepath.Join(home, ".config", "powershell", "Microsoft.PowerShell_profile.ps1")
 				}
@@ -248,8 +253,15 @@ If no shell is specified, the current shell is auto-detected.`,
 			return
 		}
 
+		_, statErr := os.Stat(si.profilePath)
+		profileExists := !os.IsNotExist(statErr)
+
 		if dryRun {
-			output.Printf("Would add to %s:\n  %s\n", si.profilePath, bootstrapLine)
+			if profileExists {
+				output.Printf("Would add to %s:\n  %s\n", si.profilePath, bootstrapLine)
+			} else {
+				output.Printf("Would create %s with:\n  %s\n", si.profilePath, bootstrapLine)
+			}
 			return
 		}
 
@@ -257,7 +269,11 @@ If no shell is specified, the current shell is auto-detected.`,
 			output.Printf("Error writing to %s: %v\n", si.profilePath, err)
 			return
 		}
-		output.Printf("Added to %s:\n  %s\n", si.profilePath, bootstrapLine)
+		if profileExists {
+			output.Printf("Added to %s:\n  %s\n", si.profilePath, bootstrapLine)
+		} else {
+			output.Printf("Created %s with:\n  %s\n", si.profilePath, bootstrapLine)
+		}
 		output.Printf("Restart your shell or run the following to activate now:\n  %s\n", bootstrapLine)
 	},
 }
