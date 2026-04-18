@@ -6,6 +6,7 @@ import (
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/ini"
 	"github.com/sverrirab/envirou/pkg/output"
+	"github.com/sverrirab/envirou/pkg/shell"
 )
 
 type Configuration struct {
@@ -89,6 +90,10 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 			profileName := strings.TrimSpace(split[1])
 			profile := data.NewProfile(caseInsensitive)
 			for _, entry := range config.GetAllVariables(section) {
+				if !shell.IsValidVarName(entry) {
+					output.Printf("Warning: skipping invalid variable name %q in [%s]\n", entry, section)
+					continue
+				}
 				if config.IsNil(section, entry) {
 					profile.SetNil(entry)
 				} else {

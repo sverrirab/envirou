@@ -27,6 +27,61 @@ func validateUnEscaped(t *testing.T, s string) {
 	}
 }
 
+func TestIsValidVarName(t *testing.T) {
+	valid := []string{"FOO", "BAR_BAZ", "_private", "a", "A1", "PATH", "__", "_0"}
+	for _, name := range valid {
+		if !IsValidVarName(name) {
+			t.Errorf("expected %q to be valid", name)
+		}
+	}
+	invalid := []string{
+		"",
+		"0FOO",
+		"FOO BAR",
+		"FOO;BAR",
+		"FOO;rm -rf ~",
+		"$(cmd)",
+		"`cmd`",
+		"FOO=BAR",
+		"FOO\nBAR",
+		"a-b",
+		"a.b",
+		"FOO$HOME",
+	}
+	for _, name := range invalid {
+		if IsValidVarName(name) {
+			t.Errorf("expected %q to be invalid", name)
+		}
+	}
+}
+
+func TestExportVarRejectsInvalidName(t *testing.T) {
+	for _, ps := range []bool{false, true} {
+		sh := NewShell(ps, false)
+		if cmd := sh.ExportVar("VALID", "value"); cmd == "" {
+			t.Error("expected command for valid name")
+		}
+		if cmd := sh.ExportVar("BAD;rm -rf /", "value"); cmd != "" {
+			t.Errorf("expected empty for injected name, got %q", cmd)
+		}
+		if cmd := sh.ExportVar("$(evil)", "value"); cmd != "" {
+			t.Errorf("expected empty for subshell name, got %q", cmd)
+		}
+	}
+}
+
+func TestUnsetVarRejectsInvalidName(t *testing.T) {
+	for _, ps := range []bool{false, true} {
+		sh := NewShell(ps, false)
+		if cmd := sh.UnsetVar("VALID"); cmd == "" {
+			t.Error("expected command for valid name")
+		}
+		if cmd := sh.UnsetVar("BAD;rm -rf /"); cmd != "" {
+			t.Errorf("expected empty for injected name, got %q", cmd)
+		}
+	}
+}
+
 func TestEscape(t *testing.T) {
 	validateEscaped(t, "hello world")
 	validateEscaped(t, "$hi")

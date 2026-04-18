@@ -19,6 +19,33 @@ func NewShell(powerShell bool, bat bool) *Shell {
 	}
 }
 
+// IsValidVarName checks whether name is a safe environment variable identifier.
+// Only allows POSIX-portable names: [a-zA-Z_][a-zA-Z0-9_]*
+func IsValidVarName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	c := name[0]
+	if !isLetter(c) && c != '_' {
+		return false
+	}
+	for i := 1; i < len(name); i++ {
+		c = name[i]
+		if !isLetter(c) && !isDigit(c) && c != '_' {
+			return false
+		}
+	}
+	return true
+}
+
+func isLetter(c byte) bool {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+
+func isDigit(c byte) bool {
+	return '0' <= c && c <= '9'
+}
+
 func needsEscape(value string) bool {
 	for i := 0; i < len(value); i++ {
 		c := value[i]
@@ -73,6 +100,9 @@ func (shell *Shell) Escape(value string) string {
 }
 
 func (shell *Shell) ExportVar(name, value string) string {
+	if !IsValidVarName(name) {
+		return ""
+	}
 	if shell.powerShell {
 		return fmt.Sprintf("$Env:%s = %s", name, shell.Escape(value))
 	} else if shell.bat {
@@ -83,6 +113,9 @@ func (shell *Shell) ExportVar(name, value string) string {
 }
 
 func (shell *Shell) UnsetVar(name string) string {
+	if !IsValidVarName(name) {
+		return ""
+	}
 	if shell.powerShell {
 		return fmt.Sprintf("Remove-Item Env:%s", name)
 	} else if shell.bat {
@@ -111,10 +144,14 @@ func (shell *Shell) GetCommands(old, new *data.Profile) (commands []string) {
 	added, removed := old.Diff(new)
 	for _, add := range added {
 		value, _ := new.Get(add)
-		commands = append(commands, shell.ExportVar(add, value))
+		if cmd := shell.ExportVar(add, value); cmd != "" {
+			commands = append(commands, cmd)
+		}
 	}
 	for _, remove := range removed {
-		commands = append(commands, shell.UnsetVar(remove))
+		if cmd := shell.UnsetVar(remove); cmd != "" {
+			commands = append(commands, cmd)
+		}
 	}
 	return
 }

@@ -1,6 +1,12 @@
 package cmd
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/sverrirab/envirou/pkg/data"
+)
 
 func TestParseDotenvLine(t *testing.T) {
 	tests := []struct {
@@ -45,6 +51,46 @@ func TestParseDotenvLine(t *testing.T) {
 				t.Errorf("parseDotenvLine(%q) = %q, want %q", tt.input, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParseDotenvLineRejectsInjection(t *testing.T) {
+	// parseDotenvLine itself just parses, but these would be caught by loadDotenvFile validation
+	// Verify the keys that come out of parseDotenvLine for dangerous patterns
+	injections := []struct {
+		input string
+		key   string
+	}{
+		{"FOO;rm -rf ~=value", "FOO;rm -rf ~"},
+		{"$(evil)=value", "$(evil)"},
+		{"`id`=value", "`id`"},
+		{"A B=value", "A B"},
+	}
+	for _, tt := range injections {
+		line := parseDotenvLine(tt.input)
+		if line == "" {
+			continue
+		}
+		// The key extracted should fail IsValidVarName (tested via loadDotenvFile)
+		key := line[:strings.Index(line, "=")]
+		if key != tt.key {
+			t.Errorf("parseDotenvLine(%q) key = %q, want %q", tt.input, key, tt.key)
+		}
+	}
+}
+
+func TestLoadDotenvFileRejectsInvalidName(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := tmpDir + "/bad.env"
+	os.WriteFile(path, []byte("GOOD=ok\nBAD;whoami=evil\n"), 0644)
+
+	env := data.NewProfile(false)
+	err := loadDotenvFile(path, env)
+	if err == nil {
+		t.Fatal("expected error for invalid variable name")
+	}
+	if !strings.Contains(err.Error(), "invalid variable name") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
