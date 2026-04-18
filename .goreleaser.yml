@@ -67,24 +67,3 @@ scoops:
     homepage: https://github.com/sverrirab/envirou
     description: View and manage your shell environment variables
     license: MIT
-
-chocolateys:
-  - name: envirou
-    owners: sverrirab
-    title: Envirou
-    authors: Sverrir A. Berg
-    project_url: https://github.com/sverrirab/envirou
-    project_source_url: https://github.com/sverrirab/envirou
-    docs_url: https://github.com/sverrirab/envirou
-    bug_tracker_url: https://github.com/sverrirab/envirou/issues
-    license_url: https://github.com/sverrirab/envirou/blob/main/LICENSE
-    require_license_acceptance: false
-    tags: "environment variables cli terminal shell"
-    summary: View and manage your shell environment variables
-    description: |
-      Envirou (ev) helps you view and manage your shell environment variables
-      with nice formatting and customizable grouping. Quickly switch between
-      environment profiles, inspect PATH variables, load .env files, and more.
-    release_notes: "https://github.com/sverrirab/envirou/releases/tag/{{ .Tag }}"
-    api_key: "{{ .Env.CHOCOLATEY_API_KEY }}"
-    source_repo: "https://push.chocolatey.org/"
