@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
+	"github.com/sverrirab/envirou/pkg/shell"
 )
 
 var dotenvCmd = &cobra.Command{
@@ -48,11 +49,18 @@ func loadDotenvFile(filename string, env *data.Profile) error {
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
+	lineNum := 0
 	for scanner.Scan() {
+		lineNum++
 		line := parseDotenvLine(scanner.Text())
-		if line != "" {
-			lines = append(lines, line)
+		if line == "" {
+			continue
 		}
+		key := line[:strings.Index(line, "=")]
+		if !shell.IsValidVarName(key) {
+			return fmt.Errorf("line %d: invalid variable name %q", lineNum, key)
+		}
+		lines = append(lines, line)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("failed reading file (%s)", err.Error())
