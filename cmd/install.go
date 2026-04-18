@@ -248,8 +248,15 @@ If no shell is specified, the current shell is auto-detected.`,
 			return
 		}
 
+		_, statErr := os.Stat(si.profilePath)
+		profileExists := !os.IsNotExist(statErr)
+
 		if dryRun {
-			output.Printf("Would add to %s:\n  %s\n", si.profilePath, bootstrapLine)
+			if profileExists {
+				output.Printf("Would add to %s:\n  %s\n", si.profilePath, bootstrapLine)
+			} else {
+				output.Printf("Would create %s with:\n  %s\n", si.profilePath, bootstrapLine)
+			}
 			return
 		}
 
@@ -257,7 +264,11 @@ If no shell is specified, the current shell is auto-detected.`,
 			output.Printf("Error writing to %s: %v\n", si.profilePath, err)
 			return
 		}
-		output.Printf("Added to %s:\n  %s\n", si.profilePath, bootstrapLine)
+		if profileExists {
+			output.Printf("Added to %s:\n  %s\n", si.profilePath, bootstrapLine)
+		} else {
+			output.Printf("Created %s with:\n  %s\n", si.profilePath, bootstrapLine)
+		}
 		output.Printf("Restart your shell or run the following to activate now:\n  %s\n", bootstrapLine)
 	},
 }
