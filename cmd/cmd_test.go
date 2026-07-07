@@ -73,6 +73,19 @@ TEST_PATH+=/opt/tools/bin
 // the root command with the given args. Returns captured stdout.
 // resetState creates a temp config file and resets all global state
 // so tests don't leak into each other.
+// TestMain routes snapshot/config storage to a temp dir so tests never
+// touch the real ~/.config/envirou and can run in restricted environments.
+func TestMain(m *testing.M) {
+	tmpDir, err := os.MkdirTemp("", "envirou-test-config")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("ENVIROU_CONFIG_DIR", tmpDir)
+	code := m.Run()
+	os.RemoveAll(tmpDir)
+	os.Exit(code)
+}
+
 func resetState(t *testing.T) {
 	t.Helper()
 

@@ -2,20 +2,34 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/sverrirab/envirou/pkg/data"
 )
 
-func TestSaveLoadSnapshot(t *testing.T) {
-	// Use a temp dir so we don't write to the real config folder
-	tmpDir, err := os.MkdirTemp("", "snapshot")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+// setTempConfigDir routes all config/snapshot storage to a temp directory
+// so tests never touch the real ~/.config/envirou.
+func setTempConfigDir(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("ENVIROU_CONFIG_DIR", tmpDir)
+	return tmpDir
+}
 
-	// Override snapshot path by writing directly to a temp file
+func TestConfigDirOverride(t *testing.T) {
+	tmpDir := setTempConfigDir(t)
+	if got := GetDefaultConfigFileFolder(); got != tmpDir {
+		t.Errorf("Expected config folder %q, got %q", tmpDir, got)
+	}
+	if got := GetSnapshotFilePath(); got != filepath.Join(tmpDir, snapshotFileName) {
+		t.Errorf("Unexpected snapshot path %q", got)
+	}
+}
+
+func TestSaveLoadSnapshot(t *testing.T) {
+	tmpDir := setTempConfigDir(t)
+
 	profile := data.NewProfile(false)
 	profile.Set("FOO", "bar")
 	profile.Set("BAZ", "qux")
@@ -24,11 +38,13 @@ func TestSaveLoadSnapshot(t *testing.T) {
 	groups := data.NewGroups()
 	groups.ParseAndAdd("..ignore", "IGNORED_*", false)
 
-	err = SaveSnapshot(profile, groups, false)
+	err := SaveSnapshot(profile, groups, false)
 	if err != nil {
 		t.Fatalf("SaveSnapshot failed: %v", err)
 	}
-	defer RemoveSnapshot()
+	if _, err := os.Stat(filepath.Join(tmpDir, snapshotFileName)); err != nil {
+		t.Fatalf("Snapshot not written to temp config dir: %v", err)
+	}
 
 	loaded, err := LoadSnapshot(false)
 	if err != nil {
@@ -51,8 +67,7 @@ func TestSaveLoadSnapshot(t *testing.T) {
 }
 
 func TestLoadSnapshotNoFile(t *testing.T) {
-	// Ensure no snapshot file exists
-	RemoveSnapshot()
+	setTempConfigDir(t)
 
 	loaded, err := LoadSnapshot(false)
 	if err != nil {
@@ -64,6 +79,8 @@ func TestLoadSnapshotNoFile(t *testing.T) {
 }
 
 func TestRemoveSnapshot(t *testing.T) {
+	setTempConfigDir(t)
+
 	// Should not error even when file doesn't exist
 	err := RemoveSnapshot()
 	if err != nil {
