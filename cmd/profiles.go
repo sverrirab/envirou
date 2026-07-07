@@ -14,7 +14,7 @@ var profilesCmd = &cobra.Command{
 		for _, profileName := range app.profileNames {
 			active := app.isActiveProfile[profileName]
 			if active && !showInactiveProfilesOnly {
-				output.Printf(app.out.ProfileSprintf("%s ", profileName))
+				output.Printf("%s", app.out.ProfileSprintf("%s ", profileName))
 			} else if !active && !showActiveProfilesOnly {
 				output.Printf("%s ", profileName)
 			}

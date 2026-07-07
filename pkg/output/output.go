@@ -176,15 +176,15 @@ func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 }
 
 func (out *Output) PrintEnv(sh *shell.Shell, name, value string) {
-	Printf(out.SprintEnv(sh, name, value))
+	Printf("%s", out.SprintEnv(sh, name, value))
 }
 
 func (out *Output) PrintGroup(name string) {
-	Printf(out.GroupSprintf("# %s\n", name))
+	Printf("%s", out.GroupSprintf("# %s\n", name))
 }
 
 func (out *Output) PrintProfileList(profileNames, mergedNames []string) {
-	Printf(out.SPrintProfileList(profileNames, mergedNames))
+	Printf("%s", out.SPrintProfileList(profileNames, mergedNames))
 }
 
 func (out *Output) SPrintProfileList(profileNames, mergedNames []string) string {
