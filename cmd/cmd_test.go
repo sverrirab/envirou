@@ -414,7 +414,6 @@ func TestConfigWithEditor(t *testing.T) {
 	}
 }
 
-
 // --- Snapshot tests ---
 
 func TestSnapshotCommand(t *testing.T) {

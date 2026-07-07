@@ -40,15 +40,16 @@ FOUR
  FIVE= magic = makes = the = world = go = around
 
 `
+
 func TestMissingConfig(t *testing.T) {
-	_, err := NewIni("m i s s i n g - f i l e")	
+	_, err := NewIni("m i s s i n g - f i l e")
 	if err == nil {
 		t.Error("This should fail")
 	}
 }
 
 func checkString(t *testing.T, iniFile *IniFile, sectionName string, name string, value string) {
-	if ! iniFile.Exists(sectionName, name) {
+	if !iniFile.Exists(sectionName, name) {
 		t.Errorf("String variable not found \"%s\" [%s]", sectionName, name)
 	}
 	val := iniFile.GetString(sectionName, name, "")
@@ -58,7 +59,7 @@ func checkString(t *testing.T, iniFile *IniFile, sectionName string, name string
 }
 
 func checkBool(t *testing.T, iniFile *IniFile, sectionName string, name string, value bool) {
-	if ! iniFile.Exists(sectionName, name) {
+	if !iniFile.Exists(sectionName, name) {
 		t.Errorf("Bool variable not found \"%s\" [%s]", sectionName, name)
 	}
 	val := iniFile.GetBool(sectionName, name, false)
@@ -68,19 +69,19 @@ func checkBool(t *testing.T, iniFile *IniFile, sectionName string, name string, 
 }
 
 func checkNil(t *testing.T, iniFile *IniFile, sectionName string, name string) {
-	if ! iniFile.Exists(sectionName, name) {
+	if !iniFile.Exists(sectionName, name) {
 		t.Errorf("Variable not found \"%s\" [%s]", sectionName, name)
 	}
-	if isNil := iniFile.IsNil(sectionName, name); ! isNil {
+	if isNil := iniFile.IsNil(sectionName, name); !isNil {
 		t.Errorf("Variable \"%s\" [%s] not nil!", sectionName, name)
 	}
 }
 
 func checkType(t *testing.T, iniFile *IniFile, sectionName string, name string, varType int) {
 	v, ok := iniFile.getVariable(sectionName, name)
-	if ! ok {
+	if !ok {
 		t.Errorf("Variable not found \"%s\" [%s]", sectionName, name)
-		
+
 	} else {
 		if varType != v.varType {
 			t.Errorf("String variable \"%s\" [%s] type mismatch: \"%d\" != \"%d\"", sectionName, name, varType, v.varType)

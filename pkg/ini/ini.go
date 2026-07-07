@@ -20,7 +20,6 @@ const (
 	OpAppend         // name+=value
 )
 
-
 type Variable struct {
 	varType  int
 	value    string
@@ -127,7 +126,7 @@ func (iniFile *IniFile) GetOperator(section string, name string) int {
 // GetString Read string variable from a section
 func (iniFile *IniFile) GetString(section string, name string, defaultValue string) string {
 	v, ok := iniFile.getVariable(section, name)
-	if ! ok {
+	if !ok {
 		return defaultValue
 	}
 	if v.varType == typeNil {
@@ -139,7 +138,7 @@ func (iniFile *IniFile) GetString(section string, name string, defaultValue stri
 // GetBool Read bool variable from a section
 func (iniFile *IniFile) GetBool(section string, name string, defaultValue bool) bool {
 	v, ok := iniFile.getVariable(section, name)
-	if ! ok {
+	if !ok {
 		return defaultValue
 	}
 	if v.varType == typeNil {
@@ -161,7 +160,7 @@ func (iniFile *IniFile) Exists(section string, name string) bool {
 // IsNil Check if variable is nil only returns true if the variable exists and is set to nil
 func (iniFile *IniFile) IsNil(section string, name string) bool {
 	v, ok := iniFile.getVariable(section, name)
-	if ! ok {
+	if !ok {
 		return false
 	}
 	return v.varType == typeNil
@@ -169,11 +168,11 @@ func (iniFile *IniFile) IsNil(section string, name string) bool {
 
 func (iniFile *IniFile) getVariable(section string, name string) (*Variable, bool) {
 	s, ok := iniFile.sections[section]
-	if ! ok {
+	if !ok {
 		return nil, false
 	}
 	v, ok := s.variables[name]
-	if ! ok {
+	if !ok {
 		return nil, false
 	}
 	return &v, true
@@ -192,7 +191,7 @@ func (iniFile *IniFile) GetAllSections() []string {
 // GetAllVariables Get sorted list of all variables
 func (iniFile *IniFile) GetAllVariables(section string) []string {
 	s, ok := iniFile.sections[section]
-	if ! ok {
+	if !ok {
 		return []string{}
 	}
 	variables := make([]string, 0, len(s.variables))
