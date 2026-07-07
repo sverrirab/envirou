@@ -2,6 +2,11 @@
 
 Many projects use `.env` files to store configuration. Envirou can load these directly into your shell.
 
+Note: like all commands that modify the environment, `ev dotenv` requires the
+`ev` shell wrapper (see "Shell integration" in the [README](../README.md)).
+Running the plain binary (`envirou dotenv`) only prints the shell commands
+without applying them.
+
 ## Basic usage
 
 Load the default `.env` file from the current directory:
@@ -62,7 +67,7 @@ cd myproject
 ev dotenv .env .env.local
 ```
 
-The `API_URL` from `.env.local` overrides the one in `.env`. All variables are exported into your current shell.
+The `API_URL` from `.env.local` overrides the one in `.env`. All variables are exported into your current shell (when run through the `ev` wrapper).
 
 ## Combining with profiles
 
