@@ -17,7 +17,7 @@ const defaultIni = `
 quiet=0
 sort_keys=1
 path_tilde=1  ; display only: replaces $HOME with ~ in output
-password=*SECRET*, *TOKEN*, *PASSWORD*, *API_KEY*, *PRIVATE_KEY*, *CREDENTIALS*
+password=*SECRET*, *TOKEN*, *PASSWORD*, *API_KEY*, *PRIVATE_KEY*, *CREDENTIALS*, ENVIROU_KEY
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
 ; ── Display colors ───────────────────────────────────────────
@@ -57,7 +57,7 @@ git=GIT_*
 ; ── Ignored groups (.. prefix) ───────────────────────────────
 ; Hidden and excluded from snapshot/diff.
 
-..ignore=_, PWD, OLDPWD, SHLVL
+..ignore=_, PWD, OLDPWD, SHLVL, ENVIROU_KEY
 
 ; ── Custom ───────────────────────────────────────────────────
 ; Add your customizations below this point.
@@ -67,10 +67,13 @@ git=GIT_*
 ; example=EXAMPLE_*
 
 ; Add your own profiles here...
+; Encrypted values (created with "envirou encrypt") are decrypted when the
+; profile is applied - see the encryption guide in the documentation.
 ; [profile:example]
 ; EXAMPLE_OCCUPATION=elevator operator
 ; EXAMPLE_EMPTY_VARIABLE=
 ; EXAMPLE_UNSET_VARIABLE
+; EXAMPLE_SECRET=enc:v1:...
 
 `
 

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/config"
@@ -30,6 +31,21 @@ To change profiles edit the config file (see "config" command)`,
 			if !found {
 				notFound = append(notFound, activateName)
 				continue
+			}
+			if hasEncryptedValues(profile) {
+				// Locked profile: get a key (ENVIROU_KEY or passphrase
+				// prompt, at most once) and decrypt a copy before merging.
+				key, err := ensureKey()
+				if err != nil {
+					output.Printf("%s\n", err.Error())
+					os.Exit(1)
+				}
+				decrypted := profile.Clone()
+				if err := decryptProfileInPlace(decrypted, key); err != nil {
+					output.Printf("%s\n", err.Error())
+					os.Exit(1)
+				}
+				profile = decrypted
 			}
 			wasActive := app.baseEnv.IsMerged(profile)
 			result := newEnv.Merge(profile)

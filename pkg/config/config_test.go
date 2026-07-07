@@ -83,13 +83,15 @@ func TestReadConfig(t *testing.T) {
 	if config.FormatEnvName != "underline" {
 		t.Errorf("expected underline")
 	}
-	if len(config.SettingsPassword) != 3 {
+	// 3 configured + builtin ENVIROU_KEY
+	if len(config.SettingsPassword) != 4 {
 		t.Errorf("Unexpected password: %s", config.SettingsPassword)
 	}
 	if len(config.SettingsPath) != 0 {
 		t.Errorf("Unexpected path: %s", config.SettingsPath)
 	}
-	if len(config.Groups) != 3 {
+	// 3 configured + builtin ..envirou
+	if len(config.Groups) != 4 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
 }
@@ -131,13 +133,15 @@ func TestReadDefault(t *testing.T) {
 	if config.FormatEnvName != "cyan" {
 		t.Error("expected cyan")
 	}
-	if len(config.SettingsPassword) != 6 {
+	// 7 in the default config (incl. ENVIROU_KEY) + hardcoded ENVIROU_KEY
+	if len(config.SettingsPassword) != 8 {
 		t.Errorf("Unexpected password: %s", config.SettingsPassword)
 	}
 	if len(config.SettingsPath) != 6 {
 		t.Errorf("Unexpected path: %s", config.SettingsPath)
 	}
-	if len(config.Groups) != 15 {
+	// 15 in the default config + builtin ..envirou
+	if len(config.Groups) != 16 {
 		t.Errorf("Unexpected number of groups: %d", len(config.Groups))
 	}
 	removeFile(file.Name())

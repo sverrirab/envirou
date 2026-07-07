@@ -61,6 +61,11 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 	configuration.SettingsPassword = *data.ParsePatterns(config.GetString("settings", "password", ""), caseInsensitive)
 	configuration.SettingsPath = *data.ParsePatterns(config.GetString("settings", "path", ""), caseInsensitive)
 
+	// ENVIROU_KEY holds the decryption key while unlocked. Hardcoded (not
+	// just in the default config) so existing user configs are protected:
+	// masked in display and excluded from snapshot/diff via ignore group.
+	configuration.SettingsPassword = append(configuration.SettingsPassword, data.Pattern("ENVIROU_KEY"))
+
 	configuration.FormatGroup = readFormat(config, "group", "magenta")
 	configuration.FormatProfile = readFormat(config, "profile", "green")
 	configuration.FormatEnvName = readFormat(config, "env_name", "cyan")
@@ -76,6 +81,9 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 	for _, k := range custom {
 		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""), caseInsensitive)
 	}
+	// Builtin ignore group (".." prefix): keeps ENVIROU_KEY out of listings,
+	// snapshots and diffs regardless of the user's group configuration.
+	configuration.Groups.ParseAndAdd("..envirou", "ENVIROU_KEY", caseInsensitive)
 
 	for _, dup := range config.Duplicates {
 		if strings.HasPrefix(dup.Section, "profile:") {

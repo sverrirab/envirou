@@ -88,6 +88,11 @@ func TestMain(m *testing.M) {
 
 func resetState(t *testing.T) {
 	t.Helper()
+	resetStateWithConfig(t, testConfigForCmd)
+}
+
+func resetStateWithConfig(t *testing.T, configContent string) {
+	t.Helper()
 
 	file, err := os.CreateTemp("", "config")
 	if err != nil {
@@ -96,7 +101,7 @@ func resetState(t *testing.T) {
 	name := file.Name()
 	t.Cleanup(func() { os.Remove(name) })
 
-	_, err = file.WriteString(testConfigForCmd)
+	_, err = file.WriteString(configContent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,6 +130,9 @@ func resetState(t *testing.T) {
 	pathCheck = false
 	installPrompt = false
 	uninstall = false
+	encryptStdout = false
+	unlockPrintKey = false
+	app.cryptKey = nil
 
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -135,7 +143,13 @@ func resetState(t *testing.T) {
 
 func executeCommand(t *testing.T, args ...string) string {
 	t.Helper()
-	resetState(t)
+	return executeCommandWithConfig(t, testConfigForCmd, args...)
+}
+
+// executeCommandWithConfig runs the root command against a custom config.
+func executeCommandWithConfig(t *testing.T, configContent string, args ...string) string {
+	t.Helper()
+	resetStateWithConfig(t, configContent)
 
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -310,8 +324,9 @@ func TestProfilesInactiveOnly(t *testing.T) {
 func TestGroupsList(t *testing.T) {
 	_ = executeCommand(t, "groups")
 	names := app.configuration.Groups.GetAllNames()
-	if len(names) != 1 || names[0] != "test" {
-		t.Errorf("Expected [test] group, got: %v", names)
+	// "..envirou" is a builtin group hiding ENVIROU_KEY.
+	if len(names) != 2 || names[0] != "..envirou" || names[1] != "test" {
+		t.Errorf("Expected [..envirou test] groups, got: %v", names)
 	}
 }
 

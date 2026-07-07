@@ -85,6 +85,7 @@ type appState struct {
 	inactiveProfileNames []string
 	isActiveProfile      map[string]bool
 	shellCommands        []string
+	cryptKey             []byte // verified decryption key cached for this invocation
 }
 
 var (
@@ -198,6 +199,12 @@ func initConfig() {
 		}
 		app.out.SetDiffNames(diffNames)
 	}
+
+	// When unlocked (valid ENVIROU_KEY), decrypt profile values up front so
+	// active-profile detection and all commands see plaintext. Locked
+	// profiles keep their tokens and simply compare as inactive; commands
+	// that apply them prompt via ensureKey.
+	decryptProfilesSilently(app.configuration.Profiles)
 
 	// Figure out what profiles are active.
 	app.profileNames = make([]string, 0, len(app.configuration.Profiles))

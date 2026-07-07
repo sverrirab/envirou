@@ -18,6 +18,7 @@ environment. Display important variables with nice formatting and hide the ones 
 * Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
 * Fully standalone go binary.
 * Optional command completion for bash, zsh, fish and PowerShell ([manual setup](./docs/completion.md)).
+* Encrypt secret values in profiles and .env files ([encryption guide](./docs/encryption.md)).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
@@ -172,6 +173,17 @@ See the [dotenv guide](./docs/dotenv.md) for syntax details and examples.
 | `ev snapshot --reset` | Remove the saved snapshot |
 
 See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
+
+### Encrypted values
+
+| Command | Description |
+|---------|-------------|
+| `envirou encrypt` | Encrypt a value for use in profiles or .env files |
+| `envirou decrypt TOKEN` | Decrypt a token to verify it |
+| `ev unlock` | Enter the passphrase once for this shell session |
+| `ev lock` | Clear the encryption key from this session |
+
+See the [encryption guide](./docs/encryption.md) for setup and security notes.
 
 ### Configuration
 
