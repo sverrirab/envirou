@@ -15,9 +15,9 @@ environment. Display important variables with nice formatting and hide the ones 
 * Compact output (replaces `$HOME` with `~` and highlights paths for readability).
 * Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc.
 * Fully customizable.
-* Works on Mac + Linux (bash + zsh) and Windows (PowerShell; CMD with manual setup).
-* Single standalone Go binary; the `ev` shell wrapper is only needed for commands that modify your environment.
-* Command completion support (bash, zsh, PowerShell, fish).
+* Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
+* Fully standalone go binary.
+* Optional command completion for bash, zsh, fish and PowerShell ([manual setup](./docs/completion.md)).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
@@ -181,6 +181,7 @@ See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 | `envirou install --uninstall` | Remove shell integration from your profile |
 | `ev config` | Open config file in `$EDITOR` |
 | `ev bootstrap bash\|zsh\|powershell\|bat` | Output shell integration script |
+| `envirou completion bash\|zsh\|fish\|powershell` | Output tab completion script ([guide](./docs/completion.md)) |
 | `ev version` | Show version information |
 
 Run `ev help` or `ev [command] --help` for full usage details.
