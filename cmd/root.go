@@ -140,7 +140,7 @@ func init() {
 	rootCmd.MarkFlagsMutuallyExclusive("all", "group")
 
 	// Flags for all commands
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/envirou/config.ini)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ~/.config/envirou/config.ini)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", verbose, "Increase output verbosity")
 	rootCmd.PersistentFlags().BoolVarP(&displayUnformatted, "unformatted", "u", displayUnformatted, "Display unformatted env variables")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", noColor, "Disable colored output")
