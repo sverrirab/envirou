@@ -9,6 +9,17 @@ import (
 	"github.com/sverrirab/envirou/pkg/data"
 )
 
+// forceColor makes color output deterministic regardless of the caller's
+// environment. NO_COLOR must be cleared before any Output is constructed:
+// color.New() bakes the NO_COLOR state into each Color at creation time,
+// so setting color.NoColor alone is not enough.
+func forceColor(t *testing.T) {
+	t.Helper()
+	t.Setenv("NO_COLOR", "")
+	NoColor(false)
+	t.Cleanup(func() { NoColor(true) })
+}
+
 func validateDifferent(t *testing.T, before, after string) {
 	if before == after {
 		t.Errorf("Unexpected equality %s == %s", before, after)
@@ -22,7 +33,7 @@ func validateSame(t *testing.T, before, after string) {
 }
 
 func TestColorChange(t *testing.T) {
-	NoColor(false) // Test need to force color.
+	forceColor(t) // Test needs color enabled.
 	sh := shell.NewShell(false, false)
 	const pathListSeparator = string(os.PathListSeparator)
 	profileNames := []string{"p1", "p2", "p3"}

@@ -87,13 +87,22 @@ func GetSnapshotFilePath() string {
 	return filepath.Join(GetDefaultConfigFileFolder(), snapshotFileName)
 }
 
-// GetDefaultConfigFileFolder Figures out where the config file should be
+// GetDefaultConfigFileFolder Figures out where the config file should be.
+// The ENVIROU_CONFIG_DIR environment variable overrides the default of
+// $HOME/.config/envirou (%USERPROFILE% on Windows).
 func GetDefaultConfigFileFolder() string {
-	currentUser, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
+	if override := os.Getenv("ENVIROU_CONFIG_DIR"); override != "" {
+		return override
 	}
-	return filepath.Join(currentUser.HomeDir, ".config", "envirou")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		currentUser, userErr := user.Current()
+		if userErr != nil {
+			log.Fatal(err)
+		}
+		home = currentUser.HomeDir
+	}
+	return filepath.Join(home, ".config", "envirou")
 }
 
 // WriteDefaultConfigFile write the default config file if no file exists already

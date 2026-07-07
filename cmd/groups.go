@@ -14,7 +14,7 @@ var groupsCmd = &cobra.Command{
 	GroupID: "groups",
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, group := range app.configuration.Groups.GetAllNames() {
-			output.Printf(app.out.GroupSprintf("# %s\n", group))
+			output.Printf("%s", app.out.GroupSprintf("# %s\n", group))
 		}
 	},
 }

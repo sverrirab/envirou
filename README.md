@@ -13,7 +13,7 @@ environment. Display important variables with nice formatting and hide the ones 
 # Key highlights
 * Works with any other tool - just views and optionally sets environment variables.
 * Compact output (replaces `$HOME` with `~` and highlights paths for readability).
-* Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc, etc.
+* Hides all irrelevant variables such as `TMPDIR`, `LSCOLORS` etc.
 * Fully customizable.
 * Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
 * Fully standalone go binary.
@@ -24,7 +24,7 @@ environment. Display important variables with nice formatting and hide the ones 
 ## Why?
 Everyone that works with complex infrastructure or multiple development environments from the command line know the feeling of using the wrong toolchain or environment and having the nagging suspicion that you have mixed something up in your configuration. Classical examples
 are PATH's to tools/SDK versions, external service endpoints for your PROD and DEV environments
-etc etc.
+etc.
 
 
 ## Install
@@ -68,6 +68,8 @@ envirou install
 ```
 This auto-detects your shell and adds the bootstrap line to your profile.
 Use `--prompt` to also customize your PowerShell prompt, or `--dry-run` to preview changes.
+Automatic installation supports Bash, Zsh and PowerShell; for Windows CMD use the
+manual `envirou bootstrap bat` setup described below.
 
 You can also specify the shell explicitly:
 ```
@@ -183,6 +185,11 @@ See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 | `ev version` | Show version information |
 
 Run `ev help` or `ev [command] --help` for full usage details.
+
+The configuration file is stored at `~/.config/envirou/config.ini`, where `~` is
+your user home directory as reported by the operating system. Set the
+`ENVIROU_CONFIG_DIR` environment variable to use a different directory, or pass
+`--config` to point at a specific file.
 
 ## First time use
 
