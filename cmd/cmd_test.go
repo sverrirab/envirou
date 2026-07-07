@@ -128,20 +128,27 @@ func executeCommand(t *testing.T, args ...string) string {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
+	// Drain the pipe while the command runs: output larger than the OS
+	// pipe buffer (4KB on Windows) would otherwise block the writer.
+	outC := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
 	rootCmd.SetArgs(args)
 	err := rootCmd.Execute()
 
 	w.Close()
 	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	out := <-outC
 
 	if err != nil {
 		t.Fatalf("Command %v failed: %v", args, err)
 	}
 
-	return buf.String()
+	return out
 }
 
 // --- Bootstrap tests ---
