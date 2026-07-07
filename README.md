@@ -17,7 +17,7 @@ environment. Display important variables with nice formatting and hide the ones 
 * Fully customizable.
 * Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
 * Fully standalone go binary.
-* Command completion support (bash, zsh, PowerShell, fish).
+* Optional command completion for bash, zsh, fish and PowerShell ([manual setup](./docs/completion.md)).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
@@ -179,6 +179,7 @@ See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 | `envirou install --uninstall` | Remove shell integration from your profile |
 | `ev config` | Open config file in `$EDITOR` |
 | `ev bootstrap bash\|zsh\|powershell\|bat` | Output shell integration script |
+| `envirou completion bash\|zsh\|fish\|powershell` | Output tab completion script ([guide](./docs/completion.md)) |
 | `ev version` | Show version information |
 
 Run `ev help` or `ev [command] --help` for full usage details.
