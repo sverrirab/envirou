@@ -25,6 +25,16 @@ jobs:
     - name: Build
       run: go build .
 
+    - name: Check gofmt
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.26.x'
+      run: |
+        unformatted=$(gofmt -l .)
+        if [ -n "$unformatted" ]; then
+          echo "Files not gofmt-clean:"
+          echo "$unformatted"
+          exit 1
+        fi
+
     - name: Run vet
       run: go vet ./...
 
