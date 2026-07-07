@@ -11,7 +11,7 @@ install:
 	go install -ldflags "$(LDFLAGS)" .
 
 test:
-	go test ./... -count=1
+	go test -race ./... -count=1
 
 cover:
 	go test ./... -coverprofile=coverage.out -count=1

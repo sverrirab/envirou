@@ -46,8 +46,7 @@ func TestSetDiffNames(t *testing.T) {
 }
 
 func TestSetDiffNamesWithColor(t *testing.T) {
-	NoColor(false)
-	defer NoColor(true)
+	forceColor(t)
 
 	sh := shell.NewShell(false, false)
 	out := NewOutput("", *data.ParsePatterns("", false), *data.ParsePatterns("", false), false, false, "cyan", "green", "cyan", "reverse", "red")
