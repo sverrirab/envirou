@@ -40,7 +40,7 @@ shell function to be installed)`,
 		if !showAllGroups && len(actionShowGroups) > 0 {
 			for _, actionShowGroup := range actionShowGroups {
 				if !displayGroup(app.out, actionShowGroup, matches[actionShowGroup], app.baseEnv, app.sh) {
-					output.Printf(app.out.GroupSprintf("# %s (group empty, use -a to show all)\n", actionShowGroup))
+					output.Printf("%s", app.out.GroupSprintf("# %s (group empty, use -a to show all)\n", actionShowGroup))
 				}
 			}
 		} else {
@@ -54,7 +54,7 @@ shell function to be installed)`,
 			displayGroup(app.out, "(no group)", remaining, app.baseEnv, app.sh)
 			if len(notDisplayed) > 0 && !app.configuration.SettingsQuiet {
 				sort.Strings(notDisplayed)
-				output.Printf(app.out.GroupSprintf("# Groups not displayed: %s (use -a to show all)\n", strings.Join(notDisplayed, " ")))
+				output.Printf("%s", app.out.GroupSprintf("# Groups not displayed: %s (use -a to show all)\n", strings.Join(notDisplayed, " ")))
 			}
 		}
 		app.out.PrintProfileList(app.profileNames, app.activeProfileNames)
