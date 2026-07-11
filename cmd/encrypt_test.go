@@ -171,7 +171,7 @@ func TestInvalidEnvKeyIgnored(t *testing.T) {
 func TestEncryptCommandFirstUse(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("ENVIROU_CONFIG_DIR", dir)
-	stubPassphrase(t, "new-pass", nil) // used for new+repeat+value prompts
+	stubPassphrase(t, "new-passphrase", nil) // used for new+repeat+value prompts
 
 	out := executeCommandWithConfig(t, testConfigForCmd, "encrypt", "--stdout")
 	token := strings.TrimSpace(out)
@@ -181,15 +181,28 @@ func TestEncryptCommandFirstUse(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "crypt.ini")); err != nil {
 		t.Errorf("crypt.ini not created: %v", err)
 	}
-	// The stub returns "new-pass" for the value prompt too.
+	// The stub returns "new-passphrase" for the value prompt too.
 	loaded, err := crypt.LoadMaterial(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	derived, _ := crypt.DeriveKey("new-pass", loaded.Salt, loaded.Iterations)
+	derived, _ := crypt.DeriveKey("new-passphrase", loaded.Salt, loaded.Iterations)
 	plaintext, err := crypt.Decrypt(derived, token)
-	if err != nil || plaintext != "new-pass" {
+	if err != nil || plaintext != "new-passphrase" {
 		t.Errorf("token round trip failed: %q %v", plaintext, err)
+	}
+}
+
+func TestValidateNewPassphrase(t *testing.T) {
+	for _, passphrase := range []string{"", "password", "short-pass"} {
+		if err := validateNewPassphrase(passphrase); err == nil {
+			t.Errorf("validateNewPassphrase(%q) should reject a short passphrase", passphrase)
+		}
+	}
+	for _, passphrase := range []string{"twelve-chars", "correct horse battery staple", "十二文字以上のパスフレーズ"} {
+		if err := validateNewPassphrase(passphrase); err != nil {
+			t.Errorf("validateNewPassphrase(%q) returned %v", passphrase, err)
+		}
 	}
 }
 

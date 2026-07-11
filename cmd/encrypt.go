@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 	"github.com/sverrirab/envirou/pkg/config"
@@ -12,6 +13,8 @@ import (
 )
 
 var encryptStdout bool
+
+const minimumPassphraseLength = 12
 
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt [VALUE]",
@@ -90,9 +93,7 @@ func setupOrGetKey() []byte {
 	output.Printf("Setting up encryption (first use).\n")
 	passphrase, err := crypt.ReadPassphrase("New passphrase: ")
 	exitOnError(err)
-	if passphrase == "" {
-		exitOnError(errors.New("empty passphrase not allowed"))
-	}
+	exitOnError(validateNewPassphrase(passphrase))
 	repeat, err := crypt.ReadPassphrase("Repeat passphrase: ")
 	exitOnError(err)
 	if passphrase != repeat {
@@ -103,6 +104,13 @@ func setupOrGetKey() []byte {
 	output.Printf("Created %s - back this file up! Encrypted values cannot be recovered without it.\n", crypt.MaterialPath(dir))
 	app.cryptKey = key
 	return key
+}
+
+func validateNewPassphrase(passphrase string) error {
+	if utf8.RuneCountInString(passphrase) < minimumPassphraseLength {
+		return fmt.Errorf("passphrase must be at least %d characters", minimumPassphraseLength)
+	}
+	return nil
 }
 
 func exitOnError(err error) {

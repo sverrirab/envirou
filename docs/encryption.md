@@ -14,7 +14,7 @@ If you never use this feature, nothing changes for you.
 envirou encrypt
 ```
 
-The first use asks you to choose a passphrase and creates the key material
+The first use asks you to choose a passphrase of at least 12 characters and creates the key material
 file `~/.config/envirou/crypt.ini`. **Back this file up** - encrypted values
 cannot be recovered without it (it does not contain your passphrase, only
 the salt used for key derivation).
