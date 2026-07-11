@@ -2,14 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/sverrirab/envirou/pkg/config"
-	"github.com/sverrirab/envirou/pkg/data"
-	"github.com/sverrirab/envirou/pkg/output"
-	"github.com/sverrirab/envirou/pkg/shell"
+	"io"
 	"os"
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/data"
+	"github.com/sverrirab/envirou/pkg/output"
+	"github.com/sverrirab/envirou/pkg/shell"
 
 	"github.com/spf13/cobra"
 )
@@ -59,6 +61,15 @@ shell function to be installed)`,
 		}
 		app.out.PrintProfileList(app.profileNames, app.activeProfileNames)
 	},
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Generated completion scripts capture stdout and discard stderr.
+		// Normal envirou output stays on stderr so the ev wrapper only
+		// evaluates shell mutations, but Cobra's hidden completion protocol
+		// must use stdout for every possible target command.
+		if cmd.Name() == cobra.ShellCompRequestCmd {
+			setCommandOutput(cmd.Root(), os.Stdout)
+		}
+	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if len(app.shellCommands) > 0 {
 			commands := app.sh.RunCommands(app.shellCommands)
@@ -71,6 +82,13 @@ shell function to be installed)`,
 			}
 		}
 	},
+}
+
+func setCommandOutput(command *cobra.Command, writer io.Writer) {
+	command.SetOut(writer)
+	for _, child := range command.Commands() {
+		setCommandOutput(child, writer)
+	}
 }
 
 // appState holds runtime state initialized during startup.

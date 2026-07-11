@@ -93,6 +93,7 @@ func resetState(t *testing.T) {
 
 func resetStateWithConfig(t *testing.T, configContent string) {
 	t.Helper()
+	setCommandOutput(rootCmd, os.Stderr)
 
 	file, err := os.CreateTemp("", "config")
 	if err != nil {
@@ -428,7 +429,6 @@ func TestConfigWithEditor(t *testing.T) {
 		t.Errorf("Expected editor command in output, got: %s", out)
 	}
 }
-
 
 // --- Snapshot tests ---
 

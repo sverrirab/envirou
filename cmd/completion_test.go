@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -35,6 +38,63 @@ func TestCompletionPowershell(t *testing.T) {
 	out := executeCommand(t, "completion", "powershell")
 	if !strings.Contains(out, "Register-ArgumentCompleter") {
 		t.Errorf("Expected PowerShell completion script on stdout, got: %.80s", out)
+	}
+}
+
+func TestDynamicCompletionUsesStdout(t *testing.T) {
+	resetState(t)
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	stdoutR, stdoutW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stderrR, stderrW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout, os.Stderr = stdoutW, stderrW
+	t.Cleanup(func() {
+		os.Stdout, os.Stderr = oldStdout, oldStderr
+		setCommandOutput(rootCmd, os.Stderr)
+	})
+
+	type result struct {
+		stream string
+		text   string
+	}
+	results := make(chan result, 2)
+	go func() {
+		var b bytes.Buffer
+		_, _ = io.Copy(&b, stdoutR)
+		results <- result{stream: "stdout", text: b.String()}
+	}()
+	go func() {
+		var b bytes.Buffer
+		_, _ = io.Copy(&b, stderrR)
+		results <- result{stream: "stderr", text: b.String()}
+	}()
+
+	rootCmd.SetArgs([]string{"__complete", "completion", ""})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	_ = stdoutW.Close()
+	_ = stderrW.Close()
+
+	output := map[string]string{}
+	for range 2 {
+		r := <-results
+		output[r.stream] = r.text
+	}
+
+	for _, candidate := range []string{"bash", "zsh", "fish", "powershell", ":4"} {
+		if !strings.Contains(output["stdout"], candidate+"\n") {
+			t.Errorf("stdout missing completion %q; got %q", candidate, output["stdout"])
+		}
+	}
+	if strings.Contains(output["stderr"], "bash\n") || strings.Contains(output["stderr"], "powershell\n") {
+		t.Errorf("completion candidates leaked to stderr: %q", output["stderr"])
 	}
 }
 
