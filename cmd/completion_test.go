@@ -98,6 +98,45 @@ func TestDynamicCompletionUsesStdout(t *testing.T) {
 	}
 }
 
+func TestSetCompletionProfiles(t *testing.T) {
+	t.Setenv("TEST_ENV", "not-active")
+
+	out := executeCommand(t, "__complete", "set", "")
+	for _, profile := range []string{"dev", "prod", "tools", "venv"} {
+		if !strings.Contains(out, profile+"\t") {
+			t.Errorf("set completion missing profile %q; got %q", profile, out)
+		}
+	}
+	if !strings.Contains(out, ":4\n") {
+		t.Errorf("set completion must disable file completion; got %q", out)
+	}
+}
+
+func TestSetCompletionFiltersPrefixAndUsedProfiles(t *testing.T) {
+	out := executeCommand(t, "__complete", "set", "dev", "pr")
+	if !strings.Contains(out, "prod\t") {
+		t.Errorf("set completion should include matching profile prod; got %q", out)
+	}
+	for _, unexpected := range []string{"dev\t", "tools\t", "venv\t"} {
+		if strings.Contains(out, unexpected) {
+			t.Errorf("set completion unexpectedly included %q; got %q", unexpected, out)
+		}
+	}
+
+	out = executeCommand(t, "__complete", "set", "dev", "")
+	if strings.Contains(out, "dev\t") {
+		t.Errorf("set completion should not repeat an already selected profile; got %q", out)
+	}
+}
+
+func TestSetCompletionLabelsActiveProfile(t *testing.T) {
+	t.Setenv("TEST_ENV", "development")
+	out := executeCommand(t, "__complete", "set", "d")
+	if !strings.Contains(out, "dev\tactive profile\n") {
+		t.Errorf("set completion should label dev active; got %q", out)
+	}
+}
+
 func TestCompletionInvalidArg(t *testing.T) {
 	resetState(t)
 	rootCmd.SetArgs([]string{"completion", "fish-food"})

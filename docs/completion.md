@@ -9,6 +9,10 @@ this page for enabling it on the `ev` wrapper as well.
 
 Run `envirou completion SHELL --help` for shell-specific details.
 
+Completion includes commands and flags as well as profile names for
+`envirou set`. Profiles already present on the command line are not offered
+again, and active profiles are labelled in shells that display descriptions.
+
 ## Bash
 
 Requires the [bash-completion](https://github.com/scop/bash-completion)
