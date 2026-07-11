@@ -135,6 +135,12 @@ func (out *Output) IsPathVariable(name string) bool {
 	return data.MatchAny(name, &out.paths, out.caseInsensitive)
 }
 
+// IsSensitiveVariable reports whether a variable's value must be masked in
+// every display mode.
+func (out *Output) IsSensitiveVariable(name string) bool {
+	return data.MatchAny(name, &out.passwords, out.caseInsensitive)
+}
+
 // ReplaceHomeTilde replaces the home directory prefix with ~ if configured.
 func (out *Output) ReplaceHomeTilde(path string) string {
 	if len(out.replacePathTilde) > 0 && strings.HasPrefix(path, out.replacePathTilde) {
@@ -146,17 +152,19 @@ func (out *Output) ReplaceHomeTilde(path string) string {
 func (out *Output) SprintEnv(sh *shell.Shell, name, value string) string {
 	outputName := name
 	outputValue := value
-	if out.displayRaw {
-		outputValue = sh.Escape(value)
-	} else {
+	if !out.displayRaw {
 		if out.diffNames != nil && out.diffNames[name] {
 			outputName = out.DiffSprintf("%s", name)
 		} else {
 			outputName = out.EnvNameSprintf("%s", name)
 		}
-		if data.MatchAny(name, &out.passwords, out.caseInsensitive) {
-			outputValue = "****--->hidden<---****"
-		} else if data.MatchAny(name, &out.paths, out.caseInsensitive) {
+	}
+	if out.IsSensitiveVariable(name) {
+		outputValue = "****--->hidden<---****"
+	} else if out.displayRaw {
+		outputValue = sh.Escape(value)
+	} else {
+		if out.IsPathVariable(name) {
 			sections := strings.Split(value, pathListSeparator)
 			for i := range sections {
 				if len(out.replacePathTilde) > 0 {

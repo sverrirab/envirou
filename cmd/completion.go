@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -31,19 +32,37 @@ var completionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// os.Stdout, not cmd.OutOrStdout(): the latter inherits the
 		// root command's stderr redirection.
-		out := os.Stdout
-		switch args[0] {
-		case "bash":
-			return rootCmd.GenBashCompletionV2(out, true)
-		case "zsh":
-			return rootCmd.GenZshCompletion(out)
-		case "fish":
-			return rootCmd.GenFishCompletion(out, true)
-		case "powershell":
-			return rootCmd.GenPowerShellCompletionWithDesc(out)
-		}
-		return nil
+		return writeCompletion(args[0], os.Stdout)
 	},
+}
+
+func writeCompletion(shellName string, out io.Writer) error {
+	var err error
+	switch shellName {
+	case "bash":
+		err = rootCmd.GenBashCompletionV2(out, true)
+	case "zsh":
+		err = rootCmd.GenZshCompletion(out)
+	case "fish":
+		return rootCmd.GenFishCompletion(out, true)
+	case "powershell":
+		err = rootCmd.GenPowerShellCompletionWithDesc(out)
+	}
+	if err != nil {
+		return err
+	}
+
+	// The shell wrappers pass Cobra's hidden completion protocol through to
+	// envirou, so the same generated completer can serve the ev function.
+	switch shellName {
+	case "bash":
+		_, err = fmt.Fprintln(out, "complete -o default -F __start_envirou ev")
+	case "zsh":
+		_, err = fmt.Fprintln(out, "compdef _envirou ev")
+	case "powershell":
+		_, err = fmt.Fprintln(out, "Register-ArgumentCompleter -CommandName 'ev' -ScriptBlock ${__envirouCompleterBlock}")
+	}
+	return err
 }
 
 func init() {

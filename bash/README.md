@@ -9,6 +9,11 @@ This auto-detects your shell (bash or zsh) and adds the bootstrap line to your p
 
 Use `envirou install --dry-run` to preview what will be added and where.
 
+To prepend active profiles while preserving your existing Bash or Zsh prompt:
+```bash
+envirou install --prompt
+```
+
 ### Manual install
 If you prefer to edit your profile yourself, add this to `.bashrc` (or `.zshrc` for zsh):
 ```bash
@@ -19,6 +24,18 @@ For zsh:
 eval "$(envirou bootstrap zsh)"
 ```
 Then restart your shell (or run the command directly in your current shell).
+
+For manual opt-in prompt integration, add `--prompt` to the bootstrap command:
+```bash
+eval "$(envirou bootstrap bash --prompt)"
+# or, in zsh after Oh My Zsh has loaded:
+eval "$(envirou bootstrap zsh --prompt)"
+```
+
+Prompt and completion integration can be enabled together:
+```zsh
+source <(envirou bootstrap zsh --prompt --completion)
+```
 
 ## Oh-My-Zsh theme
 To use the envirou zsh theme (shows active profiles in your prompt):

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/sverrirab/envirou/pkg/crypt"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/output"
 	"github.com/sverrirab/envirou/pkg/shell"
@@ -59,6 +60,17 @@ func loadDotenvFile(filename string, env *data.Profile) error {
 		key := line[:strings.Index(line, "=")]
 		if !shell.IsValidVarName(key) {
 			return fmt.Errorf("line %d: invalid variable name %q", lineNum, key)
+		}
+		if value := line[strings.Index(line, "=")+1:]; crypt.IsEncrypted(value) {
+			cryptKey, err := ensureKey()
+			if err != nil {
+				return fmt.Errorf("line %d: %s", lineNum, err.Error())
+			}
+			plaintext, err := crypt.Decrypt(cryptKey, value)
+			if err != nil {
+				return fmt.Errorf("line %d: cannot decrypt %s (%s)", lineNum, key, err.Error())
+			}
+			line = key + "=" + plaintext
 		}
 		lines = append(lines, line)
 	}

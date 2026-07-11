@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 
+	"github.com/sverrirab/envirou/pkg/crypt"
 	"github.com/sverrirab/envirou/pkg/data"
 	"github.com/sverrirab/envirou/pkg/ini"
 	"github.com/sverrirab/envirou/pkg/output"
@@ -61,6 +62,10 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 	configuration.SettingsPassword = *data.ParsePatterns(config.GetString("settings", "password", ""), caseInsensitive)
 	configuration.SettingsPath = *data.ParsePatterns(config.GetString("settings", "path", ""), caseInsensitive)
 
+	// ENVIROU_KEY holds the decryption key while unlocked. Hardcode it as
+	// sensitive so existing user configs always display its value masked.
+	addSensitiveName(&configuration.SettingsPassword, "ENVIROU_KEY", caseInsensitive)
+
 	configuration.FormatGroup = readFormat(config, "group", "magenta")
 	configuration.FormatProfile = readFormat(config, "profile", "green")
 	configuration.FormatEnvName = readFormat(config, "env_name", "cyan")
@@ -76,7 +81,6 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 	for _, k := range custom {
 		configuration.Groups.ParseAndAdd(k, config.GetString("custom", k, ""), caseInsensitive)
 	}
-
 	for _, dup := range config.Duplicates {
 		if strings.HasPrefix(dup.Section, "profile:") {
 			output.Printf("Warning: duplicate variable %s in [%s] (only last value is used)\n", dup.Variable, dup.Section)
@@ -97,6 +101,12 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 				if config.IsNil(section, entry) {
 					profile.SetNil(entry)
 				} else {
+					value := config.GetString(section, entry, "")
+					if crypt.IsEncrypted(value) {
+						// Preserve sensitivity metadata after the profile is decrypted
+						// in memory, even when the variable name is otherwise ordinary.
+						addSensitiveName(&configuration.SettingsPassword, entry, caseInsensitive)
+					}
 					op := config.GetOperator(section, entry)
 					mode := data.MergeReplace
 					switch op {
@@ -105,7 +115,7 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 					case ini.OpAppend:
 						mode = data.MergeAppend
 					}
-					profile.SetWithMode(entry, config.GetString(section, entry, ""), mode)
+					profile.SetWithMode(entry, value, mode)
 				}
 			}
 			configuration.Profiles[profileName] = *profile
@@ -113,4 +123,26 @@ func ReadConfiguration(configPath string, caseInsensitive bool) (*Configuration,
 	}
 
 	return configuration, nil
+}
+
+func addSensitiveName(patterns *data.Patterns, name string, caseInsensitive bool) {
+	if caseInsensitive {
+		name = strings.ToUpper(name)
+	}
+	for _, pattern := range *patterns {
+		if string(pattern) == name {
+			return
+		}
+	}
+	*patterns = append(*patterns, data.Pattern(name))
+}
+
+// IsEncryptionKeyVariable identifies the session key independently of display
+// grouping. It is shown with a masked value, but never persisted in snapshots
+// or included in diffs.
+func IsEncryptionKeyVariable(name string, caseInsensitive bool) bool {
+	if caseInsensitive {
+		return strings.EqualFold(name, "ENVIROU_KEY")
+	}
+	return name == "ENVIROU_KEY"
 }

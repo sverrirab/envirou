@@ -18,6 +18,7 @@ environment. Display important variables with nice formatting and hide the ones 
 * Works on Mac + Linux (bash + zsh) and Windows (bat and PowerShell).
 * Fully standalone go binary.
 * Optional command completion for bash, zsh, fish and PowerShell ([manual setup](./docs/completion.md)).
+* Encrypt secret values in profiles and .env files ([encryption guide](./docs/encryption.md)).
 * Includes [oh-my-zsh](https://ohmyz.sh/) theme and PowerShell prompt script.
 
 
@@ -67,13 +68,16 @@ The easiest way to install is:
 envirou install
 ```
 This auto-detects your shell and adds the bootstrap line to your profile.
-Use `--prompt` to also customize your PowerShell prompt, or `--dry-run` to preview changes.
+Use `--prompt` to add active profiles to your Bash, Zsh, or PowerShell prompt,
+or `--dry-run` to preview changes. Prompt integration is opt-in and preserves
+the existing Bash/Zsh prompt.
 Automatic installation supports Bash, Zsh and PowerShell; for Windows CMD use the
 manual `envirou bootstrap bat` setup described below.
 
 You can also specify the shell explicitly:
 ```
 envirou install zsh
+envirou install zsh --prompt
 envirou install powershell --prompt
 ```
 
@@ -93,6 +97,15 @@ eval "$(envirou bootstrap bash)"
 **Zsh** — add to `.zshrc`:
 ```bash
 eval "$(envirou bootstrap zsh)"
+```
+
+Add `--prompt` to the Bash or Zsh bootstrap command to prepend active profiles
+without replacing the existing prompt. With Oh My Zsh, load it after
+`source $ZSH/oh-my-zsh.sh`.
+
+Flags can be combined for a single opt-in setup:
+```zsh
+source <(envirou bootstrap zsh --completion --prompt)
 ```
 
 **PowerShell** — add to `$PROFILE`:
@@ -173,6 +186,17 @@ See the [dotenv guide](./docs/dotenv.md) for syntax details and examples.
 
 See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 
+### Encrypted values
+
+| Command | Description |
+|---------|-------------|
+| `envirou encrypt` | Encrypt a value for use in profiles or .env files |
+| `envirou decrypt TOKEN` | Decrypt a token to verify it |
+| `ev unlock` | Enter the passphrase once for this shell session |
+| `ev lock` | Clear the encryption key from this session |
+
+See the [encryption guide](./docs/encryption.md) for setup and security notes.
+
 ### Configuration
 
 | Command | Description |
@@ -181,6 +205,7 @@ See the [snapshot and diff guide](./docs/snapshots.md) for a walkthrough.
 | `envirou install --uninstall` | Remove shell integration from your profile |
 | `ev config` | Open config file in `$EDITOR` |
 | `ev bootstrap bash\|zsh\|powershell\|bat` | Output shell integration script |
+| `envirou bootstrap SHELL --completion` | Output shell integration with completion for `envirou` and `ev` |
 | `envirou completion bash\|zsh\|fish\|powershell` | Output tab completion script ([guide](./docs/completion.md)) |
 | `ev version` | Show version information |
 

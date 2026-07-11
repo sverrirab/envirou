@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/sverrirab/envirou/pkg/config"
@@ -21,6 +22,25 @@ To change profiles edit the config file (see "config" command)`,
 	// ValidArgs: []string{"one", "two", "three"},
 	GroupID: "profiles",
 	Args:    cobra.MatchAll(cobra.MinimumNArgs(1)),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		used := make(map[string]bool, len(args))
+		for _, name := range args {
+			used[name] = true
+		}
+
+		matches := make([]string, 0, len(app.profileNames))
+		for _, name := range app.profileNames {
+			if used[name] || !strings.HasPrefix(name, toComplete) {
+				continue
+			}
+			status := "inactive profile"
+			if app.isActiveProfile[name] {
+				status = "active profile"
+			}
+			matches = append(matches, name+"\t"+status)
+		}
+		return matches, cobra.ShellCompDirectiveNoFileComp
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		newEnv := app.baseEnv.Clone()
 		var notFound []string
@@ -30,6 +50,21 @@ To change profiles edit the config file (see "config" command)`,
 			if !found {
 				notFound = append(notFound, activateName)
 				continue
+			}
+			if hasEncryptedValues(profile) {
+				// Locked profile: get a key (ENVIROU_KEY or passphrase
+				// prompt, at most once) and decrypt a copy before merging.
+				key, err := ensureKey()
+				if err != nil {
+					output.Printf("%s\n", err.Error())
+					os.Exit(1)
+				}
+				decrypted := profile.Clone()
+				if err := decryptProfileInPlace(decrypted, key); err != nil {
+					output.Printf("%s\n", err.Error())
+					os.Exit(1)
+				}
+				profile = decrypted
 			}
 			wasActive := app.baseEnv.IsMerged(profile)
 			result := newEnv.Merge(profile)

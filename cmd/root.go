@@ -2,14 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/sverrirab/envirou/pkg/config"
-	"github.com/sverrirab/envirou/pkg/data"
-	"github.com/sverrirab/envirou/pkg/output"
-	"github.com/sverrirab/envirou/pkg/shell"
+	"io"
 	"os"
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/sverrirab/envirou/pkg/config"
+	"github.com/sverrirab/envirou/pkg/data"
+	"github.com/sverrirab/envirou/pkg/output"
+	"github.com/sverrirab/envirou/pkg/shell"
 
 	"github.com/spf13/cobra"
 )
@@ -59,17 +61,34 @@ shell function to be installed)`,
 		}
 		app.out.PrintProfileList(app.profileNames, app.activeProfileNames)
 	},
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Generated completion scripts capture stdout and discard stderr.
+		// Normal envirou output stays on stderr so the ev wrapper only
+		// evaluates shell mutations, but Cobra's hidden completion protocol
+		// must use stdout for every possible target command.
+		if cmd.Name() == cobra.ShellCompRequestCmd {
+			setCommandOutput(cmd.Root(), os.Stdout)
+		}
+	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if len(app.shellCommands) > 0 {
 			commands := app.sh.RunCommands(app.shellCommands)
 			if verbose || dryRun {
-				output.Printf("Shell commands to execute:\n>\n> %s>\n", commands)
+				diagnosticCommands := app.sh.RunCommands(app.sh.RedactCommandValues(app.shellCommands))
+				output.Printf("Shell commands to execute (values redacted):\n>\n> %s>\n", diagnosticCommands)
 			}
 			if !dryRun {
 				fmt.Print(commands)
 			}
 		}
 	},
+}
+
+func setCommandOutput(command *cobra.Command, writer io.Writer) {
+	command.SetOut(writer)
+	for _, child := range command.Commands() {
+		setCommandOutput(child, writer)
+	}
 }
 
 // appState holds runtime state initialized during startup.
@@ -85,6 +104,7 @@ type appState struct {
 	inactiveProfileNames []string
 	isActiveProfile      map[string]bool
 	shellCommands        []string
+	cryptKey             []byte // verified decryption key cached for this invocation
 }
 
 var (
@@ -93,6 +113,8 @@ var (
 	// Initial configuration
 	cfgFile             string
 	bashBootstrap       string
+	bashPromptBootstrap string
+	zshPromptBootstrap  string
 	powershellBootstrap string
 	powershellPrompt    string
 	batBootstrap        string
@@ -111,8 +133,10 @@ var (
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(bash, powershell, psPrompt, bat string) {
+func Execute(bash, bashPrompt, zshPrompt, powershell, psPrompt, bat string) {
 	bashBootstrap = bash
+	bashPromptBootstrap = bashPrompt
+	zshPromptBootstrap = zshPrompt
 	powershellBootstrap = powershell
 	powershellPrompt = psPrompt
 	batBootstrap = bat
@@ -148,6 +172,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "n", dryRun, "Only display what would be changed")
 
 	rootCmd.AddGroup(&cobra.Group{ID: "profiles", Title: "Profile commands"})
+	rootCmd.AddGroup(&cobra.Group{ID: "encryption", Title: "Encryption commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "groups", Title: "Group commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "configuration", Title: "Configuration commands"})
 }
@@ -198,6 +223,12 @@ func initConfig() {
 		}
 		app.out.SetDiffNames(diffNames)
 	}
+
+	// When unlocked (valid ENVIROU_KEY), decrypt profile values up front so
+	// active-profile detection and all commands see plaintext. Locked
+	// profiles keep their tokens and simply compare as inactive; commands
+	// that apply them prompt via ensureKey.
+	decryptProfilesSilently(app.configuration.Profiles)
 
 	// Figure out what profiles are active.
 	app.profileNames = make([]string, 0, len(app.configuration.Profiles))

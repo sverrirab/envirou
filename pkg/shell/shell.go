@@ -140,6 +140,36 @@ func (shell *Shell) RunCommands(commands []string) string {
 	}
 }
 
+// RedactCommandValues returns shell commands suitable for diagnostic output.
+// Assignment values may contain secrets, so only variable names and unset
+// operations are preserved.
+func (shell *Shell) RedactCommandValues(commands []string) []string {
+	redacted := make([]string, len(commands))
+	for i, command := range commands {
+		redacted[i] = command
+		if shell.powerShell {
+			if idx := strings.Index(command, " = "); idx >= 0 {
+				redacted[i] = command[:idx+3] + "<redacted>"
+			}
+			continue
+		}
+		if shell.bat {
+			if strings.HasPrefix(command, "set ") {
+				if idx := strings.Index(command, "="); idx >= 0 && idx < len(command)-1 {
+					redacted[i] = command[:idx+1] + "<redacted>"
+				}
+			}
+			continue
+		}
+		if strings.HasPrefix(command, "export ") {
+			if idx := strings.Index(command, "="); idx >= 0 {
+				redacted[i] = command[:idx+1] + "<redacted>"
+			}
+		}
+	}
+	return redacted
+}
+
 func (shell *Shell) GetCommands(old, new *data.Profile) (commands []string) {
 	added, removed := old.Diff(new)
 	for _, add := range added {

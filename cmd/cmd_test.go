@@ -88,6 +88,12 @@ func TestMain(m *testing.M) {
 
 func resetState(t *testing.T) {
 	t.Helper()
+	resetStateWithConfig(t, testConfigForCmd)
+}
+
+func resetStateWithConfig(t *testing.T, configContent string) {
+	t.Helper()
+	setCommandOutput(rootCmd, os.Stderr)
 
 	file, err := os.CreateTemp("", "config")
 	if err != nil {
@@ -96,15 +102,17 @@ func resetState(t *testing.T) {
 	name := file.Name()
 	t.Cleanup(func() { os.Remove(name) })
 
-	_, err = file.WriteString(testConfigForCmd)
+	_, err = file.WriteString(configContent)
 	if err != nil {
 		t.Fatal(err)
 	}
 	file.Close()
 
 	cfgFile = name
-	bashBootstrap = "#!/bin/bash\nfunction ev() { eval \"$(envirou \"$@\")\"; }"
-	powershellBootstrap = "function ev { Invoke-Expression (envirou $args) }"
+	bashBootstrap = "#!/bin/bash\nfunction ev() { if [[ \"${1:-}\" == \"__complete\" || \"${1:-}\" == \"__completeNoDesc\" ]]; then envirou \"$@\"; return; fi; eval \"$(envirou \"$@\")\"; }"
+	bashPromptBootstrap = "__envirou_prompt_update() { :; }; PS1='${ENVIROU_PROMPT_SEGMENT}'\"$PS1\""
+	zshPromptBootstrap = "__envirou_prompt_update() { :; }; PROMPT='${ENVIROU_PROMPT_SEGMENT}'\"$PROMPT\""
+	powershellBootstrap = "function ev { if ($args[0] -eq \"__complete\") { & envirou $args; return }; Invoke-Expression (envirou $args) }"
 	powershellPrompt = "function prompt { \"PS> \" }"
 	batBootstrap = "@FOR /F %%g IN (`envirou %*`) do @%%g"
 	verbose = false
@@ -115,8 +123,10 @@ func resetState(t *testing.T) {
 	showAllGroups = false
 	actionShowGroups = nil
 	addPrompt = false
+	bootstrapCompletion = false
 	showActiveProfilesOnly = false
 	showInactiveProfilesOnly = false
+	profilePromptOutput = false
 	snapshotReset = false
 	diffSaveProfile = ""
 	findNameOnly = false
@@ -125,6 +135,9 @@ func resetState(t *testing.T) {
 	pathCheck = false
 	installPrompt = false
 	uninstall = false
+	encryptStdout = false
+	unlockPrintKey = false
+	app.cryptKey = nil
 
 	rootCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
@@ -135,7 +148,13 @@ func resetState(t *testing.T) {
 
 func executeCommand(t *testing.T, args ...string) string {
 	t.Helper()
-	resetState(t)
+	return executeCommandWithConfig(t, testConfigForCmd, args...)
+}
+
+// executeCommandWithConfig runs the root command against a custom config.
+func executeCommandWithConfig(t *testing.T, configContent string, args ...string) string {
+	t.Helper()
+	resetStateWithConfig(t, configContent)
 
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -175,12 +194,48 @@ func TestBootstrapBash(t *testing.T) {
 	if strings.Contains(out, "#!/bin/bash") {
 		t.Error("Shebang line should be removed")
 	}
+	if strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Error("default bash bootstrap must not modify the prompt")
+	}
+}
+
+func TestBootstrapBashWithPrompt(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "bash", "--prompt")
+	if !strings.Contains(out, "__envirou_prompt_update") || !strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Errorf("bootstrap bash --prompt missing additive prompt hook: %s", out)
+	}
 }
 
 func TestBootstrapZsh(t *testing.T) {
 	out := executeCommand(t, "bootstrap", "zsh")
 	if !strings.Contains(out, "function ev()") {
 		t.Errorf("Expected zsh ev function (same as bash), got: %s", out)
+	}
+	if strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Error("default zsh bootstrap must not modify the prompt")
+	}
+}
+
+func TestBootstrapZshWithPrompt(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "zsh", "--prompt")
+	if !strings.Contains(out, "__envirou_prompt_update") || !strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Errorf("bootstrap zsh --prompt missing additive prompt hook: %s", out)
+	}
+}
+
+func TestBootstrapZshWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "zsh", "--completion")
+	for _, expected := range []string{"function ev()", "__completeNoDesc", "_envirou()", "compdef _envirou ev"} {
+		if !strings.Contains(out, expected) {
+			t.Errorf("bootstrap zsh --completion missing %q", expected)
+		}
+	}
+}
+
+func TestBootstrapBashWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "bash", "--completion")
+	if !strings.Contains(out, "__start_envirou") || !strings.Contains(out, "complete -o default -F __start_envirou ev") {
+		t.Errorf("bootstrap bash --completion did not register ev: %s", out)
 	}
 }
 
@@ -205,10 +260,33 @@ func TestBootstrapPowershellWithPrompt(t *testing.T) {
 	}
 }
 
+func TestBootstrapPowershellWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "powershell", "--completion")
+	if !strings.Contains(out, "Register-ArgumentCompleter -CommandName 'ev'") {
+		t.Errorf("bootstrap powershell --completion did not register ev: %s", out)
+	}
+}
+
 func TestBootstrapBat(t *testing.T) {
 	out := executeCommand(t, "bootstrap", "bat")
 	if !strings.Contains(out, "FOR /F") {
 		t.Errorf("Expected batch wrapper, got: %s", out)
+	}
+}
+
+func TestBootstrapBatRejectsCompletion(t *testing.T) {
+	resetState(t)
+	rootCmd.SetArgs([]string{"bootstrap", "bat", "--completion"})
+	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+		t.Errorf("expected unsupported completion error, got: %v", err)
+	}
+}
+
+func TestBootstrapBatRejectsPrompt(t *testing.T) {
+	resetState(t)
+	rootCmd.SetArgs([]string{"bootstrap", "bat", "--prompt"})
+	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+		t.Errorf("expected unsupported prompt error, got: %v", err)
 	}
 }
 
@@ -305,13 +383,24 @@ func TestProfilesInactiveOnly(t *testing.T) {
 	}
 }
 
+func TestProfilesPromptOutputUsesStdout(t *testing.T) {
+	t.Setenv("TEST_ENV", "development")
+	out := executeCommand(t, "profiles", "--prompt-output")
+	if !contains(strings.Fields(out), "dev") {
+		t.Errorf("expected active dev profile in prompt output, got %q", out)
+	}
+	if strings.Contains(out, "\x1b[") {
+		t.Errorf("prompt output must not contain ANSI formatting, got %q", out)
+	}
+}
+
 // --- Groups tests ---
 
 func TestGroupsList(t *testing.T) {
 	_ = executeCommand(t, "groups")
 	names := app.configuration.Groups.GetAllNames()
 	if len(names) != 1 || names[0] != "test" {
-		t.Errorf("Expected [test] group, got: %v", names)
+		t.Errorf("Expected [test] groups, got: %v", names)
 	}
 }
 
@@ -467,6 +556,33 @@ func TestDiffWithChanges(t *testing.T) {
 	t.Setenv("TEST_DIFF", "after")
 	t.Setenv("TEST_NEW", "added")
 	_ = executeCommand(t, "diff")
+}
+
+func TestDiffDisplayMasksSensitiveValues(t *testing.T) {
+	configContent := strings.Replace(testConfigForCmd, "quiet=1", "quiet=1\npassword=TEST_SECRET", 1)
+	_ = executeCommandWithConfig(t, configContent, "profiles")
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = w
+	t.Cleanup(func() { os.Stderr = oldStderr })
+	outC := make(chan string)
+	go func() {
+		var b bytes.Buffer
+		_, _ = io.Copy(&b, r)
+		outC <- b.String()
+	}()
+
+	printDiffEnv("+", "TEST_SECRET", "plaintext-secret")
+	_ = w.Close()
+	os.Stderr = oldStderr
+	out := <-outC
+	if strings.Contains(out, "plaintext-secret") || !strings.Contains(out, "hidden") {
+		t.Errorf("diff display must mask sensitive values, got %q", out)
+	}
 }
 
 func TestDiffWithRemovedVars(t *testing.T) {
@@ -724,6 +840,21 @@ func TestInstallZshFlow(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "envirou bootstrap zsh") {
 		t.Errorf("Expected zsh bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallZshPromptFlow(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	_ = executeCommand(t, "install", "zsh", "--prompt")
+	content, err := os.ReadFile(filepath.Join(tmpDir, ".zshrc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap zsh --prompt") {
+		t.Errorf("expected opt-in prompt bootstrap line, got: %s", content)
 	}
 }
 

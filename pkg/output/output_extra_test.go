@@ -139,6 +139,16 @@ func TestSprintEnvRaw(t *testing.T) {
 	}
 }
 
+func TestSprintEnvRawStillMasksSensitiveValue(t *testing.T) {
+	sh := shell.NewShell(false, false)
+	out := NewOutput("", *data.ParsePatterns("", false), *data.ParsePatterns("SECRET_*", false), true, false, "cyan", "green", "cyan", "reverse", "red")
+
+	result := out.SprintEnv(sh, "SECRET_KEY", "plaintext-secret")
+	if strings.Contains(result, "plaintext-secret") || !strings.Contains(result, "hidden") {
+		t.Errorf("raw display must still mask sensitive values, got %q", result)
+	}
+}
+
 func TestSPrintProfileListEmpty(t *testing.T) {
 	out := NewOutput("", *data.ParsePatterns("", false), *data.ParsePatterns("", false), false, false, "cyan", "green", "cyan", "reverse", "red")
 
