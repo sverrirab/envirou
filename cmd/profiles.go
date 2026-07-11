@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/sverrirab/envirou/pkg/output"
 )
@@ -11,6 +14,10 @@ var profilesCmd = &cobra.Command{
 	Short:   "List profiles",
 	GroupID: "profiles",
 	Run: func(cmd *cobra.Command, args []string) {
+		if profilePromptOutput {
+			fmt.Println(strings.Join(app.activeProfileNames, " "))
+			return
+		}
 		for _, profileName := range app.profileNames {
 			active := app.isActiveProfile[profileName]
 			if active && !showInactiveProfilesOnly {
@@ -26,6 +33,7 @@ var profilesCmd = &cobra.Command{
 var (
 	showActiveProfilesOnly   bool = false
 	showInactiveProfilesOnly bool = false
+	profilePromptOutput      bool
 )
 
 func init() {
@@ -33,5 +41,7 @@ func init() {
 
 	profilesCmd.Flags().BoolVarP(&showActiveProfilesOnly, "active", "a", showActiveProfilesOnly, "Show active profiles only")
 	profilesCmd.Flags().BoolVarP(&showInactiveProfilesOnly, "inactive", "i", showInactiveProfilesOnly, "Show inactive profiles only")
+	profilesCmd.Flags().BoolVar(&profilePromptOutput, "prompt-output", false, "Print active profile names for shell prompt integration")
+	_ = profilesCmd.Flags().MarkHidden("prompt-output")
 	profilesCmd.MarkFlagsMutuallyExclusive("active", "inactive")
 }

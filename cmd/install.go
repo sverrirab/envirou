@@ -21,8 +21,14 @@ type shellInfo struct {
 func getBootstrapLine(shellName string, prompt bool) string {
 	switch shellName {
 	case "bash":
+		if prompt {
+			return `eval "$(envirou bootstrap bash --prompt)"`
+		}
 		return `eval "$(envirou bootstrap bash)"`
 	case "zsh":
+		if prompt {
+			return `eval "$(envirou bootstrap zsh --prompt)"`
+		}
 		return `eval "$(envirou bootstrap zsh)"`
 	case "powershell":
 		if prompt {
@@ -285,6 +291,6 @@ var (
 
 func init() {
 	addCommand(installCmd)
-	installCmd.Flags().BoolVarP(&installPrompt, "prompt", "p", false, "Also install prompt customization (PowerShell only)")
+	installCmd.Flags().BoolVarP(&installPrompt, "prompt", "p", false, "Also add active profiles to the prompt")
 	installCmd.Flags().BoolVar(&uninstall, "uninstall", false, "Remove envirou from shell profile")
 }

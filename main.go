@@ -10,6 +10,12 @@ import (
 //go:embed bash/ev.sh
 var embeddedBootstrapBash string
 
+//go:embed bash/prompt.bash
+var embeddedPromptBash string
+
+//go:embed bash/prompt.zsh
+var embeddedPromptZsh string
+
 //go:embed powershell/ev.ps1
 var embeddedBootstrapPowerShell string
 
@@ -20,5 +26,5 @@ var embeddedPromptPowerShell string
 var embeddedBootstrapBat string
 
 func main() {
-	cmd.Execute(embeddedBootstrapBash, embeddedBootstrapPowerShell, embeddedPromptPowerShell, embeddedBootstrapBat)
+	cmd.Execute(embeddedBootstrapBash, embeddedPromptBash, embeddedPromptZsh, embeddedBootstrapPowerShell, embeddedPromptPowerShell, embeddedBootstrapBat)
 }

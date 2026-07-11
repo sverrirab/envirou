@@ -113,6 +113,8 @@ var (
 	// Initial configuration
 	cfgFile             string
 	bashBootstrap       string
+	bashPromptBootstrap string
+	zshPromptBootstrap  string
 	powershellBootstrap string
 	powershellPrompt    string
 	batBootstrap        string
@@ -131,8 +133,10 @@ var (
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(bash, powershell, psPrompt, bat string) {
+func Execute(bash, bashPrompt, zshPrompt, powershell, psPrompt, bat string) {
 	bashBootstrap = bash
+	bashPromptBootstrap = bashPrompt
+	zshPromptBootstrap = zshPrompt
 	powershellBootstrap = powershell
 	powershellPrompt = psPrompt
 	batBootstrap = bat

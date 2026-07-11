@@ -110,6 +110,8 @@ func resetStateWithConfig(t *testing.T, configContent string) {
 
 	cfgFile = name
 	bashBootstrap = "#!/bin/bash\nfunction ev() { if [[ \"${1:-}\" == \"__complete\" || \"${1:-}\" == \"__completeNoDesc\" ]]; then envirou \"$@\"; return; fi; eval \"$(envirou \"$@\")\"; }"
+	bashPromptBootstrap = "__envirou_prompt_update() { :; }; PS1='${ENVIROU_PROMPT_SEGMENT}'\"$PS1\""
+	zshPromptBootstrap = "__envirou_prompt_update() { :; }; PROMPT='${ENVIROU_PROMPT_SEGMENT}'\"$PROMPT\""
 	powershellBootstrap = "function ev { if ($args[0] -eq \"__complete\") { & envirou $args; return }; Invoke-Expression (envirou $args) }"
 	powershellPrompt = "function prompt { \"PS> \" }"
 	batBootstrap = "@FOR /F %%g IN (`envirou %*`) do @%%g"
@@ -124,6 +126,7 @@ func resetStateWithConfig(t *testing.T, configContent string) {
 	bootstrapCompletion = false
 	showActiveProfilesOnly = false
 	showInactiveProfilesOnly = false
+	profilePromptOutput = false
 	snapshotReset = false
 	diffSaveProfile = ""
 	findNameOnly = false
@@ -191,12 +194,32 @@ func TestBootstrapBash(t *testing.T) {
 	if strings.Contains(out, "#!/bin/bash") {
 		t.Error("Shebang line should be removed")
 	}
+	if strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Error("default bash bootstrap must not modify the prompt")
+	}
+}
+
+func TestBootstrapBashWithPrompt(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "bash", "--prompt")
+	if !strings.Contains(out, "__envirou_prompt_update") || !strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Errorf("bootstrap bash --prompt missing additive prompt hook: %s", out)
+	}
 }
 
 func TestBootstrapZsh(t *testing.T) {
 	out := executeCommand(t, "bootstrap", "zsh")
 	if !strings.Contains(out, "function ev()") {
 		t.Errorf("Expected zsh ev function (same as bash), got: %s", out)
+	}
+	if strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Error("default zsh bootstrap must not modify the prompt")
+	}
+}
+
+func TestBootstrapZshWithPrompt(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "zsh", "--prompt")
+	if !strings.Contains(out, "__envirou_prompt_update") || !strings.Contains(out, "ENVIROU_PROMPT_SEGMENT") {
+		t.Errorf("bootstrap zsh --prompt missing additive prompt hook: %s", out)
 	}
 }
 
@@ -256,6 +279,14 @@ func TestBootstrapBatRejectsCompletion(t *testing.T) {
 	rootCmd.SetArgs([]string{"bootstrap", "bat", "--completion"})
 	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
 		t.Errorf("expected unsupported completion error, got: %v", err)
+	}
+}
+
+func TestBootstrapBatRejectsPrompt(t *testing.T) {
+	resetState(t)
+	rootCmd.SetArgs([]string{"bootstrap", "bat", "--prompt"})
+	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+		t.Errorf("expected unsupported prompt error, got: %v", err)
 	}
 }
 
@@ -349,6 +380,17 @@ func TestProfilesInactiveOnly(t *testing.T) {
 	_ = executeCommand(t, "profiles", "--inactive")
 	if !contains(app.inactiveProfileNames, "prod") {
 		t.Errorf("Expected prod to be inactive, inactive: %v", app.inactiveProfileNames)
+	}
+}
+
+func TestProfilesPromptOutputUsesStdout(t *testing.T) {
+	t.Setenv("TEST_ENV", "development")
+	out := executeCommand(t, "profiles", "--prompt-output")
+	if !contains(strings.Fields(out), "dev") {
+		t.Errorf("expected active dev profile in prompt output, got %q", out)
+	}
+	if strings.Contains(out, "\x1b[") {
+		t.Errorf("prompt output must not contain ANSI formatting, got %q", out)
 	}
 }
 
@@ -772,6 +814,21 @@ func TestInstallZshFlow(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "envirou bootstrap zsh") {
 		t.Errorf("Expected zsh bootstrap line, got: %s", content)
+	}
+}
+
+func TestInstallZshPromptFlow(t *testing.T) {
+	skipOnWindows(t)
+	tmpDir := setTempHome(t)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	_ = executeCommand(t, "install", "zsh", "--prompt")
+	content, err := os.ReadFile(filepath.Join(tmpDir, ".zshrc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "envirou bootstrap zsh --prompt") {
+		t.Errorf("expected opt-in prompt bootstrap line, got: %s", content)
 	}
 }
 

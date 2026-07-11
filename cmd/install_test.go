@@ -13,7 +13,9 @@ func TestGetBootstrapLine(t *testing.T) {
 		contains string
 	}{
 		{"bash", false, `eval "$(envirou bootstrap bash)"`},
+		{"bash", true, `eval "$(envirou bootstrap bash --prompt)"`},
 		{"zsh", false, `eval "$(envirou bootstrap zsh)"`},
+		{"zsh", true, `eval "$(envirou bootstrap zsh --prompt)"`},
 		{"powershell", false, "Invoke-Expression (& envirou bootstrap powershell)"},
 		{"powershell", true, "Invoke-Expression (& envirou bootstrap powershell --prompt)"},
 		{"unknown", false, ""},

@@ -68,13 +68,16 @@ The easiest way to install is:
 envirou install
 ```
 This auto-detects your shell and adds the bootstrap line to your profile.
-Use `--prompt` to also customize your PowerShell prompt, or `--dry-run` to preview changes.
+Use `--prompt` to add active profiles to your Bash, Zsh, or PowerShell prompt,
+or `--dry-run` to preview changes. Prompt integration is opt-in and preserves
+the existing Bash/Zsh prompt.
 Automatic installation supports Bash, Zsh and PowerShell; for Windows CMD use the
 manual `envirou bootstrap bat` setup described below.
 
 You can also specify the shell explicitly:
 ```
 envirou install zsh
+envirou install zsh --prompt
 envirou install powershell --prompt
 ```
 
@@ -94,6 +97,15 @@ eval "$(envirou bootstrap bash)"
 **Zsh** — add to `.zshrc`:
 ```bash
 eval "$(envirou bootstrap zsh)"
+```
+
+Add `--prompt` to the Bash or Zsh bootstrap command to prepend active profiles
+without replacing the existing prompt. With Oh My Zsh, load it after
+`source $ZSH/oh-my-zsh.sh`.
+
+Flags can be combined for a single opt-in setup:
+```zsh
+source <(envirou bootstrap zsh --completion --prompt)
 ```
 
 **PowerShell** — add to `$PROFILE`:
