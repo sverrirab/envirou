@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -39,8 +40,12 @@ func TestLockCommand(t *testing.T) {
 	t.Setenv("ENVIROU_KEY", "whatever")
 
 	out := executeCommandWithConfig(t, testConfigForCmd, "lock")
-	if !strings.Contains(out, "unset ENVIROU_KEY") {
-		t.Errorf("expected unset command, got: %q", out)
+	want := "unset ENVIROU_KEY"
+	if runtime.GOOS == "windows" {
+		want = "set ENVIROU_KEY="
+	}
+	if !strings.Contains(out, want) {
+		t.Errorf("expected %q command, got: %q", want, out)
 	}
 }
 
