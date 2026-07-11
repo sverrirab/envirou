@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/sverrirab/envirou/pkg/data"
@@ -151,5 +152,41 @@ func TestRunCommandsBat(t *testing.T) {
 	cmd2 := sh.RunCommands([]string{"echo hi", "ls -al"})
 	if cmd2 != "echo hi & ls -al\n" {
 		t.Errorf("Did not expect commands to be: %s.", cmd2)
+	}
+}
+
+func TestRedactCommandValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		shell    *Shell
+		commands []string
+		want     []string
+	}{
+		{
+			name:     "bash",
+			shell:    NewShell(false, false),
+			commands: []string{"export ENVIROU_KEY=secret", "export EMPTY=", "unset OLD"},
+			want:     []string{"export ENVIROU_KEY=<redacted>", "export EMPTY=<redacted>", "unset OLD"},
+		},
+		{
+			name:     "powershell",
+			shell:    NewShell(true, false),
+			commands: []string{"$Env:SECRET = 'value'", "Remove-Item Env:OLD"},
+			want:     []string{"$Env:SECRET = <redacted>", "Remove-Item Env:OLD"},
+		},
+		{
+			name:     "bat",
+			shell:    NewShell(false, true),
+			commands: []string{"set SECRET=value", "set OLD="},
+			want:     []string{"set SECRET=<redacted>", "set OLD="},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.shell.RedactCommandValues(tt.commands)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("RedactCommandValues() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

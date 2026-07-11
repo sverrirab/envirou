@@ -63,7 +63,8 @@ shell function to be installed)`,
 		if len(app.shellCommands) > 0 {
 			commands := app.sh.RunCommands(app.shellCommands)
 			if verbose || dryRun {
-				output.Printf("Shell commands to execute:\n>\n> %s>\n", commands)
+				diagnosticCommands := app.sh.RunCommands(app.sh.RedactCommandValues(app.shellCommands))
+				output.Printf("Shell commands to execute (values redacted):\n>\n> %s>\n", diagnosticCommands)
 			}
 			if !dryRun {
 				fmt.Print(commands)
