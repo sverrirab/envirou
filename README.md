@@ -193,6 +193,7 @@ See the [encryption guide](./docs/encryption.md) for setup and security notes.
 | `envirou install --uninstall` | Remove shell integration from your profile |
 | `ev config` | Open config file in `$EDITOR` |
 | `ev bootstrap bash\|zsh\|powershell\|bat` | Output shell integration script |
+| `envirou bootstrap SHELL --completion` | Output shell integration with completion for `envirou` and `ev` |
 | `envirou completion bash\|zsh\|fish\|powershell` | Output tab completion script ([guide](./docs/completion.md)) |
 | `ev version` | Show version information |
 

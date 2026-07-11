@@ -18,12 +18,18 @@ func TestCompletionZsh(t *testing.T) {
 	if !strings.Contains(out, "_envirou()") {
 		t.Error("Expected _envirou function in zsh completion script")
 	}
+	if !strings.Contains(out, "compdef _envirou ev") {
+		t.Error("Expected zsh completion script to register the ev wrapper")
+	}
 }
 
 func TestCompletionBash(t *testing.T) {
 	out := executeCommand(t, "completion", "bash")
 	if !strings.Contains(out, "__start_envirou") {
 		t.Errorf("Expected bash completion script on stdout, got: %.80s", out)
+	}
+	if !strings.Contains(out, "complete -o default -F __start_envirou ev") {
+		t.Error("Expected bash completion script to register the ev wrapper")
 	}
 }
 
@@ -38,6 +44,9 @@ func TestCompletionPowershell(t *testing.T) {
 	out := executeCommand(t, "completion", "powershell")
 	if !strings.Contains(out, "Register-ArgumentCompleter") {
 		t.Errorf("Expected PowerShell completion script on stdout, got: %.80s", out)
+	}
+	if !strings.Contains(out, "Register-ArgumentCompleter -CommandName 'ev'") {
+		t.Error("Expected PowerShell completion script to register the ev wrapper")
 	}
 }
 

@@ -109,8 +109,8 @@ func resetStateWithConfig(t *testing.T, configContent string) {
 	file.Close()
 
 	cfgFile = name
-	bashBootstrap = "#!/bin/bash\nfunction ev() { eval \"$(envirou \"$@\")\"; }"
-	powershellBootstrap = "function ev { Invoke-Expression (envirou $args) }"
+	bashBootstrap = "#!/bin/bash\nfunction ev() { if [[ \"${1:-}\" == \"__complete\" || \"${1:-}\" == \"__completeNoDesc\" ]]; then envirou \"$@\"; return; fi; eval \"$(envirou \"$@\")\"; }"
+	powershellBootstrap = "function ev { if ($args[0] -eq \"__complete\") { & envirou $args; return }; Invoke-Expression (envirou $args) }"
 	powershellPrompt = "function prompt { \"PS> \" }"
 	batBootstrap = "@FOR /F %%g IN (`envirou %*`) do @%%g"
 	verbose = false
@@ -121,6 +121,7 @@ func resetStateWithConfig(t *testing.T, configContent string) {
 	showAllGroups = false
 	actionShowGroups = nil
 	addPrompt = false
+	bootstrapCompletion = false
 	showActiveProfilesOnly = false
 	showInactiveProfilesOnly = false
 	snapshotReset = false
@@ -199,6 +200,22 @@ func TestBootstrapZsh(t *testing.T) {
 	}
 }
 
+func TestBootstrapZshWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "zsh", "--completion")
+	for _, expected := range []string{"function ev()", "__completeNoDesc", "_envirou()", "compdef _envirou ev"} {
+		if !strings.Contains(out, expected) {
+			t.Errorf("bootstrap zsh --completion missing %q", expected)
+		}
+	}
+}
+
+func TestBootstrapBashWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "bash", "--completion")
+	if !strings.Contains(out, "__start_envirou") || !strings.Contains(out, "complete -o default -F __start_envirou ev") {
+		t.Errorf("bootstrap bash --completion did not register ev: %s", out)
+	}
+}
+
 func TestBootstrapPowershell(t *testing.T) {
 	out := executeCommand(t, "bootstrap", "powershell")
 	if !strings.Contains(out, "Invoke-Expression") {
@@ -220,10 +237,25 @@ func TestBootstrapPowershellWithPrompt(t *testing.T) {
 	}
 }
 
+func TestBootstrapPowershellWithCompletion(t *testing.T) {
+	out := executeCommand(t, "bootstrap", "powershell", "--completion")
+	if !strings.Contains(out, "Register-ArgumentCompleter -CommandName 'ev'") {
+		t.Errorf("bootstrap powershell --completion did not register ev: %s", out)
+	}
+}
+
 func TestBootstrapBat(t *testing.T) {
 	out := executeCommand(t, "bootstrap", "bat")
 	if !strings.Contains(out, "FOR /F") {
 		t.Errorf("Expected batch wrapper, got: %s", out)
+	}
+}
+
+func TestBootstrapBatRejectsCompletion(t *testing.T) {
+	resetState(t)
+	rootCmd.SetArgs([]string{"bootstrap", "bat", "--completion"})
+	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+		t.Errorf("expected unsupported completion error, got: %v", err)
 	}
 }
 
