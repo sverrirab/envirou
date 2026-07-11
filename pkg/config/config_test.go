@@ -90,8 +90,7 @@ func TestReadConfig(t *testing.T) {
 	if len(config.SettingsPath) != 0 {
 		t.Errorf("Unexpected path: %s", config.SettingsPath)
 	}
-	// 3 configured + builtin ..envirou
-	if len(config.Groups) != 4 {
+	if len(config.Groups) != 3 {
 		t.Errorf("Unexpeced number of groups: %d", len(config.Groups))
 	}
 }
@@ -133,18 +132,44 @@ func TestReadDefault(t *testing.T) {
 	if config.FormatEnvName != "cyan" {
 		t.Error("expected cyan")
 	}
-	// 7 in the default config (incl. ENVIROU_KEY) + hardcoded ENVIROU_KEY
-	if len(config.SettingsPassword) != 8 {
+	// 6 configured patterns + hardcoded ENVIROU_KEY.
+	if len(config.SettingsPassword) != 7 {
 		t.Errorf("Unexpected password: %s", config.SettingsPassword)
 	}
 	if len(config.SettingsPath) != 6 {
 		t.Errorf("Unexpected path: %s", config.SettingsPath)
 	}
-	// 15 in the default config + builtin ..envirou
-	if len(config.Groups) != 16 {
+	if len(config.Groups) != 15 {
 		t.Errorf("Unexpected number of groups: %d", len(config.Groups))
 	}
 	removeFile(file.Name())
+}
+
+func TestEncryptedProfileValueIsAutomaticallySensitive(t *testing.T) {
+	config := readTestConfig(t, testConfig+"\n[profile:encrypted]\nORDINARY_NAME=enc:v1:test-token\n")
+	want := map[string]bool{"ENVIROU_KEY": false, "ORDINARY_NAME": false}
+	for _, pattern := range config.SettingsPassword {
+		if _, ok := want[string(pattern)]; ok {
+			want[string(pattern)] = true
+		}
+	}
+	for name, found := range want {
+		if !found {
+			t.Errorf("expected %s to be automatically sensitive; patterns: %v", name, config.SettingsPassword)
+		}
+	}
+}
+
+func TestEncryptionKeyVariableCaseHandling(t *testing.T) {
+	if !IsEncryptionKeyVariable("ENVIROU_KEY", false) {
+		t.Error("expected exact ENVIROU_KEY match")
+	}
+	if IsEncryptionKeyVariable("envirou_key", false) {
+		t.Error("unexpected case-sensitive match")
+	}
+	if !IsEncryptionKeyVariable("envirou_key", true) {
+		t.Error("expected case-insensitive Windows match")
+	}
 }
 
 func TestReadDefaultPath(t *testing.T) {

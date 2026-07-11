@@ -17,7 +17,8 @@ const defaultIni = `
 quiet=0
 sort_keys=1
 path_tilde=1  ; display only: replaces $HOME with ~ in output
-password=*SECRET*, *TOKEN*, *PASSWORD*, *API_KEY*, *PRIVATE_KEY*, *CREDENTIALS*, ENVIROU_KEY
+; ENVIROU_KEY and encrypted profile variables are always masked automatically.
+password=*SECRET*, *TOKEN*, *PASSWORD*, *API_KEY*, *PRIVATE_KEY*, *CREDENTIALS*
 path=HOME, PATH, GOPATH, JAVA_HOME, KUBECONFIG, VIRTUAL_ENV
 
 ; ── Display colors ───────────────────────────────────────────
@@ -57,7 +58,7 @@ git=GIT_*
 ; ── Ignored groups (.. prefix) ───────────────────────────────
 ; Hidden and excluded from snapshot/diff.
 
-..ignore=_, PWD, OLDPWD, SHLVL, ENVIROU_KEY
+..ignore=_, PWD, OLDPWD, SHLVL
 
 ; ── Custom ───────────────────────────────────────────────────
 ; Add your customizations below this point.

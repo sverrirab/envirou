@@ -76,7 +76,10 @@ ev lock          # forget the key again
 shell variable. While unlocked, profiles with encrypted values also show
 their active/inactive state correctly; while locked they display as
 inactive. Envirou masks `ENVIROU_KEY` in listings and excludes it from
-snapshots and diffs.
+snapshots and diffs. The variable name remains visible so the unlocked state
+is not hidden, but its value is never displayed. Variable names containing
+encrypted profile values are also treated as sensitive automatically, so
+their plaintext remains masked after unlocking and decryption.
 
 ## CI and non-interactive use
 

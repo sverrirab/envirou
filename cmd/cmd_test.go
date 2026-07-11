@@ -399,9 +399,8 @@ func TestProfilesPromptOutputUsesStdout(t *testing.T) {
 func TestGroupsList(t *testing.T) {
 	_ = executeCommand(t, "groups")
 	names := app.configuration.Groups.GetAllNames()
-	// "..envirou" is a builtin group hiding ENVIROU_KEY.
-	if len(names) != 2 || names[0] != "..envirou" || names[1] != "test" {
-		t.Errorf("Expected [..envirou test] groups, got: %v", names)
+	if len(names) != 1 || names[0] != "test" {
+		t.Errorf("Expected [test] groups, got: %v", names)
 	}
 }
 
@@ -557,6 +556,33 @@ func TestDiffWithChanges(t *testing.T) {
 	t.Setenv("TEST_DIFF", "after")
 	t.Setenv("TEST_NEW", "added")
 	_ = executeCommand(t, "diff")
+}
+
+func TestDiffDisplayMasksSensitiveValues(t *testing.T) {
+	configContent := strings.Replace(testConfigForCmd, "quiet=1", "quiet=1\npassword=TEST_SECRET", 1)
+	_ = executeCommandWithConfig(t, configContent, "profiles")
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = w
+	t.Cleanup(func() { os.Stderr = oldStderr })
+	outC := make(chan string)
+	go func() {
+		var b bytes.Buffer
+		_, _ = io.Copy(&b, r)
+		outC <- b.String()
+	}()
+
+	printDiffEnv("+", "TEST_SECRET", "plaintext-secret")
+	_ = w.Close()
+	os.Stderr = oldStderr
+	out := <-outC
+	if strings.Contains(out, "plaintext-secret") || !strings.Contains(out, "hidden") {
+		t.Errorf("diff display must mask sensitive values, got %q", out)
+	}
 }
 
 func TestDiffWithRemovedVars(t *testing.T) {

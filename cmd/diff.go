@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/sverrirab/envirou/pkg/config"
@@ -42,11 +43,11 @@ var diffCmd = &cobra.Command{
 
 		for _, name := range added {
 			value, _ := app.baseEnv.Get(name)
-			output.Printf("%s %s=%s\n", app.out.DiffSprintf("+"), app.out.EnvNameSprintf("%s", name), value)
+			printDiffEnv("+", name, value)
 		}
 		for _, name := range changed {
 			value, _ := app.baseEnv.Get(name)
-			output.Printf("%s %s=%s\n", app.out.DiffSprintf("~"), app.out.EnvNameSprintf("%s", name), value)
+			printDiffEnv("~", name, value)
 		}
 		for _, name := range removed {
 			output.Printf("%s %s\n", app.out.DiffSprintf("-"), app.out.EnvNameSprintf("%s", name))
@@ -98,10 +99,15 @@ var diffCmd = &cobra.Command{
 	},
 }
 
+func printDiffEnv(prefix, name, value string) {
+	env := strings.TrimSuffix(app.out.SprintEnv(app.sh, name, value), "\n")
+	output.Printf("%s %s\n", app.out.DiffSprintf(prefix), env)
+}
+
 func filterIgnored(names []string, groups *data.Groups, caseInsensitive bool) []string {
 	result := make([]string, 0, len(names))
 	for _, name := range names {
-		if !groups.IsIgnored(name, caseInsensitive) {
+		if !groups.IsIgnored(name, caseInsensitive) && !config.IsEncryptionKeyVariable(name, caseInsensitive) {
 			result = append(result, name)
 		}
 	}

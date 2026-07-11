@@ -19,7 +19,7 @@ var unlockCmd = &cobra.Command{
 	Long: `Prompt for the passphrase once and export the derived key as ENVIROU_KEY
 so encrypted profiles can be applied without further prompts (requires the
 "ev" wrapper). Run "ev lock" to clear the key again.`,
-	GroupID: "profiles",
+	GroupID: "encryption",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		material, err := crypt.LoadMaterial(config.GetDefaultConfigFileFolder())
@@ -49,7 +49,7 @@ var lockCmd = &cobra.Command{
 	Use:     "lock",
 	Short:   "Clear the encryption key from this shell session",
 	Long:    `Unset ENVIROU_KEY so encrypted profiles prompt for the passphrase again.`,
-	GroupID: "profiles",
+	GroupID: "encryption",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if os.Getenv("ENVIROU_KEY") == "" {

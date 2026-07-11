@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/sverrirab/envirou/pkg/crypt"
 )
 
@@ -149,6 +150,26 @@ func TestLockedProfilesNeverPrompt(t *testing.T) {
 	}
 	if app.isActiveProfile["secretprofile"] {
 		t.Error("locked profile must not be detected as active")
+	}
+}
+
+func TestEncryptedProfileValueRemainsMaskedWhenUnlocked(t *testing.T) {
+	key := setupCrypt(t, "pass")
+	t.Setenv("ENVIROU_KEY", crypt.EncodeKey(key))
+	t.Setenv("TEST_SECRET", "hunter2")
+
+	_ = executeCommandWithConfig(t, encryptedProfileConfig(t, key), "profiles")
+	masked := app.out.SprintEnv(app.sh, "TEST_SECRET", "hunter2")
+	if strings.Contains(masked, "hunter2") || !strings.Contains(masked, "hidden") {
+		t.Errorf("unlocked encrypted profile value must remain masked, got %q", masked)
+	}
+}
+
+func TestEncryptionCommandsHaveDedicatedHelpGroup(t *testing.T) {
+	for _, command := range []*cobra.Command{encryptCmd, decryptCmd, unlockCmd, lockCmd} {
+		if command.GroupID != "encryption" {
+			t.Errorf("%s command group = %q, want encryption", command.Name(), command.GroupID)
+		}
 	}
 }
 

@@ -16,7 +16,7 @@ func SaveSnapshot(profile *data.Profile, groups *data.Groups, caseInsensitive bo
 	b.WriteString(fmt.Sprintf("timestamp=%s\n", time.Now().Format(time.RFC3339)))
 	b.WriteString("\n[snapshot]\n")
 	for _, name := range profile.SortedNames(false) {
-		if groups.IsIgnored(name, caseInsensitive) {
+		if groups.IsIgnored(name, caseInsensitive) || IsEncryptionKeyVariable(name, caseInsensitive) {
 			continue
 		}
 		value, _ := profile.Get(name)

@@ -27,7 +27,7 @@ history).
 The first use creates the key material file (crypt.ini) in the config
 directory. Back that file up: encrypted values cannot be recovered
 without it.`,
-	GroupID: "configuration",
+	GroupID: "encryption",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		key := setupOrGetKey()
@@ -54,7 +54,7 @@ var decryptCmd = &cobra.Command{
 	Short: "Decrypt an enc:v1: token (displays the secret in clear text)",
 	Long: `Verify an encrypted value by decrypting it and printing the plaintext.
 Note that the plaintext is displayed in clear text on the terminal.`,
-	GroupID: "configuration",
+	GroupID: "encryption",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if !crypt.IsEncrypted(args[0]) {

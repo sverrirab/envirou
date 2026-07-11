@@ -7,6 +7,7 @@ import (
 
 	"github.com/sverrirab/envirou/pkg/config"
 	"github.com/sverrirab/envirou/pkg/crypt"
+	"github.com/sverrirab/envirou/pkg/data"
 )
 
 func TestUnlockCommand(t *testing.T) {
@@ -19,6 +20,14 @@ func TestUnlockCommand(t *testing.T) {
 	}
 	if *calls != 1 {
 		t.Errorf("expected one prompt, got %d", *calls)
+	}
+}
+
+func TestEnvirouKeyExcludedFromDiffsWithoutDisplayGroup(t *testing.T) {
+	groups := data.NewGroups()
+	filtered := filterIgnored([]string{"ENVIROU_KEY", "VISIBLE"}, groups, false)
+	if len(filtered) != 1 || filtered[0] != "VISIBLE" {
+		t.Errorf("expected only VISIBLE after filtering, got %v", filtered)
 	}
 }
 
@@ -77,5 +86,8 @@ func TestEnvirouKeyHygiene(t *testing.T) {
 	masked := app.out.SprintEnv(app.sh, "ENVIROU_KEY", crypt.EncodeKey(key))
 	if strings.Contains(masked, crypt.EncodeKey(key)) {
 		t.Error("ENVIROU_KEY value must be masked in display output")
+	}
+	if app.configuration.Groups.IsIgnored("ENVIROU_KEY", app.caseInsensitive) {
+		t.Error("ENVIROU_KEY should be visible by name rather than filtered from display")
 	}
 }

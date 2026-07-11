@@ -172,6 +172,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "n", dryRun, "Only display what would be changed")
 
 	rootCmd.AddGroup(&cobra.Group{ID: "profiles", Title: "Profile commands"})
+	rootCmd.AddGroup(&cobra.Group{ID: "encryption", Title: "Encryption commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "groups", Title: "Group commands"})
 	rootCmd.AddGroup(&cobra.Group{ID: "configuration", Title: "Configuration commands"})
 }

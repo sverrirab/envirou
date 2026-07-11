@@ -44,6 +44,10 @@ var pathCmd = &cobra.Command{
 		sep := string(os.PathListSeparator)
 		for _, name := range names {
 			value, _ := app.baseEnv.Get(name)
+			if app.out.IsSensitiveVariable(name) {
+				app.out.PrintEnv(app.sh, name, value)
+				continue
+			}
 			parts := strings.Split(value, sep)
 
 			output.Printf("%s\n", app.out.EnvNameSprintf("# %s", name))

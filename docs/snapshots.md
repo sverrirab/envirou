@@ -108,3 +108,4 @@ This is especially useful for catching scripts that silently modify `PATH`, set 
 - **Take snapshots early**: Add `ev snapshot` to your shell startup if you want a daily baseline to compare against.
 - **Snapshot is global**: There's one snapshot at a time. Taking a new snapshot replaces the previous one.
 - **Ignored variables**: Transient variables (`PWD`, `SHLVL`, `OLDPWD`, etc.) from the `..ignore` group in your config are automatically excluded from snapshots and diffs.
+- **Encryption key**: `ENVIROU_KEY` is always excluded from snapshots and diffs even though its masked name can appear in environment listings.
