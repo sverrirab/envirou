@@ -67,15 +67,15 @@ func TestDecryptTamperedToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Flip a character in the ciphertext part
-	raw := []byte(token)
-	last := len(raw) - 1
-	if raw[last] == 'A' {
-		raw[last] = 'B'
-	} else {
-		raw[last] = 'A'
+	// Flip a decoded ciphertext byte. Changing the final base64 character can
+	// alter only unused padding bits and intermittently decode to the same data.
+	raw, err := tokenEncoding.DecodeString(token[len(TokenPrefix):])
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := Decrypt(key, string(raw)); err != ErrDecryptFailed {
+	raw[len(raw)-1] ^= 1
+	tampered := TokenPrefix + tokenEncoding.EncodeToString(raw)
+	if _, err := Decrypt(key, tampered); err != ErrDecryptFailed {
 		t.Errorf("expected ErrDecryptFailed for tampered token, got %v", err)
 	}
 }
@@ -137,5 +137,16 @@ func TestEncryptInvalidKeySize(t *testing.T) {
 	}
 	if _, err := Decrypt([]byte("short"), TokenPrefix+"AAAAAAAAAAAAAAAAAAAAAAAAAAAA"); err != ErrInvalidKey {
 		t.Errorf("expected ErrInvalidKey, got %v", err)
+	}
+}
+
+func TestTTYDevices(t *testing.T) {
+	input, output := ttyDevices("windows")
+	if input != "CONIN$" || output != "CONOUT$" {
+		t.Fatalf("Windows console devices = (%q, %q), want (CONIN$, CONOUT$)", input, output)
+	}
+	input, output = ttyDevices("linux")
+	if input != "/dev/tty" || output != "/dev/tty" {
+		t.Fatalf("Unix console devices = (%q, %q), want (/dev/tty, /dev/tty)", input, output)
 	}
 }

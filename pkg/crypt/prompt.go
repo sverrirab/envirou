@@ -18,20 +18,27 @@ var ErrNoTerminal = errors.New("cannot prompt for passphrase: no terminal availa
 // can stub it out.
 var ReadPassphrase = readPassphraseTTY
 
-func ttyDevice() string {
-	if runtime.GOOS == "windows" {
-		return "CONIN$"
+func ttyDevices(goos string) (input, output string) {
+	if goos == "windows" {
+		return "CONIN$", "CONOUT$"
 	}
-	return "/dev/tty"
+	return "/dev/tty", "/dev/tty"
 }
 
 // readPassphraseTTY reads from the controlling terminal so prompting works
 // under command substitution (the ev wrapper) and with redirected stdin.
 // Falls back to stdin only when stdin is a terminal.
 func readPassphraseTTY(prompt string) (string, error) {
-	if tty, err := os.OpenFile(ttyDevice(), os.O_RDWR, 0); err == nil {
-		defer tty.Close()
-		return readHidden(tty, tty, prompt)
+	inputDevice, outputDevice := ttyDevices(runtime.GOOS)
+	if input, err := os.OpenFile(inputDevice, os.O_RDWR, 0); err == nil {
+		defer input.Close()
+		if outputDevice == inputDevice {
+			return readHidden(input, input, prompt)
+		}
+		if output, err := os.OpenFile(outputDevice, os.O_WRONLY, 0); err == nil {
+			defer output.Close()
+			return readHidden(input, output, prompt)
+		}
 	}
 	if term.IsTerminal(int(os.Stdin.Fd())) {
 		return readHidden(os.Stdin, os.Stderr, prompt)
