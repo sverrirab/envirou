@@ -42,6 +42,11 @@ brew install sverrirab/tap/envirou
 go install github.com/sverrirab/envirou@latest
 ```
 
+**Chocolatey** (Windows):
+```powershell
+choco install envirou
+```
+
 <details>
 <summary>Scoop (Windows, experimental)</summary>
 
