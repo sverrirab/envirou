@@ -71,6 +71,49 @@ func TestExportVarRejectsInvalidName(t *testing.T) {
 	}
 }
 
+func TestLocalVar(t *testing.T) {
+	sh := NewShell(false, false)
+	if got, want := sh.LocalVar("FOO", "a b"), "unset FOO;FOO='a b'"; got != want {
+		t.Errorf("posix LocalVar = %q, want %q", got, want)
+	}
+	ps := NewShell(true, false)
+	if got, want := ps.LocalVar("FOO", "a b"), "Remove-Item Env:FOO -ErrorAction SilentlyContinue;$global:FOO = 'a b'"; got != want {
+		t.Errorf("powershell LocalVar = %q, want %q", got, want)
+	}
+	bat := NewShell(false, true)
+	if got, want := bat.LocalVar("FOO", "a b"), "set FOO='a b'"; got != want {
+		t.Errorf("bat LocalVar = %q, want %q", got, want)
+	}
+}
+
+func TestLocalVarRejectsInvalidName(t *testing.T) {
+	for _, ps := range []bool{false, true} {
+		sh := NewShell(ps, false)
+		if cmd := sh.LocalVar("BAD;rm -rf /", "value"); cmd != "" {
+			t.Errorf("expected empty for injected name, got %q", cmd)
+		}
+		if cmd := sh.UnsetLocalVar("$(evil)"); cmd != "" {
+			t.Errorf("expected empty for subshell name, got %q", cmd)
+		}
+	}
+}
+
+func TestUnsetLocalVar(t *testing.T) {
+	sh := NewShell(false, false)
+	if got, want := sh.UnsetLocalVar("FOO"), "unset FOO"; got != want {
+		t.Errorf("posix UnsetLocalVar = %q, want %q", got, want)
+	}
+	ps := NewShell(true, false)
+	want := "Remove-Item Env:FOO -ErrorAction SilentlyContinue;Remove-Variable -Name FOO -Scope Global -ErrorAction SilentlyContinue"
+	if got := ps.UnsetLocalVar("FOO"); got != want {
+		t.Errorf("powershell UnsetLocalVar = %q, want %q", got, want)
+	}
+	bat := NewShell(false, true)
+	if got, want := bat.UnsetLocalVar("FOO"), "set FOO="; got != want {
+		t.Errorf("bat UnsetLocalVar = %q, want %q", got, want)
+	}
+}
+
 func TestUnsetVarRejectsInvalidName(t *testing.T) {
 	for _, ps := range []bool{false, true} {
 		sh := NewShell(ps, false)
@@ -169,10 +212,22 @@ func TestRedactCommandValues(t *testing.T) {
 			want:     []string{"export ENVIROU_KEY=<redacted>", "export EMPTY=<redacted>", "unset OLD"},
 		},
 		{
+			name:     "bash local assignment",
+			shell:    NewShell(false, false),
+			commands: []string{"unset ENVIROU_KEY;ENVIROU_KEY='secret'", "FOO=bar", "echo hi=there", "unset notaname!;X=1"},
+			want:     []string{"unset ENVIROU_KEY;ENVIROU_KEY=<redacted>", "FOO=<redacted>", "echo hi=there", "unset notaname!;X=1"},
+		},
+		{
 			name:     "powershell",
 			shell:    NewShell(true, false),
 			commands: []string{"$Env:SECRET = 'value'", "Remove-Item Env:OLD"},
 			want:     []string{"$Env:SECRET = <redacted>", "Remove-Item Env:OLD"},
+		},
+		{
+			name:     "powershell local assignment",
+			shell:    NewShell(true, false),
+			commands: []string{"Remove-Item Env:ENVIROU_KEY -ErrorAction SilentlyContinue;$global:ENVIROU_KEY = 'secret'"},
+			want:     []string{"Remove-Item Env:ENVIROU_KEY -ErrorAction SilentlyContinue;$global:ENVIROU_KEY = <redacted>"},
 		},
 		{
 			name:     "bat",

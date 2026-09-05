@@ -73,7 +73,13 @@ ev lock          # forget the key again
 ```
 
 `ev unlock` stores the derived key (not the passphrase) in the `ENVIROU_KEY`
-shell variable. While unlocked, profiles with encrypted values also show
+shell variable. The variable is deliberately not exported: programs you start
+from the shell do not inherit it, and the `ev` wrapper (and the optional
+prompt integration) pass it to the `envirou` process only. Exception: on
+Windows `cmd.exe` every variable is inherited by child processes, so the
+unlocked key is visible to programs started from that shell.
+
+While unlocked, profiles with encrypted values also show
 their active/inactive state correctly; while locked they display as
 inactive. Envirou masks `ENVIROU_KEY` in listings and excludes it from
 snapshots and diffs. The variable name remains visible so the unlocked state
@@ -97,8 +103,13 @@ crypt.ini when `ENVIROU_KEY` is set.
 
 - The passphrase never touches disk; crypt.ini stores a random salt, the
   PBKDF2 iteration count and a check token used to detect wrong passphrases.
-- While unlocked, the derived key is in your shell's environment and is
-  visible to processes running as your user. `ev lock` clears it.
+- While unlocked, the derived key is held in a non-exported shell variable:
+  programs you run do not inherit it (except on `cmd.exe`, see above), and it
+  is briefly placed in the environment of each `envirou` invocation only.
+  It is still shell state - `set` or `declare -p` will print it, and anything
+  that can read your shell's memory can recover it. `ev lock` clears it.
+- An exported `ENVIROU_KEY` environment variable (e.g. set by CI) still
+  works and takes effect for all child processes as before.
 - Tokens authenticate themselves (GCM): a tampered token or a wrong key
   fails loudly, it never applies garbage to your environment.
 - `ev snapshot` and `ev diff --save` write the live environment - i.e. the

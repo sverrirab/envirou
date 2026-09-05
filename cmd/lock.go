@@ -16,9 +16,11 @@ var unlockPrintKey bool
 var unlockCmd = &cobra.Command{
 	Use:   "unlock",
 	Short: "Unlock encrypted values for this shell session",
-	Long: `Prompt for the passphrase once and export the derived key as ENVIROU_KEY
-so encrypted profiles can be applied without further prompts (requires the
-"ev" wrapper). Run "ev lock" to clear the key again.`,
+	Long: `Prompt for the passphrase once and store the derived key in the ENVIROU_KEY
+shell variable so encrypted profiles can be applied without further prompts
+(requires the "ev" wrapper). The variable is not exported: programs started
+from the shell do not inherit it; the wrapper passes it to envirou only.
+Run "ev lock" to clear the key again.`,
 	GroupID: "encryption",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -40,7 +42,7 @@ so encrypted profiles can be applied without further prompts (requires the
 			fmt.Println(crypt.EncodeKey(key))
 			return
 		}
-		app.shellCommands = append(app.shellCommands, app.sh.ExportVar("ENVIROU_KEY", crypt.EncodeKey(key)))
+		app.shellCommands = append(app.shellCommands, app.sh.LocalVar("ENVIROU_KEY", crypt.EncodeKey(key)))
 		output.Printf("Unlocked - encrypted values now decrypt automatically. Run 'ev lock' to clear.\n")
 	},
 }
@@ -48,7 +50,7 @@ so encrypted profiles can be applied without further prompts (requires the
 var lockCmd = &cobra.Command{
 	Use:     "lock",
 	Short:   "Clear the encryption key from this shell session",
-	Long:    `Unset ENVIROU_KEY so encrypted profiles prompt for the passphrase again.`,
+	Long:    `Clear the ENVIROU_KEY shell variable so encrypted profiles prompt for the passphrase again.`,
 	GroupID: "encryption",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -56,7 +58,7 @@ var lockCmd = &cobra.Command{
 			output.Printf("Already locked\n")
 			return
 		}
-		app.shellCommands = append(app.shellCommands, app.sh.UnsetVar("ENVIROU_KEY"))
+		app.shellCommands = append(app.shellCommands, app.sh.UnsetLocalVar("ENVIROU_KEY"))
 		output.Printf("Locked\n")
 	},
 }

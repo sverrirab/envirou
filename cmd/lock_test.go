@@ -15,8 +15,17 @@ func TestUnlockCommand(t *testing.T) {
 	calls := stubPassphrase(t, "pass", nil)
 
 	out := executeCommandWithConfig(t, testConfigForCmd, "unlock")
-	if !strings.Contains(out, "ENVIROU_KEY") || !strings.Contains(out, crypt.EncodeKey(key)) {
-		t.Errorf("expected export of derived key, got: %q", out)
+	// The key must land in a shell-local variable, not an exported one,
+	// so programs started from the shell do not inherit it.
+	want := "unset ENVIROU_KEY;ENVIROU_KEY="
+	if runtime.GOOS == "windows" {
+		want = "set ENVIROU_KEY="
+	}
+	if !strings.Contains(out, want) || !strings.Contains(out, crypt.EncodeKey(key)) {
+		t.Errorf("expected shell-local assignment of derived key, got: %q", out)
+	}
+	if strings.Contains(out, "export") {
+		t.Errorf("unlock must not export the key, got: %q", out)
 	}
 	if *calls != 1 {
 		t.Errorf("expected one prompt, got %d", *calls)

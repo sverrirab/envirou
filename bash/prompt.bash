@@ -2,7 +2,7 @@
 __envirou_prompt_update() {
   local previous_status=$?
   local profiles
-  profiles="$(envirou profiles --prompt-output 2>/dev/null)"
+  profiles="$(ENVIROU_KEY="${ENVIROU_KEY:-}" envirou profiles --prompt-output 2>/dev/null)"
   while [[ "$profiles" == *[[:space:]] ]]; do
     profiles="${profiles%?}"
   done
