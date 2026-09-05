@@ -112,6 +112,36 @@ func (shell *Shell) ExportVar(name, value string) string {
 	}
 }
 
+// LocalVar sets a variable visible only to the shell itself, not inherited
+// by child processes. POSIX shells get a plain assignment (the leading unset
+// strips any export attribute left by older versions); PowerShell gets a
+// global PS variable (and any process-level copy is removed). cmd has no
+// non-exported variables so bat falls back to a regular set.
+func (shell *Shell) LocalVar(name, value string) string {
+	if !IsValidVarName(name) {
+		return ""
+	}
+	if shell.powerShell {
+		return fmt.Sprintf("Remove-Item Env:%s -ErrorAction SilentlyContinue;$global:%s = %s", name, name, shell.Escape(value))
+	} else if shell.bat {
+		return fmt.Sprintf("set %s=%s", name, shell.Escape(value))
+	} else {
+		return fmt.Sprintf("unset %s;%s=%s", name, name, shell.Escape(value))
+	}
+}
+
+// UnsetLocalVar clears both the shell-local variable and any exported copy.
+func (shell *Shell) UnsetLocalVar(name string) string {
+	if !IsValidVarName(name) {
+		return ""
+	}
+	if shell.powerShell {
+		return fmt.Sprintf("Remove-Item Env:%s -ErrorAction SilentlyContinue;Remove-Variable -Name %s -Scope Global -ErrorAction SilentlyContinue", name, name)
+	}
+	// POSIX unset clears shell and environment variables alike; bat set= too.
+	return shell.UnsetVar(name)
+}
+
 func (shell *Shell) UnsetVar(name string) string {
 	if !IsValidVarName(name) {
 		return ""
@@ -165,9 +195,32 @@ func (shell *Shell) RedactCommandValues(commands []string) []string {
 			if idx := strings.Index(command, "="); idx >= 0 {
 				redacted[i] = command[:idx+1] + "<redacted>"
 			}
+			continue
 		}
+		redacted[i] = redactPosixAssignment(command)
 	}
 	return redacted
+}
+
+// redactPosixAssignment redacts the value of a plain NAME=value assignment,
+// optionally preceded by "unset NAME;" (the LocalVar form). Commands that
+// are not assignments are returned unchanged.
+func redactPosixAssignment(command string) string {
+	prefixLen := 0
+	rest := command
+	if strings.HasPrefix(rest, "unset ") {
+		idx := strings.Index(rest, ";")
+		if idx < 0 || !IsValidVarName(rest[len("unset "):idx]) {
+			return command
+		}
+		prefixLen = idx + 1
+		rest = rest[prefixLen:]
+	}
+	idx := strings.Index(rest, "=")
+	if idx <= 0 || !IsValidVarName(rest[:idx]) {
+		return command
+	}
+	return command[:prefixLen+idx+1] + "<redacted>"
 }
 
 func (shell *Shell) GetCommands(old, new *data.Profile) (commands []string) {

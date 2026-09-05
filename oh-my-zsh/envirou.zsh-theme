@@ -15,7 +15,7 @@ local current_dir='%{$terminfo[bold]$fg[blue]%}%~ %{$reset_color%}'
 local git_branch='$(git_prompt_info)'
 local rvm_ruby='$(ruby_prompt_info)'
 local venv_prompt='$(virtualenv_prompt_info)'
-local envirou_prompt='$(envirou profiles --active 2>&1) '
+local envirou_prompt='$(ENVIROU_KEY="${ENVIROU_KEY:-}" envirou profiles --active 2>&1) '
 
 ZSH_THEME_RVM_PROMPT_OPTIONS="i v g"
 
